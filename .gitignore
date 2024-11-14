@@ -2,7 +2,7 @@
 .DS_Store 
 
 # Credentials
-atproto.json
+*atproto.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
