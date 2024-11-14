@@ -17,8 +17,13 @@ This code was collected using Python scripts in a Jupyter Notebook. It also make
 * [ATProto SDK](https://atproto.blue/)
 
 ## TO-DO
-* Traversing pagination to retrieve all posts, users, *etc*.
+* Ethical considerations for social media scraping
+* Details about other API model elements: facets, views
+* Bluesky specific affordances: custom timelines, starter packs
+* Traversing pagination to retrieve posts, users, *etc*.
+* Handling rate limits
 * Exploratory data analysis of users
 * Social network analysis of follows, followers
 * Natural language processing of post content
 * Time series analysis of a timeline
+* Automation for retrieval and bots
