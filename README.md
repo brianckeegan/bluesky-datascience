@@ -3,7 +3,7 @@ These are Jupyter Notebook tutorials for retrieving and analyzing data from Blue
 
 ## List of notebooks
 Here are the topics covered:
-* [Introduction](Notebooks/Part 00 - Introduction.ipynb)
+* Introduction
 
 ## Dependencies
 This code was collected using Python scripts in a Jupyter Notebook. It also makes use of these other libraries, which I'd strongly recommend a package manager like [Anaconda](https://www.anaconda.com/products/individual) for managing.
