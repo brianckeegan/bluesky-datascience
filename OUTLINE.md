@@ -1,6 +1,6 @@
 # Notebook Outline
 
-This document outlines ten planned notebooks that build on [Part 00 - Introduction](Notebooks/Part%2000%20-%20Introduction.ipynb). Each notebook pairs a set of Bluesky/ATProto API endpoints with a data science method and a computational social science research design, so that readers learn *how* to retrieve the data and *why* a researcher would want it.
+This document outlines the ten notebooks (Parts 01–10, each in its own directory under `Notebooks/`) that build on [Part 00 - Introduction](Notebooks/Part%2000%20-%20Introduction.ipynb). Each notebook pairs a set of Bluesky/ATProto API endpoints with a data science method and a computational social science research design, so that readers learn *how* to retrieve the data and *why* a researcher would want it.
 
 **Conventions used throughout.** Like Part 00, the notebooks authenticate with the [ATProto SDK](https://atproto.blue/) using credentials stored in a local `atproto.json` file, access endpoints through the `Client` object's dot-notation methods (*e.g.*, `client.get_author_feed(...)`), and analyze results with Pandas, NumPy, Matplotlib, and NetworkX. Endpoints are referenced both by their SDK method name and their underlying XRPC lexicon name (*e.g.*, `get_follows` / `app.bsky.graph.getFollows`). Notebooks that need additional libraries list them under "New dependencies."
 

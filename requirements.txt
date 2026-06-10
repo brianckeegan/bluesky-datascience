@@ -1,0 +1,16 @@
+jupyter
+nbconvert
+nbformat
+ipykernel
+pandas
+numpy
+matplotlib
+networkx>=3.0
+atproto
+pyarrow
+statsmodels
+scikit-learn
+vaderSentiment
+Pillow
+websockets
+requests
