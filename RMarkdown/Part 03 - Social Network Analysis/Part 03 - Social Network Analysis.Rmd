@@ -1,0 +1,408 @@
+---
+title: "Part 03 — Social Network Analysis of Follow Relationships"
+subtitle: "Bluesky Data Science in R"
+output:
+  github_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+```
+
+This document is the R counterpart of the Python notebook
+[Part 03 - Social Network Analysis](../../Notebooks/Part%2003%20-%20Social%20Network%20Analysis/Part%2003%20-%20Social%20Network%20Analysis.ipynb).
+Where the Python version pairs the `atproto` SDK with
+[NetworkX](https://networkx.org/), this one pairs
+[bskyr](https://christophertkenny.com/bskyr/) with
+[igraph](https://r.igraph.org/) — R's workhorse network library — to
+crawl and analyze a *1.5-degree ego network* of follow relationships.
+
+### Learning objectives
+
+* Collect follow and follower lists with `bs_get_follows()`/`bs_get_followers()`.
+* Confront the boundary specification problem and sample alters honestly.
+* Build a directed igraph from crawled edge lists with node attributes.
+* Compute degree distributions, centrality, and Louvain communities.
+* Persist a network as edge and node tables and reload it faithfully.
+
+## Setup
+
+```{r libraries}
+library(bskyr)
+library(tidyverse)
+library(jsonlite)
+library(igraph)
+```
+
+As in every part of this series, the shared helper `bsky_client.R` looks
+for credentials (an `atproto.json` file or bskyr's environment
+variables), authenticates if it finds them, and sets `bsky_authed`. The
+`knitr::opts_chunk$set(eval = bsky_authed)` line then makes that flag the
+default for the whole document: with credentials every chunk runs;
+without them the document still knits, but the API chunks are skipped.
+
+```{r connect}
+source("bsky_client.R")
+knitr::opts_chunk$set(eval = bsky_authed)
+```
+
+## 1. The follow-graph endpoints
+
+A follow is a directed tie: `A → B` means A follows B, and B need not
+follow back. Two endpoints expose each side of the relation:
+
+```{r endpoints}
+follows_page <- bs_get_follows("nytimes.com", limit = 10)
+follows_page |> select(did, handle) |> head(5)
+
+followers_page <- bs_get_followers("nytimes.com", limit = 10)
+followers_page$handle
+```
+
+A third endpoint, `bs_get_relationships()`, checks ties between specific
+pairs — useful when you need a handful of edges, not whole lists.
+
+## 2. Designing the crawl: boundary specification and sampling
+
+Whole-network analysis needs a *boundary*: who is in, who is out
+(Laumann, Marsden, & Prensky 1989). The classic compromise is the **ego
+network**: one focal account (the *ego*), the accounts it follows (the
+*alters*), and all follow ties *among* them — "1.5 degrees" because we
+collect the alters' ties to each other but not their ties to outsiders.
+
+```{r ego}
+EGO_HANDLE <- "nytimes.com"
+
+ego_profile <- bs_get_profile(EGO_HANDLE)
+ego_did <- ego_profile$did
+
+ego_profile |> select(handle, follows_count, followers_count)
+```
+
+### Why sample?
+
+Each alter costs at least one request to enumerate *their* follows. We
+sample a fixed number of alters with a fixed seed, trading completeness
+for a documented, reproducible budget:
+
+```{r sample-alters}
+N_ALTERS <- 100
+SEED <- 42
+
+ego_follows <- bs_get_follows(ego_did, limit = 4000)
+
+set.seed(SEED)
+alters <- ego_follows |> slice_sample(n = min(N_ALTERS, nrow(ego_follows)))
+
+alters$handle |> head(10)
+```
+
+## 3. Building the 1.5-degree ego network
+
+The crawl itself: for each alter, fetch up to 200 of their follows, then
+keep only those pointing back *into* our node set (`intersect()`). Edges
+to accounts outside the boundary are discarded — that is what "1.5
+degrees" means. The result of each iteration is a small tibble of
+`from → to` pairs, and `list_rbind()` stacks them into one edge list.
+We also wrap each fetch in `tryCatch()` because some accounts will be
+deleted, suspended, or otherwise unfetchable, and one bad alter should
+not kill a 100-account crawl:
+
+```{r crawl}
+node_set <- c(ego_did, alters$did)
+
+alter_edges <- map(alters$did, \(did) {
+  follows <- tryCatch(bs_get_follows(did, limit = 200),
+                      error = function(e) NULL)
+  Sys.sleep(0.1)
+  if (is.null(follows)) return(NULL)
+  tibble(from = did, to = intersect(follows$did, node_set))
+}) |> list_rbind()
+
+ego_edges <- tibble(from = ego_did, to = alters$did)
+edges <- bind_rows(ego_edges, alter_edges) |>
+  filter(from != to) |>
+  distinct()
+
+G <- graph_from_data_frame(edges,
+                           vertices = tibble(name = node_set),
+                           directed = TRUE)
+
+c(nodes = vcount(G), edges = ecount(G))
+```
+
+### Node attributes with batched `bs_get_profile()`
+
+A graph of bare DIDs is hard to interpret, so hydrate every node with
+profile attributes, 25 per request (Part 01's batching trick). The
+`match()` call lines the profile rows up with igraph's vertex order —
+igraph stores vertices in its own sequence, so we must never assume it
+matches our tibble's row order:
+
+```{r hydrate}
+profiles <- map(split(node_set, ceiling(seq_along(node_set) / 25)),
+                \(batch) {
+                  out <- bs_get_profile(batch)
+                  Sys.sleep(0.1)
+                  out
+                }) |> list_rbind()
+
+idx <- match(V(G)$name, profiles$did)
+V(G)$handle          <- profiles$handle[idx]
+V(G)$followers_count <- profiles$followers_count[idx]
+V(G)$follows_count   <- profiles$follows_count[idx]
+V(G)$posts_count     <- profiles$posts_count[idx]
+
+vertex_attr(G, index = ego_did) |> as_tibble()
+```
+
+```{r crawl-metadata}
+dir.create("data", showWarnings = FALSE)
+write_json(
+  list(ego_handle = EGO_HANDLE, ego_did = ego_did,
+       collected_at = format(Sys.time(), tz = "UTC",
+                             "%Y-%m-%dT%H:%M:%SZ"),
+       ego_follows_at_collection = nrow(ego_follows),
+       n_alters_sampled = N_ALTERS, sampling_seed = SEED),
+  "data/collection_metadata.json", pretty = TRUE, auto_unbox = TRUE
+)
+```
+
+## 4. Describing the network
+
+```{r describe}
+tibble(
+  nodes = vcount(G),
+  edges = ecount(G),
+  density = edge_density(G),
+  reciprocity = reciprocity(G)
+)
+```
+
+Density is the share of possible ties that exist; reciprocity is the
+share of ties that are returned. Follow networks typically show much
+higher reciprocity than chance — following back is a norm.
+
+### Degree distributions
+
+In-degree counts followers *within the network*; out-degree counts
+follows. Heavy right tails are the signature of attention inequality:
+
+```{r degrees, fig.width=10, fig.height=4}
+deg <- tibble(
+  did = V(G)$name,
+  handle = V(G)$handle,
+  in_degree = degree(G, mode = "in"),
+  out_degree = degree(G, mode = "out")
+)
+
+deg |>
+  pivot_longer(ends_with("degree"), names_to = "direction") |>
+  ggplot(aes(value)) +
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +
+  facet_wrap(~direction) +
+  labs(x = "Degree", y = "Accounts",
+       title = "Degree distributions in the ego network") +
+  theme_minimal()
+```
+
+```{r degrees-loglog, fig.width=6, fig.height=5}
+deg |>
+  pivot_longer(ends_with("degree"), names_to = "direction") |>
+  count(direction, value) |>
+  filter(value > 0) |>
+  ggplot(aes(value, n, color = direction, shape = direction)) +
+  geom_point(alpha = 0.7) +
+  scale_x_log10() + scale_y_log10() +
+  labs(x = "Degree", y = "Number of accounts",
+       title = "Degree distributions, log-log axes") +
+  theme_minimal()
+```
+
+## 5. Centrality: who matters, and in what sense?
+
+Different centralities answer different questions: in-degree measures
+local audience, betweenness measures brokerage between otherwise distant
+parts of the network, PageRank measures recursively-weighted endorsement.
+
+```{r centrality}
+centrality <- deg |>
+  mutate(
+    betweenness = betweenness(G, directed = TRUE),
+    pagerank = page_rank(G)$vector
+  )
+
+centrality |>
+  filter(did != ego_did) |>
+  arrange(desc(pagerank)) |>
+  select(handle, in_degree, betweenness, pagerank) |>
+  head(10)
+```
+
+The three rankings agree at the top and diverge below — high-betweenness
+accounts that are not high in-degree are the bridges an audience count
+would miss.
+
+## 6. Community detection
+
+Do the alters cluster into groups? *Community detection* looks for
+partitions of the nodes with many ties inside groups and few between
+them. Louvain modularity maximization is the standard fast algorithm; it
+is defined for undirected graphs, so we collapse direction first.
+*Modularity* (the quality score it maximizes) runs from 0 (no more
+internal ties than chance) toward 1 (perfectly separated clusters):
+
+```{r communities}
+G_undirected <- as_undirected(G, mode = "collapse")
+
+set.seed(SEED)
+communities <- cluster_louvain(G_undirected)
+
+V(G)$community <- membership(communities)
+
+c(n_communities = length(communities),
+  modularity = round(modularity(communities), 3))
+```
+
+```{r community-members}
+nodes_df <- tibble(
+  did = V(G)$name,
+  handle = V(G)$handle,
+  followers_count = V(G)$followers_count,
+  community = V(G)$community
+)
+
+nodes_df |>
+  add_count(community, name = "community_size") |>
+  group_by(community, community_size) |>
+  slice_max(followers_count, n = 3, with_ties = FALSE) |>
+  summarise(top_members = paste(handle, collapse = ", "), .groups = "drop") |>
+  arrange(desc(community_size)) |>
+  head(4)
+```
+
+Reading a few high-profile members per community usually reveals an
+interpretable social context — a discipline, a workplace, a hobby. That
+interpretive step is yours, not the algorithm's.
+
+## 7. Visualizing the network
+
+A network drawing is a *map*, not a measurement — but it is often the
+fastest way to see the community structure we just quantified. The
+Fruchterman–Reingold layout pulls connected nodes together; we color
+nodes by their Louvain community, size them by in-degree, and label only
+the ego. Layouts are random, so `set.seed()` makes the picture
+reproducible:
+
+```{r plot, fig.width=11, fig.height=11}
+set.seed(SEED)
+layout <- layout_with_fr(G_undirected)
+
+plot(G_undirected,
+     layout = layout,
+     vertex.color = V(G)$community,
+     vertex.size = 2 + sqrt(degree(G, mode = "in")),
+     vertex.label = ifelse(V(G)$name == ego_did, "ego", NA),
+     vertex.label.font = 2,
+     edge.color = adjustcolor("gray", alpha.f = 0.3),
+     edge.arrow.size = 0,
+     main = paste0("1.5-degree ego network of ", EGO_HANDLE,
+                   "\ncolored by Louvain community, sized by in-degree"))
+```
+
+## 8. Saving and reloading the network
+
+Edge and node tables are the most portable network format:
+
+```{r save}
+write_csv(rename(edges, source_did = from, target_did = to),
+          "data/edges.csv")
+write_csv(nodes_df, "data/nodes.csv")
+
+c(edges = nrow(edges), nodes = nrow(nodes_df))
+```
+
+```{r reload}
+edges_loaded <- read_csv("data/edges.csv", show_col_types = FALSE)
+nodes_loaded <- read_csv("data/nodes.csv", show_col_types = FALSE)
+
+G_loaded <- graph_from_data_frame(
+  edges_loaded,
+  vertices = rename(nodes_loaded, name = did),
+  directed = TRUE
+)
+
+c(same_nodes = setequal(V(G_loaded)$name, V(G)$name),
+  same_edge_count = ecount(G_loaded) == ecount(G))
+```
+
+Any analysis re-runs from disk — e.g., the top PageRank alters:
+
+```{r reload-analysis}
+pr <- page_rank(G_loaded)$vector
+pr <- pr[names(pr) != ego_did]
+
+tibble(handle = V(G_loaded)$handle[match(names(pr), V(G_loaded)$name)],
+       pagerank = pr) |>
+  slice_max(pagerank, n = 5)
+```
+
+## 9. Research designs with ego networks
+
+Ego networks support comparative designs: collect many egos and model how
+network properties (density, brokerage, community diversity) relate to
+outcomes (information exposure, support, influence). Classic findings —
+Granovetter's weak ties, Burt's structural holes — are statements about
+ego-network structure that these data can test at platform scale.
+
+## Ethics and limitations
+
+A follow list is public, but assembling thousands of ties into a map of
+someone's social world creates information that never existed in any one
+place — treat crawled networks as sensitive even when every edge is
+public. Our boundary choices (one ego, 100 sampled alters, two pages of
+follows per alter) are *measurement decisions* that shape every statistic
+above; report them. Centrality and community labels are descriptions of
+the crawled graph, not of the people. And the graph is a snapshot:
+follows churn constantly.
+
+## Exercises
+
+1. Re-crawl with `N_ALTERS = 50` and compare density and modularity to
+   the 100-alter network — how sensitive are they to the boundary?
+2. Add eigenvector centrality (`eigen_centrality()`) to the comparison
+   table. Which accounts move most between rankings?
+3. Compute transitivity (`transitivity(G_undirected)`) and compare it to
+   the density — what does the gap tell you about clustering?
+4. Build the ego network from *followers* instead of follows — sampling
+   alters from one page of recent followers, since this ego has over a
+   million. How does its structure differ?
+5. Color the network plot by `followers_count` quantile instead of
+   community. Do the big accounts cluster together?
+
+## Research project ideas
+
+* **Homophily in follow ties.** Annotate alters with public profile
+  features (e.g. occupation keywords from bios) and test whether ties are
+  more likely within categories than between them.
+* **Brokerage and information arrival.** For a panel of egos, test
+  whether accounts bridging communities (high betweenness) post links
+  earlier than accounts embedded in a single community.
+
+## References
+
+### Scholarship
+
+* Laumann, E. O., Marsden, P. V., & Prensky, D. (1989). The boundary specification problem in network analysis. In *Research Methods in Social Network Analysis*.
+* Granovetter, M. (1973). The strength of weak ties. *American Journal of Sociology*, 78(6), 1360–1380.
+* Burt, R. S. (2004). Structural holes and good ideas. *American Journal of Sociology*, 110(2), 349–399.
+* Kwak, H., Lee, C., Park, H., & Moon, S. (2010). What is Twitter, a social network or a news media? *WWW '10*.
+* Blondel, V. D., Guillaume, J.-L., Lambiotte, R., & Lefebvre, E. (2008). Fast unfolding of communities in large networks. *Journal of Statistical Mechanics*, P10008.
+
+### Documentation
+
+* igraph for R: <https://r.igraph.org/>
+* `app.bsky.graph.getFollows`: <https://docs.bsky.app/docs/api/app-bsky-graph-get-follows>
+* bskyr: <https://christophertkenny.com/bskyr/>
+* R Markdown: <https://rmarkdown.rstudio.com/docs/>

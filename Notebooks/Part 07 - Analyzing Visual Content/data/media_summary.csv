@@ -1,8 +1,8 @@
 uri,author,created_at,text_length,embed_class,n_images,n_images_with_alt,alt_text,external_domain,external_uri,like_count,repost_count
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mnslrkd6ok2g,bsky.app,2026-06-08T21:10:01.530Z,207,images,5,5,"We've increased the number of photos you can attach to a post from 4 to 10. That's why we're adding a carousel. | The carousel only shows for posts with at least 5 photos.
-Old posts with photos will continue to show the regular grid layout. | Each photo displays a numbered badge to make it super clear there are more photos to browse. | We've improved the gesture handling so you don't accidentally open the drawer menu or go back/forward in your browser while swiping. | We're always eager to hear your feedback. Let us know your thoughts about the new carousel!",,,10338,2091
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mni6hmaff22u,bsky.app,2026-06-04T17:45:11.965Z,97,none,0,0,,,,14601,2116
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mndkh3ugst2b,bsky.app,2026-06-02T21:36:20.000Z,261,none,0,0,,,,2085,388
+Old posts with photos will continue to show the regular grid layout. | Each photo displays a numbered badge to make it super clear there are more photos to browse. | We've improved the gesture handling so you don't accidentally open the drawer menu or go back/forward in your browser while swiping. | We're always eager to hear your feedback. Let us know your thoughts about the new carousel!",,,10407,2108
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mni6hmaff22u,bsky.app,2026-06-04T17:45:11.965Z,97,none,0,0,,,,14609,2117
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mndkh3ugst2b,bsky.app,2026-06-02T21:36:20.000Z,261,none,0,0,,,,2086,388
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mmwmla3xph26,bsky.app,2026-05-28T18:09:50.000Z,177,images,1,1,"The Bluesky and Standard.site logos sharing an emoji handshake above examples of the new, dynamic link cards.",,,3143,539
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mlvllqtnmk2g,bsky.app,2026-05-15T14:54:22.994Z,128,record,0,0,,,,2211,182
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mlr7prm6g22c,bsky.app,2026-05-13T21:11:14.161Z,25,record,0,0,,,,1271,233
@@ -22,7 +22,7 @@ at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mizb7z3cg22p,bsky.app,
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mikijgvrhk2m,bsky.app,2026-04-03T00:44:32.239Z,118,record,0,0,,,,2940,758
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mijtnu3py22u,bsky.app,2026-04-02T18:31:11.705Z,152,record,0,0,,,,1742,166
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mijrmgxzfc2n,bsky.app,2026-04-02T17:54:36.914Z,87,record,0,0,,,,1096,121
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mhgprzgahs2l,bsky.app,2026-03-19T19:18:45.699Z,194,external,0,0,,bsky.social,https://bsky.social/about/blog/03-19-2026-series-b,2944,359
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mhgprzgahs2l,bsky.app,2026-03-19T19:18:45.699Z,194,external,0,0,,bsky.social,https://bsky.social/about/blog/03-19-2026-series-b,2945,359
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mhgg5ja5gc2w,bsky.app,2026-03-19T16:26:13.953Z,217,images,1,1,A screenshot demonstrating how bot labels appear on profiles in the Bluesky app.,,,4314,717
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mgnwwvj3u22a,bsky.app,2026-03-09T22:50:12.105Z,206,external,0,0,,bsky.social,https://bsky.social/about/blog/03-09-2026-a-new-chapter-for-bluesky-jp,2056,694
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mgnknuoxp225,bsky.app,2026-03-09T19:10:24.356Z,26,record,0,0,,,,1998,146
@@ -35,11 +35,11 @@ at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mg3ybdpo7s2b,bsky.app,
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mfl45k3q6s2l,bsky.app,2026-02-24T02:20:12.880Z,8,record,0,0,,,,5929,476
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mfkhetnvdk2p,bsky.app,2026-02-23T20:08:29.214Z,272,external,0,0,,caribouband.bandcamp.com,https://caribouband.bandcamp.com/album/butterfly,6240,1157
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mf32ydgqn223,bsky.app,2026-02-17T17:16:48.572Z,44,record,0,0,,,,1907,297
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mehkcsk62c2u,bsky.app,2026-02-09T22:57:51.314Z,75,images,1,0,,,,10763,947
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mehkcsk62c2u,bsky.app,2026-02-09T22:57:51.314Z,75,images,1,0,,,,10762,946
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mehbtjykb22n,bsky.app,2026-02-09T20:26:09.100Z,148,video,0,0,,,,6892,790
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mehblstckk2e,bsky.app,2026-02-09T20:21:49.929Z,106,images,1,1,A demonstration of where you can find the drafts feature in the top right corner of the post composer on Bluesky.,,,15723,3391
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mdni342e422l,bsky.app,2026-01-30T14:08:32.168Z,298,external,0,0,,bsky.social,https://bsky.social/about/blog/01-29-2026-transparency-report-overview,8121,989
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mdjcrkcav22j,bsky.app,2026-01-28T22:23:03.899Z,128,external,0,0,,bsky.social,https://bsky.social/about/blog/01-28-2026-bluesky-2026-predictions-jp,8439,5607
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mdjcrkcav22j,bsky.app,2026-01-28T22:23:03.899Z,128,external,0,0,,bsky.social,https://bsky.social/about/blog/01-28-2026-bluesky-2026-predictions-jp,8438,5607
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mdjby5ifhc2e,bsky.app,2026-01-28T22:08:51.609Z,247,external,0,0,,bsky.social,https://bsky.social/about/blog/01-28-2026-bluesky-2026-predictions,2633,448
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mdbijyi5qk27,bsky.app,2026-01-25T19:44:54.882Z,286,record,0,0,,,,1791,266
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mcibiyf7fs2r,bsky.app,2026-01-15T19:02:31.579Z,173,none,0,0,,,,2844,328
@@ -50,9 +50,9 @@ at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mbb4vo2ah22j,bsky.app,
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3ma5gwktd2s2c,bsky.app,2025-12-17T00:49:55.455Z,293,images,1,0,,,,3504,662
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3m7j472sanc2f,bsky.app,2025-12-08T22:44:34.704Z,290,none,0,0,,,,4461,494
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3m6zx562tss2c,bsky.app,2025-12-02T22:04:06.239Z,180,record_with_media,1,1,"Word cloud of most-used words: rolling, accounts, posts, custom, users, video, community, subscribe, starter, contributors, building independent",,,2278,353
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3m5yqexldn22q,bsky.app,2025-11-19T17:05:20.315Z,116,images,1,1,An illustration of the new Bluesky app icon for dark mode.,,,6744,624
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3m5yqexldn22q,bsky.app,2025-11-19T17:05:20.315Z,116,images,1,1,An illustration of the new Bluesky app icon for dark mode.,,,6743,623
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3m5yqc2is5s2q,bsky.app,2025-11-19T17:03:42.715Z,251,images,1,1,"A before and after comparison showing the updated ""who can reply"" settings for posts, including the new ""Save these options for next time"" checkbox.",,,3192,519
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3m5ypzhscb22q,bsky.app,2025-11-19T16:58:54.664Z,300,images,1,1,"An illustration of how the new reporting system works. When reporting a post, you select a category and then choose a specific reason within that category. These more specific reporting reasons help our moderation team address issues with better accuracy.",,,3429,561
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3m5ypzhscb22q,bsky.app,2025-11-19T16:58:54.664Z,300,images,1,1,"An illustration of how the new reporting system works. When reporting a post, you select a category and then choose a specific reason within that category. These more specific reporting reasons help our moderation team address issues with better accuracy.",,,3429,560
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3m4ykobgdkc2v,bsky.app,2025-11-06T21:57:58.544Z,62,external,0,0,,bsky.social,https://bsky.social/about/blog/11-6-2025-baseball,3336,327
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3m4j5anaals2h,bsky.app,2025-10-31T18:47:46.451Z,170,external,0,0,,bsky.social,https://bsky.social/about/blog/10-31-2025-building-healthier-social-media-update,4453,725
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3m4j4iy4oek2d,bsky.app,2025-10-31T18:34:32.548Z,6,images,1,1,"40,000,013
@@ -60,44 +60,44 @@ users on Bluesky
 80.00003% of 50,000,000 user goal (currently estimated in ~522.3 days)",,,20043,2474
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3m47grlweoc2a,bsky.app,2025-10-27T22:11:41.798Z,280,none,0,0,,,,2855,335
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3m476tnt5ps2v,bsky.app,2025-10-27T19:49:40.960Z,205,images,1,1,The updated Bluesky app icon.,,,9604,1156
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3m33z6d6yzk2w,bsky.app,2025-10-13T20:05:05.614Z,202,images,1,1,A screenshot of “Allow others to be notified of your posts” with “No one” selected,,,3614,653
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3m2kdgmbbzc2o,bsky.app,2025-10-06T19:20:45.697Z,31,none,0,0,,,,30377,2615
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3m33z6d6yzk2w,bsky.app,2025-10-13T20:05:05.614Z,202,images,1,1,A screenshot of “Allow others to be notified of your posts” with “No one” selected,,,3614,652
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3m2kdgmbbzc2o,bsky.app,2025-10-06T19:20:45.697Z,31,none,0,0,,,,30376,2614
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3m25mrktygc2y,bsky.app,2025-10-01T18:03:20.389Z,270,external,0,0,,bsky.social,https://bsky.social/about/blog/10-01-2025-patent-pledge,6369,890
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lz7yasblh22p,bsky.app,2025-09-19T23:08:50.497Z,265,external,0,0,,bsky.social,https://bsky.social/about/blog/09-19-2025-building-healthier-social-media,6395,935
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lydt7uwac22f,bsky.app,2025-09-08T18:24:18.334Z,210,video,0,0,,,,23767,6087
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lydt7uwac22f,bsky.app,2025-09-08T18:24:18.334Z,210,video,0,0,,,,23767,6086
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lydpzxb3uc2f,bsky.app,2025-09-08T17:27:18.225Z,198,images,1,1,Screenshot of Post Interaction Settings with an arrow pointing to Reply Settings,,,4289,808
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3ly6xh4j2dc2v,bsky.app,2025-09-06T19:56:37.449Z,49,none,0,0,,,,1917,181
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lxxo3i4qzs2c,bsky.app,2025-09-03T22:20:25.131Z,219,video,0,0,,,,9405,1381
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lxulu56oo22z,bsky.app,2025-09-02T17:02:32.080Z,145,record,0,0,,,,2705,342
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lxkjaotopk2v,bsky.app,2025-08-29T16:49:14.626Z,174,images,1,1,Screenshot of Moderation settings with an arrow pointing to “Muted words & tags”,,,5807,1164
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lxd23jxui22z,bsky.app,2025-08-26T17:29:17.464Z,200,external,0,0,,washingtonpost.com,https://www.washingtonpost.com/politics/2025/08/26/sammys-law-social-media-safety-congress/,6225,931
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lwzadikbrc2u,bsky.app,2025-08-22T19:54:29.473Z,300,none,0,0,,,,56209,14080
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lwzadikbrc2u,bsky.app,2025-08-22T19:54:29.473Z,300,none,0,0,,,,56208,14079
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lwercyjq4s2u,bsky.app,2025-08-14T16:32:31.783Z,259,external,0,0,,bsky.social,https://bsky.social/about/blog/08-14-2025-updated-terms-and-policies,3607,968
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lwerb4pjak2u,bsky.app,2025-08-14T16:31:29.058Z,244,external,0,0,,bsky.social,https://bsky.social/about/blog/08-14-2025-updated-terms-and-policies,2826,473
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lwaxvmzztk23,bsky.app,2025-08-13T04:19:40.764Z,280,none,0,0,,,,2090,284
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lvtayxmq5s27,bsky.app,2025-08-07T17:25:19.868Z,27,none,0,0,,,,4949,585
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lvo6kuupcc2w,bsky.app,2025-08-05T16:58:21.046Z,151,record,0,0,,,,3821,753
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lvo6kuupcc2w,bsky.app,2025-08-05T16:58:21.046Z,151,record,0,0,,,,3821,752
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lvbkskppdk2x,bsky.app,2025-07-31T16:32:47.134Z,66,none,0,0,,,,3175,300
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lv76v3dauk2w,bsky.app,2025-07-30T17:54:07.282Z,144,none,0,0,,,,19150,2831
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lv2nr32whs2m,bsky.app,2025-07-28T22:37:00.215Z,93,images,2,2,pixelated potato | handsome squidward,,,21496,2041
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lv76v3dauk2w,bsky.app,2025-07-30T17:54:07.282Z,144,none,0,0,,,,19150,2830
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lv2nr32whs2m,bsky.app,2025-07-28T22:37:00.215Z,93,images,2,2,pixelated potato | handsome squidward,,,21496,2039
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lupy6jjmd22g,bsky.app,2025-07-24T16:44:11.893Z,37,none,0,0,,,,3489,336
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lunvnx3rmc2y,bsky.app,2025-07-23T20:53:48.734Z,262,external,0,0,,bsky.social,https://bsky.social/about/blog/07-10-2025-age-assurance,3209,468
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lunpneb2h22c,bsky.app,2025-07-23T19:06:06.532Z,189,record,0,0,,,,1288,171
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lu6hkqg5222e,bsky.app,2025-07-17T17:31:32.608Z,68,none,0,0,,,,3424,252
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3ltmzy7cs5c22,bsky.app,2025-07-10T19:13:16.498Z,20,none,0,0,,,,6243,1134
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3ltfdpa5edc2v,bsky.app,2025-07-07T17:45:54.883Z,297,images,1,1,A screenshot demonstrating that you can press the bell icon on a profile to subscribe to push notifications from that user's posts,,,12935,3538
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3ltmzy7cs5c22,bsky.app,2025-07-10T19:13:16.498Z,20,none,0,0,,,,6243,1133
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3ltfdpa5edc2v,bsky.app,2025-07-07T17:45:54.883Z,297,images,1,1,A screenshot demonstrating that you can press the bell icon on a profile to subscribe to push notifications from that user's posts,,,12935,3537
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lsyqmukj3c2b,bsky.app,2025-07-02T17:32:37.674Z,295,none,0,0,,,,6051,526
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lqv2pprabs2i,bsky.app,2025-06-05T19:32:08.522Z,158,images,1,1,Bluesky 1.103. A screenshot of a post by Bluesky that says “Hello world!” The share button has a line pointing to it that says “Share post!”,,,9698,1173
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lpk2lf7k6k2t,bsky.app,2025-05-19T17:05:14.470Z,177,images,1,1,Bluesky profile with “live now” indicator,,,22473,4097
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lpd3zz5gy222,bsky.app,2025-05-16T22:42:40.726Z,189,none,0,0,,,,7792,727
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lnlxxw53f22o,bsky.app,2025-04-25T00:33:29.885Z,169,none,0,0,,,,23256,1607
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lnl5wneet225,bsky.app,2025-04-24T16:47:29.845Z,173,record,0,0,,,,2392,273
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lndjyecwcs2a,bsky.app,2025-04-21T16:01:54.461Z,268,images,1,1,"Bluesky’s logo, a trusted verifier’s scalloped checkmark, and a standard verified blue check mark.",,,40063,5433
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lndjyecwcs2a,bsky.app,2025-04-21T16:01:54.461Z,268,images,1,1,"Bluesky’s logo, a trusted verifier’s scalloped checkmark, and a standard verified blue check mark.",,,40063,5432
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3ln6ixpgjcs2m,bsky.app,2025-04-19T16:00:20.126Z,200,record,0,0,,,,2824,342
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3ln23glbupk2j,bsky.app,2025-04-17T21:47:27.758Z,275,record,0,0,,,,4490,330
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lmi3hlglc224,bsky.app,2025-04-10T18:00:06.171Z,148,images,1,1,Bluesky 1.100. A screenshot of a chat message that says “Nice”. The response picker is open.,,,19546,2141
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3llzh4fl3o226,bsky.app,2025-04-04T22:18:39.760Z,272,record,0,0,,,,11943,2384
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3llqwu7r34c2e,bsky.app,2025-04-01T13:06:27.452Z,127,external,0,0,,bsky.social,https://bsky.social/about/blog/04-01-2025-april-fools,38560,4455
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3llzh4fl3o226,bsky.app,2025-04-04T22:18:39.760Z,272,record,0,0,,,,11943,2383
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3llqwu7r34c2e,bsky.app,2025-04-01T13:06:27.452Z,127,external,0,0,,bsky.social,https://bsky.social/about/blog/04-01-2025-april-fools,38559,4454
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lla2nyxzec2t,bsky.app,2025-03-25T19:59:18.414Z,285,images,1,1,"Bluesky's ""Mundus Sine Caesaribus"" shirt website",,,5898,351
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3ll5ddl5k6s2s,bsky.app,2025-03-24T17:56:32.847Z,62,external,0,0,,worldwithoutcaesars.com,https://worldwithoutcaesars.com/,4016,375
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lkvoqk7aps2j,bsky.app,2025-03-21T16:59:21.315Z,64,external,0,0,,worldwithoutcaesars.com,https://worldwithoutcaesars.com/,5475,606
@@ -109,13 +109,13 @@ at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lk23stkjm22n,bsky.app,
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3ljt2kfpoks22,bsky.app,2025-03-07T22:27:29.309Z,108,images,1,1,"Digital billboard in Boston's subway station that reads: ""Finally, social media that's billionaire-proof.""",,,53353,4850
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3ljnp4dmoxk2w,bsky.app,2025-03-05T19:19:27.503Z,206,images,1,1,Jay Graber's headshot for her SXSW keynote,,,12010,1305
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lifoglqwdc25,bsky.app,2025-02-17T21:20:48.328Z,187,images,1,1,"Bluesky 1.98. Improvements: You can now restrict replies to ""Followers only"". New settings page: Post Interaction Settings. Added ""Search posts"" to user profiles. Improvements to the search page. New translation: Interlingua",,,48047,6966
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lhjnj6s6ok2q,bsky.app,2025-02-06T17:49:48.981Z,254,images,1,1,"Popular meme format, grandma labeled with ""bluesky's public launch was one year ago today."" Younger person helping her labeled with ""sure grandma let's get you to bed.""",,,153042,13803
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lhjnj6s6ok2q,bsky.app,2025-02-06T17:49:48.981Z,254,images,1,1,"Popular meme format, grandma labeled with ""bluesky's public launch was one year ago today."" Younger person helping her labeled with ""sure grandma let's get you to bed.""",,,153041,13802
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lhh5wy4ml22u,bsky.app,2025-02-05T18:05:52.399Z,130,images,1,1,"Screenshot of NFLair's profile. Below, there are two screenshots of what the user flairs look like. One is for the Philadelphia Eagles and the other is for the Kansas City Chiefs.",,,3641,373
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lh5iyaqqos24,bsky.app,2025-02-01T21:56:48.783Z,104,none,0,0,,,,107751,8155
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lgu4lg6j2k2v,bsky.app,2025-01-29T04:20:55.707Z,49,images,1,1,euphoric photo of dolphins jumping under a rainbow,,,211902,16040
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lh5iyaqqos24,bsky.app,2025-02-01T21:56:48.783Z,104,none,0,0,,,,107748,8155
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lgu4lg6j2k2v,bsky.app,2025-01-29T04:20:55.707Z,49,images,1,1,euphoric photo of dolphins jumping under a rainbow,,,211901,16040
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lgqgeqeix22o,bsky.app,2025-01-27T17:05:29.988Z,219,none,0,0,,,,25977,2299
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lgbvthr26k2z,bsky.app,2025-01-21T22:32:14.330Z,155,none,0,0,,,,24306,1498
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lg5g64vptc23,bsky.app,2025-01-20T03:41:13.225Z,171,video,0,0,,,,67909,9241
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lg5g64vptc23,bsky.app,2025-01-20T03:41:13.225Z,171,video,0,0,,,,67909,9240
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lfxpbo2kss24,bsky.app,2025-01-17T21:08:17.119Z,272,none,0,0,,,,29778,3167
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lery4ketx226,bsky.app,2025-01-02T21:05:19.108Z,225,none,0,0,,,,20051,1827
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3leka7qrtl224,bsky.app,2024-12-30T19:08:58.516Z,210,external,0,0,,bsky.social,https://bsky.social/about/blog/12-30-2024-year-in-review,51106,5483
@@ -125,265 +125,153 @@ at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3ldoudjpdmk2y,bsky.app,
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lcfsxeylik2q,bsky.app,2024-12-03T14:10:36.866Z,134,record,0,0,,,,29589,5015
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lc4n2cohf22a,bsky.app,2024-11-29T22:30:55.003Z,245,external,0,0,,bsky.social,https://bsky.social/about/blog/11-29-2024-engagement,75176,8724
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lbxfx3gocc2z,bsky.app,2024-11-27T20:40:31.859Z,103,images,1,1,"Bluesky 1.95. Improvements: New reply sorting option: ""hotness."" Improved localizations. Smoother feed scrolling. You can now swipe away informational ""toasts"". Fixes: Camera photos no longer get stretched. Newlines no longer get dropped on copypaste. Lots of other bug fixes and performance improvements.",,,23180,2160
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lbvgvbvcf22c,bsky.app,2024-11-27T01:52:05.788Z,97,none,0,0,,,,30235,3648
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lbvgvbvcf22c,bsky.app,2024-11-27T01:52:05.788Z,97,none,0,0,,,,30234,3648
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lbstepcz422v,bsky.app,2024-11-26T00:57:28.872Z,38,record,0,0,,,,6237,546
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lbsizxfxa22r,bsky.app,2024-11-25T21:52:30.840Z,282,external,0,0,,twitch.tv,https://www.twitch.tv/blueskysocial,10260,1204
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lbic4dss222e,bsky.app,2024-11-21T20:21:57.376Z,270,external,0,0,,bsky.social,https://bsky.social/about/blog/4-28-2023-domain-handle-tutorial,14997,2764
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lbfx22zhr22l,bsky.app,2024-11-20T21:58:30.413Z,186,none,0,0,,,,60815,2021
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lbdmuh7axs2u,bsky.app,2024-11-19T23:51:04.962Z,128,images,1,1,Bluesky 1.94. Improvements: Redesigned settings screen. New animations when viewing images. Imported images now clearly indicate that they were imported. Fixes: Lots of performance improvements!,,,69168,7567
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lb6vz4ms6c25,bsky.app,2024-11-18T02:51:26.625Z,105,images,1,1,Kris Jenner looking at a computer,,,217302,11237
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lb3qyu64bs2z,bsky.app,2024-11-16T20:43:49.836Z,95,none,0,0,,,,236304,16568
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lazf2ljw5s2b,bsky.app,2024-11-15T22:04:43.515Z,274,external,0,0,,bsky.social,https://bsky.social/about/blog/4-28-2023-domain-handle-tutorial,36783,6794
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3layuzbti6s2x,bsky.app,2024-11-15T17:17:39.920Z,147,none,0,0,,,,117037,11395
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lbdmuh7axs2u,bsky.app,2024-11-19T23:51:04.962Z,128,images,1,1,Bluesky 1.94. Improvements: Redesigned settings screen. New animations when viewing images. Imported images now clearly indicate that they were imported. Fixes: Lots of performance improvements!,,,69167,7567
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lb6vz4ms6c25,bsky.app,2024-11-18T02:51:26.625Z,105,images,1,1,Kris Jenner looking at a computer,,,217302,11236
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lb3qyu64bs2z,bsky.app,2024-11-16T20:43:49.836Z,95,none,0,0,,,,236301,16567
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lazf2ljw5s2b,bsky.app,2024-11-15T22:04:43.515Z,274,external,0,0,,bsky.social,https://bsky.social/about/blog/4-28-2023-domain-handle-tutorial,36783,6793
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3layuzbti6s2x,bsky.app,2024-11-15T17:17:39.920Z,147,none,0,0,,,,117036,11394
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lax6dv6eus2z,bsky.app,2024-11-15T00:59:19.944Z,110,external,0,0,,twitch.tv,https://www.twitch.tv/blueskysocial,12621,866
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lax5zxh7bc2p,bsky.app,2024-11-15T00:53:46.785Z,117,video,0,0,,,,86451,8651
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mnv2x2if7k2m,brianckeegan.com,2026-06-09T20:46:51.855Z,97,record,0,0,,,,18,3
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mnv2ft7y2c2m,brianckeegan.com,2026-06-09T20:37:13.813Z,89,none,0,0,,,,8,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mnugb7elak2d,brianckeegan.com,2026-06-09T14:36:43.938Z,246,record,0,0,,,,6,2
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mnug4aixhk2d,brianckeegan.com,2026-06-09T14:33:57.358Z,25,record,0,0,,,,2,1
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mnk2il4tss2e,brianckeegan.com,2026-06-05T11:39:28.862Z,41,record_with_media,0,0,,static.klipy.com,https://static.klipy.com/ii/8ce8357c78ea940b9c2015daf05ce1a5/84/f1/PkMNOXaW.gif?hh=498&ww=498&mp4=6lqKA0ByW5ApMdg7Zx&webm=DhEP54UyjxpDC33,3,1
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mndifd6u7k22,brianckeegan.com,2026-06-02T20:59:34.093Z,51,record,0,0,,,,6,2
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mn6ryygjh225,brianckeegan.com,2026-06-01T00:08:18.884Z,84,record,0,0,,,,15,4
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mn5hi3zttc2t,brianckeegan.com,2026-05-31T11:27:15.081Z,199,record,0,0,,,,8,2
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mn3om4eczk2o,brianckeegan.com,2026-05-30T18:29:26.359Z,119,record_with_media,0,0,,volcanodiscovery.com,https://www.volcanodiscovery.com/earthquakes/quake-info/23049522/quake-felt-May-30-2026-Near-Boston-Massachusetts-USA.html,71,31
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mmwjz2cmt22y,brianckeegan.com,2026-05-28T17:23:53.011Z,179,record,0,0,,,,1,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mmwjneggdc2y,brianckeegan.com,2026-05-28T17:17:20.968Z,155,record,0,0,,,,1,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mmuhodhynk2y,brianckeegan.com,2026-05-27T21:36:46.566Z,115,record,0,0,,,,4,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mmsanjuglc2r,brianckeegan.com,2026-05-27T00:25:44.041Z,20,record,0,0,,,,3,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mmsal5eils2r,brianckeegan.com,2026-05-27T00:24:23.828Z,0,record_with_media,0,0,,static.klipy.com,https://static.klipy.com/ii/39f2394ae36df6e199be9eb7c9fa1012/1f/d7/KZsAT054.gif?hh=286&ww=498&mp4=iZBeV4oITRb8hq&webm=MIDxgPBu10RvPvRs8SuC,6,1
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mmrwy66hbs2r,brianckeegan.com,2026-05-26T21:32:43.467Z,286,record,0,0,,,,2,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mmr6d35y7s2i,brianckeegan.com,2026-05-26T14:11:25.859Z,203,record,0,0,,,,81,38
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mmlsm5sh6s2b,brianckeegan.com,2026-05-24T10:58:27.022Z,156,record,0,0,,,,8,3
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mmiim7lavs2g,brianckeegan.com,2026-05-23T03:21:32.240Z,0,record_with_media,1,1,Tasha Yar fucks a clanker,,,8,1
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mmichdesns2g,brianckeegan.com,2026-05-23T01:31:26.010Z,45,images,1,1,"import umap
-import hdbscan
-from sklearn.cluster import KMeans
-from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score",,,5,1
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mmeicrrhks2u,brianckeegan.com,2026-05-21T13:05:36.832Z,128,record,0,0,,,,2,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mmddz2dj3c2j,brianckeegan.com,2026-05-21T02:15:55.561Z,73,external,0,0,,poynter.org,https://www.poynter.org/commentary/2026/bari-weiss-demoted-cbs-news-cnn/,0,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mmcwfloeck2f,brianckeegan.com,2026-05-20T22:12:24.010Z,139,none,0,0,,,,1,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mman53azes2h,brianckeegan.com,2026-05-20T00:21:15.207Z,269,record,0,0,,,,2,1
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mm2uzupn3s2b,brianckeegan.com,2026-05-17T17:26:39.187Z,202,record,0,0,,,,1,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mlp5iuvb4k2p,brianckeegan.com,2026-05-13T01:26:15.762Z,61,record,0,0,,,,5,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mlmpp6inps23,brianckeegan.com,2026-05-12T02:13:55.300Z,67,record,0,0,,,,1,1
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mllesboeqc2t,brianckeegan.com,2026-05-11T13:26:08.398Z,54,record,0,0,,,,7,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mllcrm65wk25,brianckeegan.com,2026-05-11T12:49:58.361Z,205,external,0,0,,boulderreportinglab.org,https://boulderreportinglab.org/2026/05/10/brian-keegan-boulders-tipped-wage-debate-rests-on-a-myth-about-what-restaurant-workers-earn/,6,4
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mlh3kz52kk2q,brianckeegan.com,2026-05-09T20:30:21.930Z,90,record,0,0,,,,4,1
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mlgdndfk6s2v,brianckeegan.com,2026-05-09T13:22:10.000Z,71,record,0,0,,,,3,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mlcluly37c2n,brianckeegan.com,2026-05-08T01:38:44.857Z,112,record,0,0,,,,4,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mlbup4sux22j,brianckeegan.com,2026-05-07T18:44:05.125Z,195,external,0,0,,nytimes.com,https://www.nytimes.com/2026/05/07/business/us-debt-trump-policies-budget.html,1,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3ml7yysllgk2i,brianckeegan.com,2026-05-07T00:55:45.434Z,258,record,0,0,,,,1,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3ml7lhtoauc2q,brianckeegan.com,2026-05-06T20:53:37.501Z,72,record,0,0,,,,2,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3ml76fv6xzc2z,brianckeegan.com,2026-05-06T16:59:53.345Z,95,record,0,0,,,,2,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3ml76aci3522z,brianckeegan.com,2026-05-06T16:56:45.949Z,247,record_with_media,0,0,,philanthropyroundtable.org,https://www.philanthropyroundtable.org/magazine/the-world-population-crisis/,3,2
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3ml6kdwzzys2z,brianckeegan.com,2026-05-06T11:00:53.334Z,148,record,0,0,,,,0,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3ml3yi2sffs2x,brianckeegan.com,2026-05-05T10:35:44.667Z,161,record,0,0,,,,1,1
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3ml2ogtq2bs2i,brianckeegan.com,2026-05-04T22:03:26.540Z,22,record,0,0,,,,1,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3ml2ca2nad22f,brianckeegan.com,2026-05-04T18:24:54.003Z,45,record_with_media,0,0,,media.tenor.com,https://media.tenor.com/w5VFVZ5UabwAAAAC/pouting-pout.gif?hh=305&ww=498,3,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3ml22tqw75k22,brianckeegan.com,2026-05-04T16:12:44.966Z,278,record,0,0,,,,1,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mky2zhy3222k,brianckeegan.com,2026-05-03T21:10:37.441Z,120,record,0,0,,,,3,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mky2jjhdnk2k,brianckeegan.com,2026-05-03T21:01:42.119Z,60,record,0,0,,,,4,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mkwwyodivk2h,brianckeegan.com,2026-05-03T10:25:55.846Z,98,record,0,0,,,,2,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mkqhkh4sos2s,brianckeegan.com,2026-04-30T20:33:33.957Z,65,images,1,1,"4 tech companies are planning to spend $700+ Billion on capex this year
-
-Bar chart with Amazon, Alphabet, Microsoft, and Meta spending from 2014 through 2026",,,3,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mkq5f4nmjc2m,brianckeegan.com,2026-04-30T17:31:37.793Z,23,external,0,0,,media.tenor.com,https://media.tenor.com/wHWOKt31cpgAAAAC/its-done-frodo.gif?hh=280&ww=498,5,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mkq4ko7wdc2t,brianckeegan.com,2026-04-30T17:16:50.250Z,105,record,0,0,,,,3,3
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mkophlbvvs2m,brianckeegan.com,2026-04-30T03:49:48.123Z,120,record,0,0,,,,24,8
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mkngb53ibs2v,brianckeegan.com,2026-04-29T15:32:28.492Z,207,record,0,0,,,,1,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mkn4iv3drs2g,brianckeegan.com,2026-04-29T12:37:51.116Z,123,record,0,0,,,,0,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mkmvonkezc2i,brianckeegan.com,2026-04-29T10:35:48.349Z,20,record_with_media,1,1,NYTimes Trump voter panel,,,0,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mkjkeov4ok26,brianckeegan.com,2026-04-28T02:35:23.831Z,115,record,0,0,,,,5,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mkhwqcm46k26,brianckeegan.com,2026-04-27T11:11:19.033Z,126,record,0,0,,,,33,6
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mkfsrq2bg22d,brianckeegan.com,2026-04-26T14:55:12.236Z,165,record_with_media,1,1,"RUN
-MHIDE FIGHT
-BE PREPARED | ACTIVE HARMER RESPONSE
-RUN
-If a safe path is available, RUN
-• Have an escape route and plan in mind
-• Do not hesitate, get out
-• Leave your belongings
-• Evacuate regardless of whether others agree to follow
-• Keep your hands visible
-HIDE
-If you cannot get out safely, HIDE
-• Block entrances, turn off lights and lock doors
-• Stay out of the harmer's view
-• Be quiet and silence your phone (including vibrate)
-FIGHT
-Fight only as a
-LAST RESORT
-• Try to disarm and incapacitate the harmer
-• Improvise weapons or throw items at the harmer
-• Fight like your life depends on it
-CALL OR TEXT 9-1-1
-WHEN IT IS SAFE TO DO SO
-WHEN LAW
-ENFORCEMENT ARRIVES
-• Remain calm and follow instructions
-• Raise hands and spread fingers
-• Avoid quick movements toward officers, such as holding on to them for safety
-• Avoid pointing, screaming or yelling
-• Do not ask questions when evacuating
-INFORMATION TO PROVIDE
-TO 911 OPERATORS
-• Location of the active harmer
-• Number of harmers
-• Physical description of harmers)
-• Number and type of weapons the harmer has
-• Number of potential victims at location
-University of Colorado Boulder",,,142,45
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mkeiy2deok2a,brianckeegan.com,2026-04-26T02:27:07.195Z,57,record,0,0,,,,5,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mkbyqk7by22b,brianckeegan.com,2026-04-25T02:31:16.054Z,24,record_with_media,1,1,"Oracle, though, is in a comparatively weaker financial position than big tech rivals. It has a lower investment-grade credit rating, more debt and is burning cash. Much of its future revenue is tied to a money-losing startup that is facing growing competitive pressure. The cost of protecting Oracle’s bonds against a potential default via credit-default swaps roughly quadrupled between late September and late March, though it has fallen slightly since then.",,,2,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mk76u7kpxk24,brianckeegan.com,2026-04-23T23:42:42.341Z,111,record_with_media,1,1,Cumulative number of NSF awards from grant-witness.us,,,15,6
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mk6p2l65ck2a,brianckeegan.com,2026-04-23T18:59:55.978Z,0,record_with_media,0,0,,media.tenor.com,https://media.tenor.com/I61bFykN2pQAAAAC/schadenfreude-bowie.gif?hh=371&ww=498,1,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mk4usazb2s2e,brianckeegan.com,2026-04-23T01:37:19.844Z,91,images,1,1,"English Wikipedia pageviews since January 1 2026 for the articles ""Tau Ceti"" and ""40 Eridani"" showing a peak at March 20 corresponding to release of Project Hail Mary",,,6,2
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mk2j54c4ys2k,brianckeegan.com,2026-04-22T03:03:19.640Z,48,record,0,0,,,,0,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mk26t2kefc2k,brianckeegan.com,2026-04-21T23:58:44.850Z,136,record_with_media,0,0,,splcenter.org,https://www.splcenter.org/resources/extremist-files/,3,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mk24scs7tc2g,brianckeegan.com,2026-04-21T23:22:32.458Z,0,record_with_media,0,0,,media.tenor.com,https://media.tenor.com/TZ_dNtAPrGUAAAAC/haha-lol.gif?hh=361&ww=498,1,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mjtwglkeys2i,brianckeegan.com,2026-04-19T12:12:38.104Z,182,record,0,0,,,,2,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mjruivb4uk2v,brianckeegan.com,2026-04-18T16:32:48.434Z,77,record,0,0,,,,4,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mjrrnyrfx22v,brianckeegan.com,2026-04-18T15:41:58.660Z,185,external,0,0,,nytimes.com,https://www.nytimes.com/2026/04/17/health/trump-psychedelics-ibogaine.html,0,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mjk6cgik4c2t,brianckeegan.com,2026-04-15T15:06:51.121Z,0,record_with_media,1,1,"WAIT, IT'S ALL GENDER
-
-ALWAYS HAS BEEN",,,66,17
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mjeywnyylk2e,brianckeegan.com,2026-04-13T13:47:28.957Z,148,record,0,0,,,,1,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mj7rkq5irc2q,brianckeegan.com,2026-04-11T11:52:13.663Z,169,record,0,0,,,,1,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mj6rd6wvz22v,brianckeegan.com,2026-04-11T02:15:21.005Z,45,record,0,0,,,,1,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3miz3iwi3f22f,brianckeegan.com,2026-04-08T20:01:32.444Z,55,record,0,0,,,,2,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3miyxufk5p22c,brianckeegan.com,2026-04-08T18:56:22.373Z,196,record,0,0,,,,5,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3miyolrrjgk2s,brianckeegan.com,2026-04-08T16:10:29.516Z,17,record_with_media,1,1,"This morning I asked President Trump if he's okay with the Iranians charging a toll for all ships that go through the Strait of Hormuz, he told me there may be a Joint US-Iran venture to charge tolls:
-
-""We're thinking of doing it as a joint venture. It's a way of securing it - also securing it from lots of other people.""
-
-""It's a beautiful thing""",,,1,1
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3miyffc5jgs2u,brianckeegan.com,2026-04-08T13:25:48.142Z,136,external,0,0,,en.wikipedia.org,https://en.wikipedia.org/wiki/Musandam_Governorate,1,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mix72gv7yk26,brianckeegan.com,2026-04-08T01:59:41.827Z,46,record,0,0,,,,3,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mix6ytvn2k26,brianckeegan.com,2026-04-08T01:58:48.362Z,15,record,0,0,,,,3,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3miucchtqq22j,brianckeegan.com,2026-04-06T22:19:53.271Z,156,external,0,0,,davidmperry.com,https://www.davidmperry.com/the-public-scholar/,2,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mittwf5vf22x,brianckeegan.com,2026-04-06T18:02:35.420Z,96,record,0,0,,,,1,2
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mittp75rx22x,brianckeegan.com,2026-04-06T17:58:34.245Z,96,record,0,0,,,,2,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mitt56qwls2x,brianckeegan.com,2026-04-06T17:48:29.843Z,116,external,0,0,,gijn.org,https://gijn.org/stories/tips-investigating-right-wing-influencers-podcasters/,3,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mirskwgbvc2j,brianckeegan.com,2026-04-05T22:32:57.650Z,45,record,0,0,,,,1,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3miqtsgyyt22k,brianckeegan.com,2026-04-05T13:22:23.924Z,198,record,0,0,,,,1,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3miodqfheps2f,brianckeegan.com,2026-04-04T13:29:35.842Z,0,record_with_media,1,1,Heartbreaking: The Worst Person You Know Just Made A Great Point,,,2,2
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mimcoo4dgs26,brianckeegan.com,2026-04-03T18:05:24.592Z,10,images,1,1,"Your muted words
-hasan
-platner
-nuzzi",,,5,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3milq6keo3k2u,brianckeegan.com,2026-04-03T12:34:16.446Z,68,record,0,0,,,,8,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mik4kumsqc24,brianckeegan.com,2026-04-02T21:10:35.278Z,281,record,0,0,,,,6,2
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3migkyj3tyc24,brianckeegan.com,2026-04-01T11:18:06.380Z,171,external,0,0,,boulderreportinglab.org,https://boulderreportinglab.org/2026/03/31/brian-keegan-what-822505-words-reveal-about-how-boulders-comprehensive-plan-has-changed-since-1977/,6,3
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mieyuyhr4s24,brianckeegan.com,2026-03-31T20:21:21.191Z,84,record,0,0,,,,4,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3micbjdc22k2z,brianckeegan.com,2026-03-30T18:17:54.346Z,157,record,0,0,,,,6,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mhyjin7ftk26,brianckeegan.com,2026-03-26T21:14:03.742Z,36,record,0,0,,,,2,1
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mhxjl725ys22,brianckeegan.com,2026-03-26T11:42:49.812Z,277,external,0,0,,coloradosun.com,https://coloradosun.com/2026/03/26/opinion-colorado-regents-collective-bargining-decision/?utm_source=Colorado+Sun+App&utm_medium=App+Share+Button,32,22
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mhu4dab5dk2s,brianckeegan.com,2026-03-25T03:07:44.797Z,162,external,0,0,,reddit.com,https://www.reddit.com/r/SipsTea/comments/1s2vvcy/iran_made_a_video_for_trimp_and_its_hilariois/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button,3,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mhtpkxhmsc2b,brianckeegan.com,2026-03-24T23:19:25.361Z,89,images,1,1,"When a paper is submitted, the authors must explicitly declare four qualified individual names from their author list who will collectively complete up to four full paper reviews for the conference (an author name can be submitted multiple times). This ensures that every paper submitted provides the reviewing labour required to evaluate it. Failing to fulfill these declared review responsibilities will result in an automatic desk rejection of all authors' own submissions who failed to deliver the reviews.",,,11,1
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mhqi2b2egs23,brianckeegan.com,2026-03-23T16:26:49.583Z,235,record,0,0,,,,3,1
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mhlyct2uus2f,brianckeegan.com,2026-03-21T21:34:38.087Z,38,record,0,0,,,,4,1
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mhitmeeizk2x,brianckeegan.com,2026-03-20T15:32:30.295Z,70,record,0,0,,,,1,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mhitenij7s2x,brianckeegan.com,2026-03-20T15:28:11.427Z,113,record,0,0,,,,1,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mhifiycywc2s,brianckeegan.com,2026-03-20T11:20:04.613Z,87,record,0,0,,,,4,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mhhhsrz4es2k,brianckeegan.com,2026-03-20T02:28:41.267Z,40,record_with_media,1,1,"bar graph of  from Wikipedia Pageviews spiking on St. Patrick's day
-
-https://pageviews.wmcloud.org/?project=en.wikipedia.org&platform=all-access&agent=user&redirects=0&range=latest-30&pages=Ceretic_Guletic",,,9,1
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mhhautmnp22k,brianckeegan.com,2026-03-20T00:24:33.888Z,0,record_with_media,1,1,butlerian jihad now,,,5,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mhhapfnbh22k,brianckeegan.com,2026-03-20T00:21:31.459Z,47,none,0,0,,,,4,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mhejznqfsc2v,brianckeegan.com,2026-03-18T22:30:19.957Z,10,record,0,0,,,,3,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mhdkd3yptc2o,brianckeegan.com,2026-03-18T13:02:57.160Z,88,record,0,0,,,,0,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mhcipbthas2o,brianckeegan.com,2026-03-18T03:01:18.705Z,0,record_with_media,0,0,,media.tenor.com,https://media.tenor.com/dpSpYy3d1_4AAAAC/tenset-10set.gif?hh=242&ww=320,6,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mhc7rpplpc2r,brianckeegan.com,2026-03-18T00:21:36.696Z,300,external,0,0,,bigthink.com,https://bigthink.com/starts-with-a-bang/nasa-x-ray-axis-killed/,7,4
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mhayacgins2e,brianckeegan.com,2026-03-17T12:33:56.410Z,174,record,0,0,,,,2,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mh76w6efu22v,brianckeegan.com,2026-03-16T19:28:13.319Z,119,record,0,0,,,,3,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mh6eaasujk2f,brianckeegan.com,2026-03-16T11:30:40.404Z,218,external,0,0,,nytimes.com,https://www.nytimes.com/2026/03/15/books/paul-r-ehrlich-dead.html?smid=bs-share,191,55
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mh275rxurk2m,brianckeegan.com,2026-03-14T19:49:10.070Z,166,record,0,0,,,,11,4
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mgzrzfcdo22h,brianckeegan.com,2026-03-14T15:54:03.920Z,137,record,0,0,,,,3,1
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mgzjwaa45k2h,brianckeegan.com,2026-03-14T13:29:08.005Z,134,external,0,0,,en.wikipedia.org,https://en.wikipedia.org/wiki/Nuremberg_(2025_film),6,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mgze6l23w22i,brianckeegan.com,2026-03-14T11:46:25.327Z,100,record,0,0,,,,1,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mgzayqg6ss2i,brianckeegan.com,2026-03-14T10:49:28.414Z,99,record,0,0,,,,0,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mgxrirl25k2p,brianckeegan.com,2026-03-13T20:39:26.885Z,73,record,0,0,,,,2,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mgv67723ss2g,brianckeegan.com,2026-03-12T19:48:44.895Z,81,record,0,0,,,,3,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mgtefexlic2h,brianckeegan.com,2026-03-12T02:34:15.405Z,0,record_with_media,0,0,,media.tenor.com,https://media.tenor.com/YvWe7r7NNF4AAAAC/leave-the-plumbing-to-me-mario.gif?hh=498&ww=498,4,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mgsdxaqkm22h,brianckeegan.com,2026-03-11T16:53:41.480Z,17,record,0,0,,,,0,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mgrrmepvfc2o,brianckeegan.com,2026-03-11T11:25:29.201Z,65,record,0,0,,,,8,2
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mgnas23xe22g,brianckeegan.com,2026-03-09T16:13:46.818Z,4,images,1,1,"You preferred
-Readers preferred
-Human
-
-“It makes no difference what men think of war, said the judge. War endures. As well ask men what they think of stone. War was always here. Before man was, war waited for him. The ultimate trade awaiting its ultimate practitioner. That is the way it was and will be.”
-
-— “Blood Meridian” (1985) by Cormac McCarthy
-A.I.
-Human
-
-“You must not change one thing, one pebble, one grain of sand, until you know what good and evil will follow on that act. The world is in balance, in Equilibrium. A wizard’s power of Changing and of Summoning can shake the balance of the world. It is dangerous, that power. It must follow knowledge, and serve need. To light a candle is to cast a shadow.”
-
-— “A Wizard of Earthsea” (1968) by Ursula K. Le Guin
-A.I.
-A.I.
-
-“There is something astonishing in the fact that we are made of matter forged in dying stars, that the calcium in our bones was created in stellar furnaces billions of years before Earth existed. The universe is not indifferent to us; we are made of it, continuous with it. To understand this is not to feel small. It is to feel implicated in something vast.”
-
-— By Anthropic’s Claude, Opus 4.5
-A.I.
-Human
-
-“It is wise to conceal the past even if there is nothing to conceal. A man's power is in the half-light, in the half-seen movements of his hand and the unguessed-at expression of his face. It is the absence of facts that frightens people: the gap you open, into which they pour their fears, fantasies, desires.”
-
-— “Wolf Hall” (2009) by Hilary Mantel
-Human
-Human
-
-“I caught a tremendous fish and held him beside the boat half out of water, with my hook fast in a corner of his mouth. He didn’t fight. He hadn’t fought at all. He hung a grunting weight, battered and venerable and homely. Here and there his brown skin hung in strips like ancient wallpaper.”
-
-— “The Fish” (1946) by Elizabeth Bishop
-A.I.",,,0,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mgn3djsymk2w,brianckeegan.com,2026-03-09T14:36:11.282Z,163,external,0,0,,github.com,https://github.com/oksure/openalex-research-mcp,4,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mgmvd3ctzk2e,brianckeegan.com,2026-03-09T12:48:33.622Z,131,external,0,0,,media.tenor.com,https://media.tenor.com/QTT8V4tpSbMAAAAC/love-on-the-spectrum-disinterested.gif?hh=498&ww=498,2,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mglruf64a224,brianckeegan.com,2026-03-09T02:13:59.671Z,0,record_with_media,0,0,,media.tenor.com,https://media.tenor.com/SlM60YglJG8AAAAC/care-bear.gif?hh=369&ww=498,24,4
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mglfcjpj7s2q,brianckeegan.com,2026-03-08T22:29:15.554Z,0,record_with_media,0,0,,media.tenor.com,https://media.tenor.com/IVR1Xv6VAJsAAAAC/you-might-want-to-buckle-up-dominic-toretto.gif?hh=281&ww=498,5,1
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mgi2mibobk2i,brianckeegan.com,2026-03-07T14:39:59.221Z,66,record,0,0,,,,0,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mggaxwgw7s23,brianckeegan.com,2026-03-06T21:28:26.143Z,26,images,2,2,"The future of higher education should be modular, and employers must be active partners in shaping what gets taught. The country needs to shift focus from long and expensive degrees that risk obsolescence before completion toward short, affordable job-linked credits that offer on-ramps from education to work. People should be encouraged to pursue credentials that can stand alone or be stacked over time into degrees, bringing people back to campus over the arc of their lives. A midcareer accountant displaced by A.I. doesn't need another master's degree. Instead, she may be better off with a four-month credential and temporary wage insurance that bridges any pay gap and incentivizes her to accept a new role sooner. | The funding model for higher education must change, too. Public investment should hold schools to measurable labor market results, not just enrollments. Texas offers a working example: Community colleges that award credentials in high-demand fields receive greater state funding. If we take this approach, we'll quickly see a survival of the fittest emerge: Innovative programs that meet labor market needs will be rewarded, while underperformers will shutter.",,,2,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mgap3whcuc23,brianckeegan.com,2026-03-04T16:25:14.333Z,161,external,0,0,,ire.org,https://www.ire.org/training/conferences/nicar-2026/,0,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mgakllntfk2q,brianckeegan.com,2026-03-04T15:04:31.174Z,94,external,0,0,,wikipedia25.org,https://wikipedia25.org/en/which-wikipedia-of-the-future-are-you/result,2,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mg6ptozjts22,brianckeegan.com,2026-03-03T21:33:12.371Z,143,none,0,0,,,,8,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mg6mniqwxk2t,brianckeegan.com,2026-03-03T20:36:03.247Z,148,record_with_media,0,0,,media.tenor.com,https://media.tenor.com/5mFfD66oJzEAAAAC/why-crying.gif?hh=277&ww=498,1,1
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mg6dqpyr2c2k,brianckeegan.com,2026-03-03T17:56:47.830Z,176,record,0,0,,,,6,1
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mfyvg3oads25,brianckeegan.com,2026-03-01T13:56:59.884Z,31,images,2,2,"Will the iranian regime fall by June 30? Line plot from Polymarked | The Onion
-
-This War Will Destabilize The Entire Mideast Region And Set Off A Global Shockwave Of Anti-Americanism vs. No It Won’t
-
-Published:
-March 26, 2003
-Nathan Eckert",,,0,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mfxm3sgbqk24,brianckeegan.com,2026-03-01T01:37:31.232Z,8,images,1,1,"OpenAl
-ChatGPT - Your data export has started
-now",,,2,0
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mfunqpak3k2v,brianckeegan.com,2026-02-27T21:29:07.071Z,110,none,0,0,,,,7,1
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mfrubzgdos2c,brianckeegan.com,2026-02-26T18:48:11.383Z,75,record_with_media,4,4,"Year-to-year citations
-
-When are citations to P&E work published?
-
-P&E work from A-M regime continues to be cited in present | Topical embedding with UMAP
-
-Project 1302 paper x 429 topic matrix ins 1302 x 2 space preserving structure
-
-A-M regime paper clusters distinct from post-regime papers with some ""normal"" papers | Reference network
-
-Papers published in P&E, 1978-2025
-
-Links are references from P&E papers
-
-Clear but not complete polarization reflects a gradient of normal and reactionary papers | Coauthorship network
-
-Authors published in P&E, 1978-2025
-
-Links are coauthorships on P&E papers
-
-Unmistakable coauthorshop community under Abernethy and MacDonald",,,9,2
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mfpvcyzuqk27,brianckeegan.com,2026-02-26T00:01:18.817Z,18,record,0,0,,,,3,2
-at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3mfnlaegnuc24,brianckeegan.com,2026-02-25T01:55:33.213Z,62,external,0,0,,media.tenor.com,https://media.tenor.com/yTxA7WgkBEUAAAAC/grandpa-abe-exit.gif?hh=360&ww=480,6,0
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lax5zxh7bc2p,bsky.app,2024-11-15T00:53:46.785Z,117,video,0,0,,,,86450,8650
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnx2l5k7ua2n,npr.org,2026-06-10T15:45:31.839360Z,128,external,0,0,,n.pr,https://n.pr/4xm2igC,28,13
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnwsj3omwr2d,npr.org,2026-06-10T13:21:12.808877Z,172,external,0,0,,n.pr,https://n.pr/4oiHyCt,248,91
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnwsak6wbs2n,npr.org,2026-06-10T13:16:26.023001Z,155,external,0,0,,n.pr,https://n.pr/4aHaeiT,51,14
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnwqij7fpj24,npr.org,2026-06-10T12:45:05.995675Z,175,external,0,0,,n.pr,https://n.pr/4e1f24Z,89,19
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnworfwdvq26,npr.org,2026-06-10T12:14:17.039519Z,211,external,0,0,,n.pr,https://n.pr/3Q7w5sY,62,21
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnwn3kqzu22c,npr.org,2026-06-10T11:44:10.057899Z,160,external,0,0,,n.pr,https://n.pr/4unr5hF,225,50
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnwl54pndv2t,npr.org,2026-06-10T11:09:15.072077Z,208,external,0,0,,n.pr,https://n.pr/4vGiqbn,317,155
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnwjetyeiu26,npr.org,2026-06-10T10:37:46.883607Z,165,external,0,0,,n.pr,https://n.pr/4okhJlp,54,13
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnwiminhij2c,npr.org,2026-06-10T10:24:09.672166Z,168,external,0,0,,n.pr,https://n.pr/4xz2LfQ,146,31
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnwgtllvb22d,npr.org,2026-06-10T09:52:20.173474Z,201,external,0,0,,n.pr,https://n.pr/3PVvjzc,131,43
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnwf3yvrji2x,npr.org,2026-06-10T09:21:15.083146Z,184,external,0,0,,n.pr,https://n.pr/4oowtQy,106,29
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnwbmiilfx2e,npr.org,2026-06-10T08:18:53.320533Z,167,external,0,0,,n.pr,https://n.pr/4v7idOG,130,25
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnw2rkiigi2c,npr.org,2026-06-10T06:16:27.001956Z,199,external,0,0,,n.pr,https://n.pr/49MBr3p,130,22
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnvu2puc5z2x,npr.org,2026-06-10T04:16:18.425027Z,190,external,0,0,,n.pr,https://n.pr/4fCIW0v,237,40
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnvkqlkjvz2y,npr.org,2026-06-10T01:29:34.727813Z,208,external,0,0,,n.pr,https://n.pr/4fCks7K,71,14
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnvgglk4nc2n,npr.org,2026-06-10T00:12:24.029467Z,126,external,0,0,,n.pr,https://n.pr/4urv3G6,96,17
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnvflb62nq24,npr.org,2026-06-09T23:57:07.291618Z,210,external,0,0,,n.pr,https://n.pr/4xBUqIn,176,39
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnvc5nzrni26,npr.org,2026-06-09T22:55:49.851717Z,212,external,0,0,,n.pr,https://n.pr/49KBwVm,165,44
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnvc5m5sq72z,npr.org,2026-06-09T22:55:47.828986Z,181,external,0,0,,n.pr,https://n.pr/4ot2AhR,171,48
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnvblp7nlj2m,npr.org,2026-06-09T22:45:47.080780Z,90,external,0,0,,n.pr,https://n.pr/49RTnts,87,15
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnva4hzxxb2n,npr.org,2026-06-09T22:19:22.496753Z,212,external,0,0,,n.pr,https://n.pr/4gbmnQJ,105,33
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnv5jiv6o62t,npr.org,2026-06-09T21:32:58.341339Z,209,external,0,0,,n.pr,https://n.pr/4exPAnJ,132,57
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnv3ewvu7v2r,npr.org,2026-06-09T20:54:37.822237Z,197,external,0,0,,n.pr,https://n.pr/4eb3OJR,97,18
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnuyuaqcog2s,npr.org,2026-06-09T20:09:30.214263Z,210,external,0,0,,n.pr,https://n.pr/4xf74wF,69,7
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnuxhq5z4i24,npr.org,2026-06-09T19:44:36.373356Z,211,external,0,0,,n.pr,https://n.pr/43W4BJV,198,28
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnuuv2e5pd2l,npr.org,2026-06-09T18:58:22.057172Z,175,external,0,0,,n.pr,https://n.pr/4fvghdM,295,123
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnutrbhkm32l,npr.org,2026-06-09T18:38:21.565665Z,173,external,0,0,,n.pr,https://n.pr/49JPWFe,82,16
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnusqfzxzg2j,npr.org,2026-06-09T18:19:59.104719Z,171,external,0,0,,n.pr,https://n.pr/43YuTeA,87,9
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnurr4ofkv2b,npr.org,2026-06-09T18:02:29.100642Z,72,external,0,0,,n.pr,https://n.pr/4ewms01,80,9
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnuqkgc3mc2t,npr.org,2026-06-09T17:40:50.561479Z,195,external,0,0,,n.pr,https://n.pr/4e7RY3e,233,49
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnupl6q3iv2c,npr.org,2026-06-09T17:23:22.374405Z,185,external,0,0,,n.pr,https://n.pr/4fATttc,219,80
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnuom6va7e26,npr.org,2026-06-09T17:06:02.252776Z,190,external,0,0,,n.pr,https://n.pr/4dZwdUn,175,47
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnum4xfotb25,npr.org,2026-06-09T16:21:43.775779Z,199,external,0,0,,n.pr,https://n.pr/4xiNK1m,298,46
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnukykssue25,npr.org,2026-06-09T16:01:22.615782Z,189,external,0,0,,n.pr,https://n.pr/4uUI5gl,107,32
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnuk53c4yf2c,npr.org,2026-06-09T15:46:00.367370Z,171,external,0,0,,n.pr,https://n.pr/43l9ImO,164,34
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnuj4sw42b2t,npr.org,2026-06-09T15:27:57.846778Z,136,external,0,0,,n.pr,https://n.pr/3SaPutt,183,68
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnudx4tx5i2z,npr.org,2026-06-09T13:55:18.226413Z,176,external,0,0,,n.pr,https://n.pr/4vG0z4o,87,23
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnuc5qlq442l,npr.org,2026-06-09T13:23:12.775062Z,189,external,0,0,,n.pr,https://n.pr/4exFJOE,121,31
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnuafljbbh2f,npr.org,2026-06-09T12:51:48.399983Z,111,external,0,0,,n.pr,https://n.pr/4ezVOm7,194,58
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnu6nuscbs23,npr.org,2026-06-09T12:20:39.080739Z,94,external,0,0,,n.pr,https://n.pr/4v1ibYz,62,8
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnu4wzoswa24,npr.org,2026-06-09T11:49:58.720979Z,212,external,0,0,,n.pr,https://n.pr/49QfK2t,371,70
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnu3b6tdrl23,npr.org,2026-06-09T11:19:52.171220Z,106,external,0,0,,n.pr,https://n.pr/4umbZcc,80,11
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mntziixrb72i,npr.org,2026-06-09T10:48:10.184268Z,118,external,0,0,,n.pr,https://n.pr/49P1wip,118,21
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mntxryh5fy2n,npr.org,2026-06-09T10:17:40.920229Z,186,external,0,0,,n.pr,https://n.pr/43k3OSW,106,19
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mntw2kkfyg2j,npr.org,2026-06-09T09:46:40.841141Z,184,external,0,0,,n.pr,https://n.pr/4v2xfFg,219,41
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mntvasuen62l,npr.org,2026-06-09T09:32:17.166096Z,250,external,0,0,,n.pr,https://n.pr/43kFjFh,305,60
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mntu45cqhn2m,npr.org,2026-06-09T09:11:46.642428Z,202,external,0,0,,n.pr,https://n.pr/4uYBZLV,130,34
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mntqq3jh3d2m,npr.org,2026-06-09T08:11:20.857576Z,233,external,0,0,,n.pr,https://n.pr/4awcJEz,116,25
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mntjxzaaz526,npr.org,2026-06-09T06:10:30.701157Z,168,external,0,0,,n.pr,https://n.pr/3PQjfzf,382,56
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mntd6fhuhg2l,npr.org,2026-06-09T04:08:48.668667Z,127,external,0,0,,n.pr,https://n.pr/49NWVgk,114,23
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnt2qtflr42t,npr.org,2026-06-09T01:38:03.579841Z,149,external,0,0,,n.pr,https://n.pr/4oiFHh2,265,103
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnswxlx36c2p,npr.org,2026-06-09T00:30:15.718Z,240,external,0,0,,laist.com,https://laist.com/news/politics/la-mayor-race-second-place-raman-pratt-bass-runoff,1039,116
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnsrs2bpqe2n,npr.org,2026-06-08T22:57:40.668021Z,167,external,0,0,,n.pr,https://n.pr/4ximlwq,184,37
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnsofmxb4e2f,npr.org,2026-06-08T21:57:02.699669Z,209,external,0,0,,n.pr,https://n.pr/43p7ZNj,186,28
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnsltjdaiu2k,npr.org,2026-06-08T21:11:07.526871Z,121,external,0,0,,n.pr,https://n.pr/4uZdGgU,154,34
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnskvl6lz72q,npr.org,2026-06-08T20:54:22.805108Z,186,external,0,0,,n.pr,https://n.pr/3RN18e7,69,11
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnsikq2tg22m,npr.org,2026-06-08T20:12:31.398109Z,121,external,0,0,,n.pr,https://n.pr/43niVuU,190,40
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnsfta2m6o2k,npr.org,2026-06-08T19:23:35.406145Z,195,external,0,0,,n.pr,https://n.pr/4xi5iL7,119,15
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnse2q5vyr2u,npr.org,2026-06-08T18:51:59.669175Z,119,external,0,0,,n.pr,https://n.pr/4oq6d8f,211,107
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnsdz6njuh2g,npr.org,2026-06-08T18:51:07.748092Z,193,external,0,0,,n.pr,https://n.pr/4ussYdd,258,81
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnsbignhai24,npr.org,2026-06-08T18:05:58.219538Z,167,external,0,0,,n.pr,https://n.pr/4oziKXf,103,20
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnsajzt7l62y,npr.org,2026-06-08T17:48:58.060548Z,192,external,0,0,,n.pr,https://n.pr/4vvQNBG,105,19
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mns5y2qx6h2z,npr.org,2026-06-08T17:03:07.647786Z,213,external,0,0,,n.pr,https://n.pr/3Q4m1Rs,251,20
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mns3g43vjc2e,npr.org,2026-06-08T16:17:17.601874Z,153,external,0,0,,n.pr,https://n.pr/4dSdfz2,101,9
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnrytcz4hp2g,npr.org,2026-06-08T15:30:59.700896Z,198,external,0,0,,n.pr,https://n.pr/4xn9b1x,293,30
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnrxhvf46b2l,npr.org,2026-06-08T15:06:42.705712Z,174,external,0,0,,n.pr,https://n.pr/4fs6pBz,90,6
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnruanlq5f2l,npr.org,2026-06-08T14:08:58.373681Z,212,external,0,0,,n.pr,https://n.pr/4406jKd,323,59
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnrskwvalq2c,npr.org,2026-06-08T13:38:56.073023Z,212,external,0,0,,n.pr,https://n.pr/4vyjjm8,103,17
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnrqszs7hl2n,npr.org,2026-06-08T13:07:40.234155Z,133,external,0,0,,n.pr,https://n.pr/4espgLM,97,16
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnrp53l4wr2y,npr.org,2026-06-08T12:37:30.157132Z,128,external,0,0,,n.pr,https://n.pr/49JzHb7,126,15
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnrnh7ucyq2n,npr.org,2026-06-08T12:07:22.553816Z,212,external,0,0,,n.pr,https://n.pr/4uZ29yl,276,85
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnrlrbbnnv2t,npr.org,2026-06-08T11:37:12.259566Z,213,external,0,0,,n.pr,https://n.pr/3PMNuqL,145,31
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnrk32bd6n2z,npr.org,2026-06-08T11:06:52.905535Z,205,external,0,0,,n.pr,https://n.pr/4eazW06,145,19
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnriejjzl42i,npr.org,2026-06-08T10:36:23.496772Z,197,external,0,0,,n.pr,https://n.pr/4edWzkv,184,61
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnrgotizxs24,npr.org,2026-06-08T10:06:22.003808Z,174,external,0,0,,n.pr,https://n.pr/4e5cotx,265,51
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnrey42gq62t,npr.org,2026-06-08T09:35:45.469497Z,208,external,0,0,,n.pr,https://n.pr/3QobZdY,175,28
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnrdba7w2c2o,npr.org,2026-06-08T09:05:04.346828Z,227,external,0,0,,n.pr,https://n.pr/4ea6Z4z,192,26
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnr4jlj5pe2n,npr.org,2026-06-08T07:04:28.435868Z,168,external,0,0,,n.pr,https://n.pr/4dVfX6Y,238,48
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnqvqmv4vz2x,npr.org,2026-06-08T05:03:08.510290Z,185,external,0,0,,n.pr,https://n.pr/4vENpoh,144,10
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnqozwxi2h22,npr.org,2026-06-08T03:03:04.920978Z,189,external,0,0,,n.pr,https://n.pr/3Q9SFAZ,136,9
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnqi32djdp2t,npr.org,2026-06-08T00:58:25.804831Z,150,external,0,0,,n.pr,https://n.pr/43UdNhW,220,84
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnqbz22cgt2q,npr.org,2026-06-07T23:09:55.961939Z,87,external,0,0,,n.pr,https://n.pr/4ujdRTi,475,73
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnq7kybdjp2u,npr.org,2026-06-07T22:26:16.843730Z,191,external,0,0,,n.pr,https://n.pr/4vtJwlN,383,75
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnq4v3rnio2l,npr.org,2026-06-07T21:38:14.843512Z,136,external,0,0,,n.pr,https://n.pr/4agbLwa,289,46
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnq3yayh3f2q,npr.org,2026-06-07T21:22:07.212970Z,146,external,0,0,,n.pr,https://n.pr/4xu47se,268,57
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnq2xceskn2z,npr.org,2026-06-07T21:03:41.385468Z,196,external,0,0,,n.pr,https://n.pr/3Q9ZtPd,411,247
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnpycghqqv2r,npr.org,2026-06-07T20:16:13.566184Z,148,external,0,0,,n.pr,https://n.pr/3RONVBv,103,28
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnpybwitaw2t,npr.org,2026-06-07T20:15:56.811896Z,168,external,0,0,,n.pr,https://n.pr/4vyXYJd,68,12
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnpxgfwjjz2l,npr.org,2026-06-07T20:00:33.480066Z,151,external,0,0,,n.pr,https://n.pr/4g65Tcw,102,32
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnpvaw4suz24,npr.org,2026-06-07T19:21:41.630555Z,166,external,0,0,,n.pr,https://n.pr/4xfMNXw,113,4
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnpuzrpzzj24,npr.org,2026-06-07T19:17:42.147274Z,180,external,0,0,,n.pr,https://n.pr/4vtM0kc,172,50
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnpu2xnz6z2u,npr.org,2026-06-07T19:00:28.182366Z,174,external,0,0,,n.pr,https://n.pr/4e5Pcvk,89,10
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnpsr7r3i62l,npr.org,2026-06-07T18:37:07.385853Z,198,external,0,0,,n.pr,https://n.pr/4vr6ydc,193,69
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnprvyjqzi2h,npr.org,2026-06-07T18:21:53.834847Z,192,external,0,0,,n.pr,https://n.pr/43UBGG6,107,17
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnpqxzoblo23,npr.org,2026-06-07T18:05:08.402343Z,209,external,0,0,,n.pr,https://n.pr/4uiYj1C,113,23
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnpphb3nbz2j,npr.org,2026-06-07T17:37:51.982134Z,191,external,0,0,,n.pr,https://n.pr/4onKKgb,105,38
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnpojby7cc2j,npr.org,2026-06-07T17:21:06.309267Z,198,external,0,0,,n.pr,https://n.pr/4xbIOLE,105,25
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnpnjwxoga2j,npr.org,2026-06-07T17:03:34.573684Z,152,external,0,0,,n.pr,https://n.pr/4uQrvhL,36,7
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnpmgsxds52z,npr.org,2026-06-07T16:43:55.959711Z,135,external,0,0,,n.pr,https://n.pr/49Iz55z,95,20
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnpllxe4pn2t,npr.org,2026-06-07T16:28:54.582086Z,142,external,0,0,,n.pr,https://n.pr/4oeYvxM,222,37
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnpkl2tajm2q,npr.org,2026-06-07T16:10:30.961089Z,212,external,0,0,,n.pr,https://n.pr/4ujRdtM,281,59
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnpjltn7ij2t,npr.org,2026-06-07T15:53:03.228403Z,167,external,0,0,,n.pr,https://n.pr/4olspAw,351,46
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnpjghmwsq24,npr.org,2026-06-07T15:50:02.895758Z,202,external,0,0,,n.pr,https://n.pr/43TjBbu,83,1
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnpizzhvar2x,npr.org,2026-06-07T15:43:05.338842Z,205,external,0,0,,n.pr,https://n.pr/4e9MCEL,102,14
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnpi3alr5f2a,npr.org,2026-06-07T15:25:52.615744Z,179,external,0,0,,n.pr,https://n.pr/4g3s0jQ,139,40
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnpgywwijn2j,npr.org,2026-06-07T15:06:41.662450Z,153,external,0,0,,n.pr,https://n.pr/4oburTz,137,33
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnpg4c7cmc2o,npr.org,2026-06-07T14:50:40.416152Z,180,external,0,0,,n.pr,https://n.pr/3RTieXE,315,34
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnpg3n2cvy2u,npr.org,2026-06-07T14:50:18.217210Z,210,external,0,0,,n.pr,https://n.pr/4e5xPuC,140,43
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnpfvfkpjg2u,npr.org,2026-06-07T14:46:49.012655Z,121,external,0,0,,n.pr,https://n.pr/49EqKjq,186,22
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnpb7g6i5624,npr.org,2026-06-07T13:22:56.529961Z,200,external,0,0,,n.pr,https://n.pr/4af3BnM,133,26
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnp7vbibbd2n,npr.org,2026-06-07T12:59:22.313339Z,180,external,0,0,,n.pr,https://n.pr/4uVEvm8,152,32
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnp4pbrkim2u,npr.org,2026-06-07T12:02:19.987798Z,204,external,0,0,,n.pr,https://n.pr/4frSeMR,146,29
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnp2n3oolo24,npr.org,2026-06-07T11:25:19.093263Z,179,external,0,0,,n.pr,https://n.pr/3QnOjq8,80,4
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnoxfxrvyv23,npr.org,2026-06-07T10:27:38.892783Z,192,external,0,0,,n.pr,https://n.pr/4e7C1Ku,136,35
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnotfcosmx2q,npr.org,2026-06-07T09:15:41.784720Z,145,external,0,0,,n.pr,https://n.pr/4e2XOEp,401,73
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnnxpt4gla2u,npr.org,2026-06-07T01:00:29.756385Z,155,external,0,0,,n.pr,https://n.pr/4v54CXZ,362,56
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnnqyif4j72f,npr.org,2026-06-06T23:00:04.349999Z,200,external,0,0,,n.pr,https://n.pr/4e9uIBO,145,28
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnnnntbjp72o,npr.org,2026-06-06T22:00:25.443339Z,167,external,0,0,,n.pr,https://n.pr/4odeix3,206,74
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnnmotuhqu2x,npr.org,2026-06-06T21:43:05.869595Z,244,external,0,0,,n.pr,https://n.pr/3RJv0Ij,141,24
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnnlrcdi4j2o,npr.org,2026-06-06T21:26:34.419654Z,148,external,0,0,,n.pr,https://n.pr/4vyqxqo,128,24
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnnkssr2sf2k,npr.org,2026-06-06T21:09:31.442267Z,139,external,0,0,,n.pr,https://n.pr/4od3Sxq,119,14
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnnjtl75rn2u,npr.org,2026-06-06T20:52:03.331203Z,181,external,0,0,,n.pr,https://n.pr/43Q0i2L,309,59
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnniytqb3r2p,npr.org,2026-06-06T20:37:06.317378Z,182,external,0,0,,n.pr,https://n.pr/4dRcupX,100,14
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnni6ykdny2m,npr.org,2026-06-06T20:22:38.954267Z,182,external,0,0,,n.pr,https://n.pr/4erOkT2,220,53
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnnh5mcqnt2b,npr.org,2026-06-06T20:03:58.824271Z,130,external,0,0,,n.pr,https://n.pr/4uoJ5Zl,220,103
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnnfmyj54b2o,npr.org,2026-06-06T19:36:47.459224Z,143,external,0,0,,n.pr,https://n.pr/4dUErxb,219,100
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnnfmsoown2f,npr.org,2026-06-06T19:36:41.340213Z,207,external,0,0,,n.pr,https://n.pr/4e5J0DH,746,188
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnnf7uengx2z,npr.org,2026-06-06T19:29:26.901985Z,135,external,0,0,,n.pr,https://n.pr/4dTAf0x,90,21
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnnedl4ura2n,npr.org,2026-06-06T19:13:37.680418Z,199,external,0,0,,n.pr,https://n.pr/4xkoRCH,106,9
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnndgo2m6c2o,npr.org,2026-06-06T18:57:27.658141Z,193,external,0,0,,n.pr,https://n.pr/4uUD73r,181,42
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnnaplsk632n,npr.org,2026-06-06T18:08:46.073788Z,124,external,0,0,,n.pr,https://n.pr/4vpCiiS,123,13
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnn5yodtc72x,npr.org,2026-06-06T17:20:09.507807Z,148,external,0,0,,n.pr,https://n.pr/4e5EYLz,99,29
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnn54rypeh2u,npr.org,2026-06-06T17:04:33.823402Z,109,external,0,0,,n.pr,https://n.pr/4fuWT0C,114,13
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnn4vtdngg2l,npr.org,2026-06-06T17:00:40.330090Z,144,external,0,0,,n.pr,https://n.pr/4xetE8r,110,10
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mnn3xqeqk32s,npr.org,2026-06-06T16:43:50.597084Z,179,external,0,0,,n.pr,https://n.pr/4vqQJ6a,170,38
 at://did:plc:7lqpdof4fqal4imvharp66vb/app.bsky.feed.post/3mns5te2hj22r,boulderrl.bsky.social,2026-06-08T17:00:29.677Z,297,external,0,0,,boulderreportinglab.org,https://boulderreportinglab.org/2026/06/07/boulder-city-council-candidates-preview-election-year-debates-over-housing-airport-and-wages/,1,0
 at://did:plc:7lqpdof4fqal4imvharp66vb/app.bsky.feed.post/3mns4zugkak2r,boulderrl.bsky.social,2026-06-08T16:46:14.433Z,234,external,0,0,,boulderreportinglab.org,https://boulderreportinglab.org/2026/06/04/boulder-county-survey-finds-strong-opposition-to-trail-use-pilot-that-could-limit-bike-access/,1,0
 at://did:plc:7lqpdof4fqal4imvharp66vb/app.bsky.feed.post/3mns4oohhqk2r,boulderrl.bsky.social,2026-06-08T16:39:59.074Z,280,external,0,0,,boulderreportinglab.org,https://boulderreportinglab.org/2026/06/04/inside-a-former-macys-parking-garage-boulder-artists-transform-shipping-containers-into-immersive-theater/,1,0
@@ -519,47 +407,49 @@ at://did:plc:7lqpdof4fqal4imvharp66vb/app.bsky.feed.post/3mff32c57y22i,boulderrl
 at://did:plc:7lqpdof4fqal4imvharp66vb/app.bsky.feed.post/3mff2twvyhk2i,boulderrl.bsky.social,2026-02-21T16:40:58.607Z,243,external,0,0,,boulderreportinglab.org,https://boulderreportinglab.org/2026/02/19/boulder-city-council-approves-annexation-for-indoor-tennis-facility-near-east-boulder-rec-center/,2,0
 at://did:plc:7lqpdof4fqal4imvharp66vb/app.bsky.feed.post/3mff2rpfuqc2i,boulderrl.bsky.social,2026-02-21T16:39:43.628Z,278,external,0,0,,boulderreportinglab.org,https://boulderreportinglab.org/2026/02/19/boulders-modular-housing-factory-gets-latest-project-rebuilding-marshall-fire-burn-area/,4,0
 at://did:plc:7lqpdof4fqal4imvharp66vb/app.bsky.feed.post/3mf5r2nrhvs2q,boulderrl.bsky.social,2026-02-18T18:57:08.314Z,297,external,0,0,,boulderreportinglab.org,https://boulderreportinglab.org/2026/02/17/its-not-working-boulder-police-oversight-panel-questions-limits-on-its-role/,0,0
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnvpvuxodk26,propublica.org,2026-06-10T03:02:01.076750772Z,204,external,0,0,,propublica.org,https://www.propublica.org/article/jeff-yass-susquehanna-tiktok-tax-avoidance?utm_campaign=propublica-sprout&utm_content=1781060520&utm_medium=social&utm_source=bluesky,629,305
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnvlf2nxp22x,propublica.org,2026-06-10T01:41:01.645861824Z,240,external,0,0,,propublica.org,https://www.propublica.org/article/old-apostolic-lutheran-church-generational-sexual-abuse?utm_campaign=propublica-sprout&utm_content=1781055660&utm_medium=social&utm_source=bluesky,634,259
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnvfc5dpcv24,propublica.org,2026-06-09T23:52:01.349795561Z,245,external,0,0,,propublica.org,https://www.propublica.org/article/republicans-face-backlash-after-challenging-abortion-bans?utm_campaign=propublica-sprout&utm_content=1781049120&utm_medium=social&utm_source=bluesky,451,98
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnvbve6vud2n,propublica.org,2026-06-09T22:51:11.095978954Z,273,external,0,0,,propublica.org,https://www.propublica.org/article/toxic-ground-how-oil-field-pollution-is-threatening-oklahoma?utm_campaign=propublica-sprout&utm_content=1781045460&utm_medium=social&utm_source=bluesky,299,120
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnv6aubhdr2y,propublica.org,2026-06-09T21:46:02.091474945Z,294,images,1,1,"Graphic displaying three men's photos, stacked on top of each other, in a column on the left. Text on right reads: Gerardo del Valle, Alejandro Bonilla Suarez and Edwin Corona Ramos. ProPublica, The Texas Tribune, Alianza Rebelde Investiga, and Cazadores de Fake News. Livingston Award, International Reporting.",,,227,43
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnuav75afy26,propublica.org,2026-06-09T13:00:32.319497612Z,251,external,0,0,,propublica.org,https://www.propublica.org/article/tim-sheehy-bridger-aerospace-forest-service-inspection?utm_campaign=propublica-sprout&utm_content=1781010031&utm_medium=social&utm_source=bluesky,579,290
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnu5jjrgmv2h,propublica.org,2026-06-09T12:00:19.587505394Z,229,external,0,0,,propublica.org,https://www.propublica.org/article/mark-mcafee-raw-milk-recalls-maha?utm_campaign=propublica-sprout&utm_content=1781006418&utm_medium=social&utm_source=bluesky,2743,1107
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnu2sjvvps2t,propublica.org,2026-06-09T11:11:40.514Z,239,external,0,0,,propublica.org,https://www.propublica.org/article/trump-ambani-reliance-industries-america-first-refining-texas?utm_source=bluesky&utm_medium=social&utm_campaign=propublica-bsky&utm_content=06-09,717,396
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnt7gf5p5n2i,propublica.org,2026-06-09T03:01:41.830Z,299,video,0,0,,,,1205,562
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnwr2b2eef2n,propublica.org,2026-06-10T12:55:01.31639367Z,254,external,0,0,,propublica.org,https://www.propublica.org/article/california-teacher-misconduct-public-records?utm_campaign=propublica-sprout&utm_content=1781096100&utm_medium=social&utm_source=bluesky,124,40
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnwocn3xas2t,propublica.org,2026-06-10T12:06:01.290153771Z,252,external,0,0,,propublica.org,https://www.propublica.org/article/how-tear-gas-harms-kids-trump-ice-cbp-minneapolis-portland?utm_campaign=propublica-sprout&utm_content=1781093160&utm_medium=social&utm_source=bluesky,305,132
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnvpvuxodk26,propublica.org,2026-06-10T03:02:01.076750772Z,204,external,0,0,,propublica.org,https://www.propublica.org/article/jeff-yass-susquehanna-tiktok-tax-avoidance?utm_campaign=propublica-sprout&utm_content=1781060520&utm_medium=social&utm_source=bluesky,707,347
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnvlf2nxp22x,propublica.org,2026-06-10T01:41:01.645861824Z,240,external,0,0,,propublica.org,https://www.propublica.org/article/old-apostolic-lutheran-church-generational-sexual-abuse?utm_campaign=propublica-sprout&utm_content=1781055660&utm_medium=social&utm_source=bluesky,692,283
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnvfc5dpcv24,propublica.org,2026-06-09T23:52:01.349795561Z,245,external,0,0,,propublica.org,https://www.propublica.org/article/republicans-face-backlash-after-challenging-abortion-bans?utm_campaign=propublica-sprout&utm_content=1781049120&utm_medium=social&utm_source=bluesky,469,103
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnvbve6vud2n,propublica.org,2026-06-09T22:51:11.095978954Z,273,external,0,0,,propublica.org,https://www.propublica.org/article/toxic-ground-how-oil-field-pollution-is-threatening-oklahoma?utm_campaign=propublica-sprout&utm_content=1781045460&utm_medium=social&utm_source=bluesky,314,123
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnv6aubhdr2y,propublica.org,2026-06-09T21:46:02.091474945Z,294,images,1,1,"Graphic displaying three men's photos, stacked on top of each other, in a column on the left. Text on right reads: Gerardo del Valle, Alejandro Bonilla Suarez and Edwin Corona Ramos. ProPublica, The Texas Tribune, Alianza Rebelde Investiga, and Cazadores de Fake News. Livingston Award, International Reporting.",,,235,44
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnuav75afy26,propublica.org,2026-06-09T13:00:32.319497612Z,251,external,0,0,,propublica.org,https://www.propublica.org/article/tim-sheehy-bridger-aerospace-forest-service-inspection?utm_campaign=propublica-sprout&utm_content=1781010031&utm_medium=social&utm_source=bluesky,586,291
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnu5jjrgmv2h,propublica.org,2026-06-09T12:00:19.587505394Z,229,external,0,0,,propublica.org,https://www.propublica.org/article/mark-mcafee-raw-milk-recalls-maha?utm_campaign=propublica-sprout&utm_content=1781006418&utm_medium=social&utm_source=bluesky,2777,1117
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnu2sjvvps2t,propublica.org,2026-06-09T11:11:40.514Z,239,external,0,0,,propublica.org,https://www.propublica.org/article/trump-ambani-reliance-industries-america-first-refining-texas?utm_source=bluesky&utm_medium=social&utm_campaign=propublica-bsky&utm_content=06-09,738,410
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnt7gf5p5n2i,propublica.org,2026-06-09T03:01:41.830Z,299,video,0,0,,,,1209,565
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnsymwneg72t,propublica.org,2026-06-09T01:00:05.304596343Z,293,images,1,1,"Graphic displaying how hundreds of staff who do work related to nuclear reactors and their safety have left and not been replaced. The data is categorized into six sections: Nuclear Reactor Regulation, Nuclear Material Safety and Safeguards, Nuclear Regulatory Research, Nuclear Security and Incident Response, Regional offices, and Other offices. Each orange square underneath a category represents a loss in staff, while each gray square represents an addition of staff. The graphic shows that there have been 443 losses and 57 arrivals across all six of these categories. Note: The data is from the week ending Jan. 24, 2025, through Feb. 13, 2026. Source: Weekly Information Reports from the Nuclear Regulatory Commission.",,,571,261
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnsvbsyjgv2q,propublica.org,2026-06-09T00:00:11.153166916Z,289,external,0,0,,propublica.org,https://www.propublica.org/article/trump-jim-justice-doj-southern-coal-investigation-west-virginia?utm_campaign=propublica-sprout&utm_content=1780963210&utm_medium=social&utm_source=bluesky,291,142
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnsrwgy6so2q,propublica.org,2026-06-08T23:00:08.235010586Z,280,external,0,0,,propublica.org,https://www.propublica.org/article/flex-loans-tennessee-advance-financial?utm_campaign=propublica-sprout&utm_content=1780959607&utm_medium=social&utm_source=bluesky,342,162
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnsl7tmdfk24,propublica.org,2026-06-08T21:00:07.274826813Z,253,external,0,0,,propublica.org,https://www.propublica.org/article/texas-vouchers-private-schools-conflicts-of-interest?utm_campaign=propublica-sprout&utm_content=1780952406&utm_medium=social&utm_source=bluesky,286,98
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnsc4xshtx2k,propublica.org,2026-06-08T18:17:27.238588648Z,283,external,0,0,,propublica.org,https://www.propublica.org/article/trump-jim-justice-doj-southern-coal-investigation-west-virginia?utm_campaign=propublica-sprout&utm_content=1780942646&utm_medium=social&utm_source=bluesky,1186,625
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnsvbsyjgv2q,propublica.org,2026-06-09T00:00:11.153166916Z,289,external,0,0,,propublica.org,https://www.propublica.org/article/trump-jim-justice-doj-southern-coal-investigation-west-virginia?utm_campaign=propublica-sprout&utm_content=1780963210&utm_medium=social&utm_source=bluesky,295,144
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnsrwgy6so2q,propublica.org,2026-06-08T23:00:08.235010586Z,280,external,0,0,,propublica.org,https://www.propublica.org/article/flex-loans-tennessee-advance-financial?utm_campaign=propublica-sprout&utm_content=1780959607&utm_medium=social&utm_source=bluesky,343,163
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnsl7tmdfk24,propublica.org,2026-06-08T21:00:07.274826813Z,253,external,0,0,,propublica.org,https://www.propublica.org/article/texas-vouchers-private-schools-conflicts-of-interest?utm_campaign=propublica-sprout&utm_content=1780952406&utm_medium=social&utm_source=bluesky,289,101
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnsc4xshtx2k,propublica.org,2026-06-08T18:17:27.238588648Z,283,external,0,0,,propublica.org,https://www.propublica.org/article/trump-jim-justice-doj-southern-coal-investigation-west-virginia?utm_campaign=propublica-sprout&utm_content=1780942646&utm_medium=social&utm_source=bluesky,1189,625
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnrtramzrd2m,propublica.org,2026-06-08T14:00:21.548582053Z,278,images,1,1,Support journalism powered by the people. Donate by June 12.,,,198,37
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnroptcghl2k,propublica.org,2026-06-08T12:30:05.308968927Z,255,external,0,0,,projects.propublica.org,https://projects.propublica.org/measles-outbreak-analysis-utah-texas/?utm_campaign=propublica-sprout&utm_content=1780921804&utm_medium=social&utm_source=bluesky,349,144
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnrj7r7q3s2p,propublica.org,2026-06-08T10:51:37.552Z,259,external,0,0,,propublica.org,https://www.propublica.org/article/boston-school-bus-crash-record-lens-joseph-transdev?utm_source=bluesky&utm_medium=social&utm_campaign=propublica-bsky&utm_content=06-08,4452,2120
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnqbhhg4df23,propublica.org,2026-06-07T23:00:06.027735654Z,289,external,0,0,,propublica.org,https://www.propublica.org/article/oklahoma-oil-gas-wastewater-pollution?utm_campaign=propublica-sprout&utm_content=1780873205&utm_medium=social&utm_source=bluesky,667,324
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnrj7r7q3s2p,propublica.org,2026-06-08T10:51:37.552Z,259,external,0,0,,propublica.org,https://www.propublica.org/article/boston-school-bus-crash-record-lens-joseph-transdev?utm_source=bluesky&utm_medium=social&utm_campaign=propublica-bsky&utm_content=06-08,4453,2120
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnqbhhg4df23,propublica.org,2026-06-07T23:00:06.027735654Z,289,external,0,0,,propublica.org,https://www.propublica.org/article/oklahoma-oil-gas-wastewater-pollution?utm_campaign=propublica-sprout&utm_content=1780873205&utm_medium=social&utm_source=bluesky,667,323
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnq2qtupct2r,propublica.org,2026-06-07T21:00:04.887750707Z,271,external,0,0,,propublica.org,https://www.propublica.org/article/mental-health-suicide-highmark-bcbs-insurance-denials?utm_campaign=propublica-sprout&utm_content=1780866004&utm_medium=social&utm_source=bluesky,448,145
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnpqp33tar2t,propublica.org,2026-06-07T18:00:07.933047056Z,146,external,0,0,,propublica.org,http://propublica.org/article/illinois-farming-rice-soy-corn-flooding-mississippi-river?utm_campaign=propublica-sprout&utm_content=1780855206&utm_medium=social&utm_source=bluesky,178,48
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnpjyiaopt2n,propublica.org,2026-06-07T16:00:07.519954466Z,249,external,0,0,,propublica.org,https://www.propublica.org/article/deleting-dei-language-nonprofits-irs-forms?utm_campaign=propublica-sprout&utm_content=1780848006&utm_medium=social&utm_source=bluesky,231,114
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnnudric7224,propublica.org,2026-06-07T00:00:04.242466098Z,268,external,0,0,,propublica.org,https://www.propublica.org/article/andrew-tate-investigation-dhs-paul-ingrassia?utm_campaign=propublica-sprout&utm_content=1780790401&utm_medium=social&utm_source=bluesky,1995,838
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnnudric7224,propublica.org,2026-06-07T00:00:04.242466098Z,268,external,0,0,,propublica.org,https://www.propublica.org/article/andrew-tate-investigation-dhs-paul-ingrassia?utm_campaign=propublica-sprout&utm_content=1780790401&utm_medium=social&utm_source=bluesky,1996,838
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnnnna6kvt2h,propublica.org,2026-06-06T22:00:05.435580063Z,278,images,1,1,"No hidden agendas, just uncovered facts. Donate now.",,,238,49
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnndledb5k2s,propublica.org,2026-06-06T19:00:05.276029806Z,281,external,0,0,,propublica.org,https://www.propublica.org/article/newtok-alaska-climate-relocation?utm_campaign=propublica-sprout&utm_content=1780772404&utm_medium=social&utm_source=bluesky,184,66
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnmzjv5g4g2f,propublica.org,2026-06-06T16:00:18.378344844Z,240,external,0,0,,propublica.org,https://www.propublica.org/article/education-department-civil-rights-office-foia-lawsuit?utm_campaign=propublica-sprout&utm_content=1780761607&utm_medium=social&utm_source=bluesky,308,84
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnmst2iium2r,propublica.org,2026-06-06T14:00:09.786898662Z,296,external,0,0,,propublica.org,https://www.propublica.org/article/zolgensma-sma-novartis-drug-prices-gene-therapy-avexis?utm_campaign=propublica-sprout&utm_content=1780754408&utm_medium=social&utm_source=bluesky,370,142
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnlnwnpgd72g,propublica.org,2026-06-06T03:00:02.153523024Z,265,external,0,0,,propublica.org,https://www.propublica.org/article/trump-social-security-ssi-disability-benefits-cuts-parents-children?utm_campaign=propublica-sprout&utm_content=1780714801&utm_medium=social&utm_source=bluesky,798,507
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnlnwnpgd72g,propublica.org,2026-06-06T03:00:02.153523024Z,265,external,0,0,,propublica.org,https://www.propublica.org/article/trump-social-security-ssi-disability-benefits-cuts-parents-children?utm_campaign=propublica-sprout&utm_content=1780714801&utm_medium=social&utm_source=bluesky,798,506
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnlko34yal2m,propublica.org,2026-06-06T02:01:32.992078779Z,299,video,0,0,,,,456,199
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnlha64a5r2f,propublica.org,2026-06-06T01:00:05.144926994Z,218,external,0,0,,propublica.org,https://www.propublica.org/article/clean-air-act-exemptions-trump-emails?utm_campaign=propublica-sprout&utm_content=1780707604&utm_medium=social&utm_source=bluesky,591,374
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnlha64a5r2f,propublica.org,2026-06-06T01:00:05.144926994Z,218,external,0,0,,propublica.org,https://www.propublica.org/article/clean-air-act-exemptions-trump-emails?utm_campaign=propublica-sprout&utm_content=1780707604&utm_medium=social&utm_source=bluesky,591,373
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnlajnjhev2u,propublica.org,2026-06-05T23:00:07.055028605Z,255,external,0,0,,propublica.org,https://www.propublica.org/article/florida-court-ordered-c-sections?utm_campaign=propublica-sprout&utm_content=1780700406&utm_medium=social&utm_source=bluesky,315,145
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnktf7z4pc23,propublica.org,2026-06-05T19:05:00.090Z,229,external,0,0,,propublica.org,https://www.propublica.org/article/tim-robinson-indicted-addiction-recovery-care?utm_source=bluesky&utm_medium=social&utm_campaign=propublica-bsky&utm_content=06-05,2257,1075
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnkpxdt4ps23,propublica.org,2026-06-05T18:03:33.083Z,248,images,1,1,We pursue the answers the public needs. You make it possible. Donate now.,,,272,56
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnkmmq42xs2s,propublica.org,2026-06-05T17:03:55.649Z,252,external,0,0,,propublica.org,https://www.propublica.org/article/north-carolina-legislation-governor-power?utm_source=bluesky&utm_medium=social&utm_campaign=propublica-bsky&utm_content=06-05,1027,343
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnk3tfdse22h,propublica.org,2026-06-05T12:03:25.639Z,242,external,0,0,,propublica.org,https://www.propublica.org/article/republicans-face-backlash-after-challenging-abortion-bans,349,117
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnj5htw4am2o,propublica.org,2026-06-05T03:00:06.000564997Z,274,external,0,0,,propublica.org,https://www.propublica.org/article/trump-mortgage-fraud-florida-principal-residences?utm_campaign=propublica-sprout&utm_content=1780628404&utm_medium=social&utm_source=bluesky,2795,1041
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnj5htw4am2o,propublica.org,2026-06-05T03:00:06.000564997Z,274,external,0,0,,propublica.org,https://www.propublica.org/article/trump-mortgage-fraud-florida-principal-residences?utm_campaign=propublica-sprout&utm_content=1780628404&utm_medium=social&utm_source=bluesky,2796,1041
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mniwrb3yzc2u,propublica.org,2026-06-05T01:00:05.620103801Z,207,external,0,0,,projects.propublica.org,https://projects.propublica.org/childhood-vaccines-deaths-modeling/?utm_campaign=propublica-sprout&utm_content=1780621204&utm_medium=social&utm_source=bluesky,776,413
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mniq2rlsk62b,propublica.org,2026-06-04T23:00:08.715112113Z,171,external,0,0,,propublica.org,https://www.propublica.org/article/oklahoma-survivors-act-domestic-violence?utm_campaign=propublica-sprout&utm_content=1780614007&utm_medium=social&utm_source=bluesky,354,128
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnijeahilm2v,propublica.org,2026-06-04T21:00:10.096834988Z,257,external,0,0,,propublica.org,https://www.propublica.org/article/psychiatric-hospitals-emtala-mental-health-profit?utm_campaign=propublica-sprout&utm_content=1780606809&utm_medium=social&utm_source=bluesky,326,159
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mni2wemdn22a,propublica.org,2026-06-04T16:41:52.315Z,282,external,0,0,,propublica.org,https://www.propublica.org/article/texas-school-takeover-mike-miles-morath-beaumont-lake-worth-austin,871,457
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnhmwmqnb22p,propublica.org,2026-06-04T12:31:28.458Z,256,external,0,0,,propublica.org,https://www.propublica.org/article/california-teacher-misconduct-public-records?utm_source=bluesky&utm_medium=social&utm_campaign=propublica-bsky&utm_content=06-04,467,135
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnhjq35mps2p,propublica.org,2026-06-04T11:34:07.457Z,279,external,0,0,,propublica.org,https://www.propublica.org/article/old-apostolic-lutheran-church-generational-sexual-abuse?utm_source=bluesky&utm_medium=social&utm_campaign=propublica-bsky&utm_content=06-04,6719,3334
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnhjq35mps2p,propublica.org,2026-06-04T11:34:07.457Z,279,external,0,0,,propublica.org,https://www.propublica.org/article/old-apostolic-lutheran-church-generational-sexual-abuse?utm_source=bluesky&utm_medium=social&utm_campaign=propublica-bsky&utm_content=06-04,6721,3335
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mngmyvuatv2o,propublica.org,2026-06-04T03:00:05.374624634Z,225,external,0,0,,propublica.org,https://www.propublica.org/article/miscarriage-abortion-bans-dilation-and-curettage-dilation-and-evacuation?utm_campaign=propublica-sprout&utm_content=1780542004&utm_medium=social&utm_source=bluesky,768,489
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mnggcdqrl62w,propublica.org,2026-06-04T01:00:05.732797186Z,121,external,0,0,,projects.propublica.org,https://projects.propublica.org/trump-team-financial-disclosures/?utm_campaign=propublica-sprout&utm_content=1780534804&utm_medium=social&utm_source=bluesky,522,282
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mngcx6bp2j2u,propublica.org,2026-06-04T00:00:09.674918549Z,245,external,0,0,,propublica.org,https://www.propublica.org/article/louisville-trump-doj-police-reform-consent-decrees?utm_campaign=propublica-sprout&utm_content=1780531208&utm_medium=social&utm_source=bluesky,158,56
@@ -588,7 +478,7 @@ An on-screen excerpt of that story reads:
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mn7y44il4m2y,propublica.org,2026-06-01T11:30:05.991Z,253,external,0,0,,propublica.org,https://www.propublica.org/article/how-trump-reversed-biden-gun-crackdown-atf?utm_source=bluesky&utm_medium=social&utm_campaign=propublica-bsky,744,461
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mn73m3yshl2u,propublica.org,2026-06-01T03:00:03.826750287Z,273,external,0,0,,propublica.org,https://www.propublica.org/article/joseph-schwartz-trump-pardon-skyline-nursing-home-patients?utm_campaign=propublica-sprout&utm_content=1780282803&utm_medium=social&utm_source=bluesky,1210,627
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mn6uvkksvg2j,propublica.org,2026-06-01T01:00:04.895018753Z,203,external,0,0,,propublica.org,https://www.propublica.org/article/arkansas-abortion-ban-miscarriage-care?utm_campaign=propublica-sprout&utm_content=1780275604&utm_medium=social&utm_source=bluesky,681,265
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mn6o76okou2e,propublica.org,2026-05-31T23:00:11.786659746Z,233,external,0,0,,propublica.org,https://www.propublica.org/article/about-russell-vought-trump-shadow-president?utm_campaign=propublica-sprout&utm_content=1780268411&utm_medium=social&utm_source=bluesky,814,389
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mn6o76okou2e,propublica.org,2026-05-31T23:00:11.786659746Z,233,external,0,0,,propublica.org,https://www.propublica.org/article/about-russell-vought-trump-shadow-president?utm_campaign=propublica-sprout&utm_content=1780268411&utm_medium=social&utm_source=bluesky,815,390
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mn6hiujsjr26,propublica.org,2026-05-31T21:00:18.862Z,239,external,0,0,,propublica.org,https://www.propublica.org/article/alaska-public-schools-repairs-funding-bill?utm_source=bluesky&utm_medium=social&utm_campaign=propublica-bsky,219,45
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mn623fleje2j,propublica.org,2026-05-31T17:00:09.968017663Z,250,external,0,0,,propublica.org,https://www.propublica.org/article/vascular-procedures-medicare-inspector-general-report?utm_campaign=propublica-sprout&utm_content=1780246809&utm_medium=social&utm_source=bluesky,225,58
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mn5tewhcoy2m,propublica.org,2026-05-31T15:00:13.457987158Z,270,external,0,0,,propublica.org,https://www.propublica.org/article/bitcoin-jesus-roger-ver-tax-evasion-friends-of-trump?utm_campaign=propublica-sprout&utm_content=1780239612&utm_medium=social&utm_source=bluesky,420,201
@@ -600,7 +490,7 @@ at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mn3wzpfnmk2n,propublic
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mn3mxugnnz2e,propublica.org,2026-05-30T18:00:13.201410126Z,223,external,0,0,,projects.propublica.org,https://projects.propublica.org/habeas-tracker/?utm_campaign=propublica-sprout&utm_content=1780164012&utm_medium=social&utm_source=bluesky,406,129
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mn3gbeqtqd25,propublica.org,2026-05-30T16:00:16.113211353Z,247,external,0,0,,propublica.org,https://www.propublica.org/article/albuquerque-moves-to-curb-homelessness-citations?utm_campaign=propublica-sprout&utm_content=1780156815&utm_medium=social&utm_source=bluesky,219,47
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mn34bre5nc2w,propublica.org,2026-05-30T13:01:31.920Z,225,external,0,0,,propublica.org,https://www.propublica.org/article/puerto-rico-trump-drugs-for-votes-doj-inspector-general-investigation?utm_source=bluesky&utm_medium=social&utm_campaign=propublica-bsky,4501,1658
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mn23iz336s2n,propublica.org,2026-05-30T03:15:01.3998046Z,240,external,0,0,,propublica.org,https://www.propublica.org/article/arkansas-abortion-ban-miscarriage-care?utm_campaign=propublica-sprout&utm_content=1780110900&utm_medium=social&utm_source=bluesky,695,305
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mn23iz336s2n,propublica.org,2026-05-30T03:15:01.3998046Z,240,external,0,0,,propublica.org,https://www.propublica.org/article/arkansas-abortion-ban-miscarriage-care?utm_campaign=propublica-sprout&utm_content=1780110900&utm_medium=social&utm_source=bluesky,696,305
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmzyt6cpue2k,propublica.org,2026-05-30T02:27:01.21469276Z,210,external,0,0,,propublica.org,https://www.propublica.org/article/health-insurance-denial-external-review?utm_campaign=propublica-sprout&utm_content=1780108020&utm_medium=social&utm_source=bluesky,776,393
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmzuzla3ex2e,propublica.org,2026-05-30T01:19:01.115252337Z,273,external,0,0,,propublica.org,https://www.propublica.org/article/lord-of-the-roths-how-tech-mogul-peter-thiel-turned-a-retirement-account-for-the-middle-class-into-a-5-billion-dollar-tax-free-piggy-bank?utm_campaign=propublica-sprout&utm_content=1780103940&utm_medium=social&utm_source=bluesky,492,222
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmzqmkm4522q,propublica.org,2026-05-30T00:00:09.187328946Z,267,external,0,0,,propublica.org,https://www.propublica.org/article/climate-change-alec-leonard-leo-lawsuits-fossil-fuel-oil-gas-immunity?utm_campaign=propublica-sprout&utm_content=1780099208&utm_medium=social&utm_source=bluesky,347,206
@@ -612,7 +502,7 @@ at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmxlk6i6ud2t,propublic
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmxhair6tp2k,propublica.org,2026-05-29T02:07:01.552366341Z,271,external,0,0,,propublica.org,https://www.propublica.org/article/trump-dot-regulation-safety-rollback-sean-duffy?utm_campaign=propublica-sprout&utm_content=1780020420&utm_medium=social&utm_source=bluesky,639,294
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmx7ef3hyh2k,propublica.org,2026-05-28T23:46:01.951500391Z,283,external,0,0,,propublica.org,https://www.propublica.org/article/save-voter-citizenship-tool-mistakes-confusion?utm_campaign=propublica-sprout&utm_content=1780011961&utm_medium=social&utm_source=bluesky,803,321
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmwzv52m3l24,propublica.org,2026-05-28T22:08:01.487754878Z,253,external,0,0,,propublica.org,https://www.propublica.org/article/trump-education-department-civil-rights-racial-harassment?utm_campaign=propublica-sprout&utm_content=1780006080&utm_medium=social&utm_source=bluesky,367,178
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmwpaqx77c2d,propublica.org,2026-05-28T18:57:40.337Z,208,images,1,1,"Text on graphic: ProPublica and Partners Win Two Emmys. Image: From left to right, ProPublica reporter Perla Trevizo, video journalist Gerardo del Valle, and managing editor Ginger Thompson smile and pose on the Emmy Awards red carpet. Trevizo is wearing a white and black polka dot bubble dress; del Valle, who is holding the Emmy Award, is wearing a gray suit with a black tie; and Thompson is wearing a black suit with a dark blue blouse.",,,6450,1204
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmwpaqx77c2d,propublica.org,2026-05-28T18:57:40.337Z,208,images,1,1,"Text on graphic: ProPublica and Partners Win Two Emmys. Image: From left to right, ProPublica reporter Perla Trevizo, video journalist Gerardo del Valle, and managing editor Ginger Thompson smile and pose on the Emmy Awards red carpet. Trevizo is wearing a white and black polka dot bubble dress; del Valle, who is holding the Emmy Award, is wearing a gray suit with a black tie; and Thompson is wearing a black suit with a dark blue blouse.",,,6452,1206
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmw62peha62e,propublica.org,2026-05-28T13:50:03.691456394Z,284,external,0,0,,propublica.org,https://www.propublica.org/article/trump-border-wall-contracts-tommy-fisher?utm_campaign=propublica-sprout&utm_content=1779976202&utm_medium=social&utm_source=bluesky,515,240
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmvzx5tec22f,propublica.org,2026-05-28T12:36:29.728Z,204,external,0,0,,propublica.org,https://www.propublica.org/podcast/health-insurance-industry-secret-external-review?utm_source=bluesky&utm_medium=social&utm_campaign=propublica-bsky,1965,980
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmvwacg4y22f,propublica.org,2026-05-28T11:30:01.560Z,243,external,0,0,,propublica.org,https://www.propublica.org/article/donald-trump-jr-vulcan-deal-white-house?utm_source=bluesky&utm_medium=social&utm_campaign=propublica-bsky,2745,1578
@@ -631,7 +521,7 @@ at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmrxfa44pb27,propublic
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmreghl4o623,propublica.org,2026-05-26T16:00:41.937466681Z,229,external,0,0,,propublica.org,https://www.propublica.org/podcast/connecticut-dmv-towing-law-investigation?utm_campaign=propublica-sprout&utm_content=1779811241&utm_medium=social&utm_source=bluesky,148,49
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmr3bt3q5m2w,propublica.org,2026-05-26T13:17:01.107Z,245,external,0,0,,propublica.org,https://www.propublica.org/article/albuquerque-moves-to-curb-homelessness-citations?utm_source=bluesky&utm_medium=social&utm_campaign=propublica-bsky,255,71
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmqybu75q22r,propublica.org,2026-05-26T12:23:22.550Z,231,external,0,0,,propublica.org,https://www.propublica.org/article/puerto-rico-trump-drugs-for-votes-doj-inspector-general-investigation?utm_source=bluesky&utm_medium=social&utm_campaign=propublica-bsky,2492,1001
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmqw5h5ops2l,propublica.org,2026-05-26T11:45:07.169Z,298,external,0,0,,propublica.org,https://www.propublica.org/article/arkansas-abortion-ban-miscarriage-care?utm_source=bluesky&utm_medium=social&utm_campaign=propublica-bsky,6139,3103
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmqw5h5ops2l,propublica.org,2026-05-26T11:45:07.169Z,298,external,0,0,,propublica.org,https://www.propublica.org/article/arkansas-abortion-ban-miscarriage-care?utm_source=bluesky&utm_medium=social&utm_campaign=propublica-bsky,6140,3103
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmpyskxtqf2g,propublica.org,2026-05-26T03:00:03.512209887Z,224,external,0,0,,propublica.org,https://www.propublica.org/article/more-parents-decline-vitamin-k-shot-newborns?utm_campaign=propublica-sprout&utm_content=1779764402&utm_medium=social&utm_source=bluesky,1086,486
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmps3zqdbq27,propublica.org,2026-05-26T01:00:04.79148189Z,246,external,0,0,,propublica.org,https://www.propublica.org/article/trump-doj-immigration-bondi-declinations-criminal-investigations?utm_campaign=propublica-sprout&utm_content=1779757204&utm_medium=social&utm_source=bluesky,836,510
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmplfk2iyy27,propublica.org,2026-05-25T23:00:07.696443751Z,270,external,0,0,,propublica.org,https://www.propublica.org/article/revlimid-price-cancer-celgene-drugs-fda-multiple-myeloma?utm_campaign=propublica-sprout&utm_content=1779750006&utm_medium=social&utm_source=bluesky,794,446
@@ -655,70 +545,89 @@ at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmk52lpa2n2c,propublic
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmjwe5xhxv2p,propublica.org,2026-05-23T17:00:14.192438477Z,226,external,0,0,,propublica.org,https://www.propublica.org/article/range-usa-guns-straw-sales-atf?utm_campaign=propublica-sprout&utm_content=1779555613&utm_medium=social&utm_source=bluesky,395,141
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmjpslj5wi2l,propublica.org,2026-05-23T15:03:01.976611308Z,207,external,0,0,,propublica.org,https://www.propublica.org/article/trump-immigration-child-parent-separation-estimates-brookings?utm_campaign=propublica-sprout&utm_content=1779548581&utm_medium=social&utm_source=bluesky,509,237
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmigxgg3my24,propublica.org,2026-05-23T02:52:00.986504032Z,191,external,0,0,,propublica.org,https://www.propublica.org/article/texas-maternal-mortality-analysis-methodology?utm_campaign=propublica-sprout&utm_content=1779504720&utm_medium=social&utm_source=bluesky,2195,879
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmiegxn52w2g,propublica.org,2026-05-23T02:07:01.11048713Z,197,external,0,0,,propublica.org,https://www.propublica.org/article/rfk-jr-vaccine-agenda-childhood-plagues?utm_campaign=propublica-sprout&utm_content=1779502020&utm_medium=social&utm_source=bluesky,1315,440
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mmibggcxie22,propublica.org,2026-05-23T01:13:01.751133581Z,248,images,2,2,"A gray Jeep Wrangler on the road, shown in great condition. | The same Jeep Wrangler with its tires and doors removed. Snow has fallen on top of the car, but there is no snow inside the interior.",,,187,44
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwkdpevjv2d,nytimes.com,2026-06-10T10:55:02.232817Z,156,external,0,0,,nyti.ms,https://nyti.ms/4unqZXp,1,0
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwjizkxiq23,nytimes.com,2026-06-10T10:40:06.948694Z,117,external,0,0,,nyti.ms,https://nyti.ms/4g9jvno,9,2
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwio5ptsh2z,nytimes.com,2026-06-10T10:25:05.338540Z,225,external,0,0,,nyti.ms,https://nyti.ms/4unnIaz,19,9
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwgyjj6mq23,nytimes.com,2026-06-10T09:55:05.764871Z,74,external,0,0,,nyti.ms,https://nyti.ms/49REbwx,25,4
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwfcu7p6q2a,nytimes.com,2026-06-10T09:25:05.047601Z,173,external,0,0,,nyti.ms,https://nyti.ms/4uoUHLy,7,4
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnw2g5vn7425,nytimes.com,2026-06-10T06:10:04.702793Z,125,external,0,0,,nyti.ms,https://nyti.ms/3Svjmko,43,7
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvysdqycv2s,nytimes.com,2026-06-10T05:41:06.002818Z,248,external,0,0,,nyti.ms,https://nyti.ms/4omZNXx,49,8
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvvkkr2cn2f,nytimes.com,2026-06-10T04:43:03.695367Z,223,external,0,0,,nyti.ms,https://nyti.ms/4egbUky,28,5
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvuv3bkfe2l,nytimes.com,2026-06-10T04:31:02.818387Z,113,external,0,0,,nyti.ms,https://nyti.ms/4gaY3yq,29,6
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvubjobdr23,nytimes.com,2026-06-10T04:20:06.685872Z,165,external,0,0,,nyti.ms,https://nyti.ms/4fAMa4C,23,1
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvtsp5cre2f,nytimes.com,2026-06-10T04:11:49.243918Z,250,images,1,0,,,,112,9
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvt5qsbqx2b,nytimes.com,2026-06-10T04:00:06.303704Z,194,external,0,0,,nyti.ms,https://nyti.ms/3RM4CNY,13,1
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvs53ufpl25,nytimes.com,2026-06-10T03:41:50.648413Z,267,external,0,0,,nyti.ms,https://nyti.ms/4vxHX6q,27,5
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvrzys6rr23,nytimes.com,2026-06-10T03:40:06.564187Z,300,external,0,0,,nyti.ms,https://nyti.ms/4vEnxZA,49,6
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvqw4mp622i,nytimes.com,2026-06-10T03:20:02.811541Z,224,images,1,1,"A woman poses with small plastic containers of bean salad with the headline"" How the Dense Bean Salad Went Viral",,,19,1
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvpsdunmu2f,nytimes.com,2026-06-10T03:00:02.457019Z,201,external,0,0,,nyti.ms,https://nyti.ms/4e9nqOr,20,2
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvoonk46f25,nytimes.com,2026-06-10T02:40:04.639905Z,221,external,0,0,,nyti.ms,https://nyti.ms/4e1Yxpm,240,56
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvnksyam42d,nytimes.com,2026-06-10T02:20:02.386098Z,220,external,0,0,,nyti.ms,https://nyti.ms/4vZgqeD,83,18
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvmh6ceuc2s,nytimes.com,2026-06-10T02:00:06.148551Z,166,external,0,0,,nyti.ms,https://nyti.ms/43ujL99,29,3
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvldbwcep2s,nytimes.com,2026-06-10T01:40:02.123437Z,148,external,0,0,,nyti.ms,https://nyti.ms/4uWoyfD,62,10
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnx4iy5jst2k,nytimes.com,2026-06-10T16:20:06.449096Z,234,external,0,0,,nyti.ms,https://nyti.ms/4evsn5D,4,0
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnx3vbtlhn23,nytimes.com,2026-06-10T16:09:05.533848Z,283,external,0,0,,nyti.ms,https://nyti.ms/4e20ty6,6,0
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnx34dag2h2d,nytimes.com,2026-06-10T15:55:08.241184Z,261,external,0,0,,nyti.ms,https://nyti.ms/4usyqwu,27,6
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwz7ma2pc2g,nytimes.com,2026-06-10T15:21:10.855849Z,148,external,0,0,,nyti.ms,https://nyti.ms/43X2Mwl,30,2
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwxncwr5l23,nytimes.com,2026-06-10T14:53:03.251900Z,224,external,0,0,,nyti.ms,https://nyti.ms/4ojvP6w,9,1
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwwcezymk2b,nytimes.com,2026-06-10T14:29:02.609091Z,185,external,0,0,,nyti.ms,https://nyti.ms/3RYxYZu,32,1
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwvsdcfgl2i,nytimes.com,2026-06-10T14:20:04.043966Z,223,external,0,0,,nyti.ms,https://nyti.ms/4om3WLi,148,25
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwvqlptei2i,nytimes.com,2026-06-10T14:19:05.779333Z,99,images,1,1,A Strands word search,,,10,0
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwvaihwcn23,nytimes.com,2026-06-10T14:10:05.491214Z,178,external,0,0,,nyti.ms,https://nyti.ms/4fCvo58,47,37
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwujb4ms62k,nytimes.com,2026-06-10T13:57:05.894442Z,253,external,0,0,,nyti.ms,https://nyti.ms/43qdGuo,14,2
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwua5vnhd2w,nytimes.com,2026-06-10T13:52:00.666833Z,235,external,0,0,,nyti.ms,https://nyti.ms/4e0Y6eN,23,5
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwsvgcy732b,nytimes.com,2026-06-10T13:28:06.530233Z,244,images,1,1,A Curacao player in a pale yellow kit. Headline: The Best and Worst Kits At the 2026 World Cup,,,10,1
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwrmbg3gm25,nytimes.com,2026-06-10T13:05:05.778376Z,256,external,0,0,,nyti.ms,https://nyti.ms/4vvwjsF,12,0
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwr7oylea2k,nytimes.com,2026-06-10T12:58:03.812004Z,139,images,1,1,The Connections game shows a 4x4 grid of words or phrases,,,9,0
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwr2cxhdf25,nytimes.com,2026-06-10T12:55:03.364949Z,224,external,0,0,,nyti.ms,https://nyti.ms/4omzKzI,59,36
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwpyeuvgv2d,nytimes.com,2026-06-10T12:36:04.575462Z,124,external,0,0,,nyti.ms,https://nyti.ms/4xkrzrC,90,62
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwpeo4r7y2p,nytimes.com,2026-06-10T12:25:03.187669Z,148,external,0,0,,nyti.ms,https://nyti.ms/4fCtth2,18,13
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwojtzsdb2d,nytimes.com,2026-06-10T12:10:03.393989Z,185,external,0,0,,nyti.ms,https://nyti.ms/4e0F7Rz,31,13
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwnp3ci6j2n,nytimes.com,2026-06-10T11:55:05.063892Z,236,external,0,0,,nyti.ms,https://nyti.ms/4eggi2Q,29,6
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwmwajyvx2g,nytimes.com,2026-06-10T11:41:11.698134Z,140,external,0,0,,nyti.ms,https://nyti.ms/4edrtt0,38,11
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwlzhhlkn2c,nytimes.com,2026-06-10T11:25:05.870742Z,241,external,0,0,,nyti.ms,https://nyti.ms/3QcdnQI,31,9
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwkdpevjv2d,nytimes.com,2026-06-10T10:55:02.232817Z,156,external,0,0,,nyti.ms,https://nyti.ms/4unqZXp,21,4
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwjizkxiq23,nytimes.com,2026-06-10T10:40:06.948694Z,117,external,0,0,,nyti.ms,https://nyti.ms/4g9jvno,29,5
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwio5ptsh2z,nytimes.com,2026-06-10T10:25:05.338540Z,225,external,0,0,,nyti.ms,https://nyti.ms/4unnIaz,41,15
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwgyjj6mq23,nytimes.com,2026-06-10T09:55:05.764871Z,74,external,0,0,,nyti.ms,https://nyti.ms/49REbwx,45,8
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnwfcu7p6q2a,nytimes.com,2026-06-10T09:25:05.047601Z,173,external,0,0,,nyti.ms,https://nyti.ms/4uoUHLy,17,4
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnw2g5vn7425,nytimes.com,2026-06-10T06:10:04.702793Z,125,external,0,0,,nyti.ms,https://nyti.ms/3Svjmko,48,9
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvysdqycv2s,nytimes.com,2026-06-10T05:41:06.002818Z,248,external,0,0,,nyti.ms,https://nyti.ms/4omZNXx,55,10
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvvkkr2cn2f,nytimes.com,2026-06-10T04:43:03.695367Z,223,external,0,0,,nyti.ms,https://nyti.ms/4egbUky,32,5
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvuv3bkfe2l,nytimes.com,2026-06-10T04:31:02.818387Z,113,external,0,0,,nyti.ms,https://nyti.ms/4gaY3yq,32,6
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvubjobdr23,nytimes.com,2026-06-10T04:20:06.685872Z,165,external,0,0,,nyti.ms,https://nyti.ms/4fAMa4C,25,1
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvtsp5cre2f,nytimes.com,2026-06-10T04:11:49.243918Z,250,images,1,0,,,,130,16
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvt5qsbqx2b,nytimes.com,2026-06-10T04:00:06.303704Z,194,external,0,0,,nyti.ms,https://nyti.ms/3RM4CNY,15,1
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvs53ufpl25,nytimes.com,2026-06-10T03:41:50.648413Z,267,external,0,0,,nyti.ms,https://nyti.ms/4vxHX6q,29,5
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvrzys6rr23,nytimes.com,2026-06-10T03:40:06.564187Z,300,external,0,0,,nyti.ms,https://nyti.ms/4vEnxZA,51,7
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvqw4mp622i,nytimes.com,2026-06-10T03:20:02.811541Z,224,images,1,1,"A woman poses with small plastic containers of bean salad with the headline"" How the Dense Bean Salad Went Viral",,,20,1
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvpsdunmu2f,nytimes.com,2026-06-10T03:00:02.457019Z,201,external,0,0,,nyti.ms,https://nyti.ms/4e9nqOr,21,2
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvoonk46f25,nytimes.com,2026-06-10T02:40:04.639905Z,221,external,0,0,,nyti.ms,https://nyti.ms/4e1Yxpm,253,60
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvnksyam42d,nytimes.com,2026-06-10T02:20:02.386098Z,220,external,0,0,,nyti.ms,https://nyti.ms/4vZgqeD,84,19
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvmh6ceuc2s,nytimes.com,2026-06-10T02:00:06.148551Z,166,external,0,0,,nyti.ms,https://nyti.ms/43ujL99,30,3
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvldbwcep2s,nytimes.com,2026-06-10T01:40:02.123437Z,148,external,0,0,,nyti.ms,https://nyti.ms/4uWoyfD,63,10
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvk7ne7ep26,nytimes.com,2026-06-10T01:20:06.149919Z,127,external,0,0,,nyti.ms,https://nyti.ms/4xkhVW6,29,7
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvj3wcw4o2c,nytimes.com,2026-06-10T01:00:07.597543Z,205,external,0,0,,nyti.ms,https://nyti.ms/4ey4471,36,2
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvhy3afcy26,nytimes.com,2026-06-10T00:40:04.795912Z,133,external,0,0,,nyti.ms,https://nyti.ms/4ebj3T8,64,9
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvj3wcw4o2c,nytimes.com,2026-06-10T01:00:07.597543Z,205,external,0,0,,nyti.ms,https://nyti.ms/4ey4471,37,2
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvhy3afcy26,nytimes.com,2026-06-10T00:40:04.795912Z,133,external,0,0,,nyti.ms,https://nyti.ms/4ebj3T8,65,11
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvguc62fe2f,nytimes.com,2026-06-10T00:20:04.128937Z,157,external,0,0,,nyti.ms,https://nyti.ms/4oknU9k,28,6
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvfqkxdja2b,nytimes.com,2026-06-10T00:00:05.345603Z,139,external,0,0,,nyti.ms,https://nyti.ms/4ecNVT4,22,3
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvemrzp7h2b,nytimes.com,2026-06-09T23:40:04.818254Z,184,external,0,0,,nyti.ms,https://nyti.ms/49Oz9Rh,64,3
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvfqkxdja2b,nytimes.com,2026-06-10T00:00:05.345603Z,139,external,0,0,,nyti.ms,https://nyti.ms/4ecNVT4,23,3
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvemrzp7h2b,nytimes.com,2026-06-09T23:40:04.818254Z,184,external,0,0,,nyti.ms,https://nyti.ms/49Oz9Rh,65,3
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvdixmdon2s,nytimes.com,2026-06-09T23:20:02.713141Z,122,external,0,0,,nyti.ms,https://nyti.ms/4gaXuEP,48,3
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnvcfeqw7p2s,nytimes.com,2026-06-09T23:00:08.530954Z,162,external,0,0,,nyti.ms,https://nyti.ms/4ewWTMl,50,7
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnva5pmwvu2o,nytimes.com,2026-06-09T22:20:03.397197Z,228,external,0,0,,nyti.ms,https://nyti.ms/4vFliFn,112,20
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnv6zxvm7w2y,nytimes.com,2026-06-09T22:00:04.725348Z,160,external,0,0,,nyti.ms,https://nyti.ms/3QwK2kb,52,3
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnv6axjsgg2j,nytimes.com,2026-06-09T21:46:05.484876Z,155,external,0,0,,nyti.ms,https://nyti.ms/4oqILrC,169,85
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnv67a2fua2a,nytimes.com,2026-06-09T21:45:07.298204Z,185,external,0,0,,nyti.ms,https://nyti.ms/4offiRa,119,46
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnv5ee3fjl2j,nytimes.com,2026-06-09T21:30:05.567824Z,145,external,0,0,,nyti.ms,https://nyti.ms/4osUSUX,195,23
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnv4uejwxf2b,nytimes.com,2026-06-09T21:21:09.179517Z,211,external,0,0,,nyti.ms,https://nyti.ms/4ewO5WO,72,7
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnv6zxvm7w2y,nytimes.com,2026-06-09T22:00:04.725348Z,160,external,0,0,,nyti.ms,https://nyti.ms/3QwK2kb,53,4
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnv6axjsgg2j,nytimes.com,2026-06-09T21:46:05.484876Z,155,external,0,0,,nyti.ms,https://nyti.ms/4oqILrC,170,85
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnv67a2fua2a,nytimes.com,2026-06-09T21:45:07.298204Z,185,external,0,0,,nyti.ms,https://nyti.ms/4offiRa,121,48
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnv5ee3fjl2j,nytimes.com,2026-06-09T21:30:05.567824Z,145,external,0,0,,nyti.ms,https://nyti.ms/4osUSUX,200,23
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnv4uejwxf2b,nytimes.com,2026-06-09T21:21:09.179517Z,211,external,0,0,,nyti.ms,https://nyti.ms/4ewO5WO,73,8
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnv34ro4fv2x,nytimes.com,2026-06-09T20:50:03.376582Z,241,external,0,0,,nyti.ms,https://nyti.ms/4e43dti,42,0
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnv22ruof22j,nytimes.com,2026-06-09T20:31:03.138745Z,243,external,0,0,,nyti.ms,https://nyti.ms/4ec1Zw7,37,0
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuz7yb2e525,nytimes.com,2026-06-09T20:16:03.973205Z,232,external,0,0,,nyti.ms,https://nyti.ms/4eyaKCc,79,24
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuz7yb2e525,nytimes.com,2026-06-09T20:16:03.973205Z,232,external,0,0,,nyti.ms,https://nyti.ms/4eyaKCc,80,24
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuyvawbnz26,nytimes.com,2026-06-09T20:10:03.954970Z,226,external,0,0,,nyti.ms,https://nyti.ms/4ey122F,53,11
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuxym3f3x2f,nytimes.com,2026-06-09T19:54:02.583731Z,268,external,0,0,,nyti.ms,https://nyti.ms/3QtlPez,51,13
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuxrlnpxm25,nytimes.com,2026-06-09T19:50:07.148902Z,203,external,0,0,,nyti.ms,https://nyti.ms/4ga632H,43,0
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuxym3f3x2f,nytimes.com,2026-06-09T19:54:02.583731Z,268,external,0,0,,nyti.ms,https://nyti.ms/3QtlPez,52,13
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuxrlnpxm25,nytimes.com,2026-06-09T19:50:07.148902Z,203,external,0,0,,nyti.ms,https://nyti.ms/4ga632H,44,0
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuxdbspld2a,nytimes.com,2026-06-09T19:42:07.071610Z,231,images,1,1,A list of the Maddest World Cup Moments ranked 20 to 1,,,53,4
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuxcqdoxr2j,nytimes.com,2026-06-09T19:41:48.858834Z,193,external,0,0,,nyti.ms,https://nyti.ms/49P2z1N,59,19
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuwnukgt525,nytimes.com,2026-06-09T19:30:08.631291Z,198,external,0,0,,nyti.ms,https://nyti.ms/4urK0Ij,43,6
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuvnjwet425,nytimes.com,2026-06-09T19:12:03.582942Z,262,external,0,0,,nyti.ms,https://nyti.ms/4dZMGbl,146,28
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuuukqerz2n,nytimes.com,2026-06-09T18:58:05.564938Z,168,images,1,1,Serena Williams celebrates during a tennis match. Headline: Serena Williams Is Victorious In Her First Match in 4 Years,,,163,24
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuu5c7adb27,nytimes.com,2026-06-09T18:45:05.038617Z,234,external,0,0,,nyti.ms,https://nyti.ms/4dXq6Qy,55,13
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuuukqerz2n,nytimes.com,2026-06-09T18:58:05.564938Z,168,images,1,1,Serena Williams celebrates during a tennis match. Headline: Serena Williams Is Victorious In Her First Match in 4 Years,,,165,25
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuu5c7adb27,nytimes.com,2026-06-09T18:45:05.038617Z,234,external,0,0,,nyti.ms,https://nyti.ms/4dXq6Qy,56,13
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnutcip3yg2d,nytimes.com,2026-06-09T18:30:05.880761Z,242,external,0,0,,nyti.ms,https://nyti.ms/4evvfzo,40,3
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnupx5k6br2v,nytimes.com,2026-06-09T17:30:03.852731Z,153,external,0,0,,nyti.ms,https://nyti.ms/4e7P0M8,68,4
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnup6mgphg25,nytimes.com,2026-06-09T17:16:20.586517Z,140,external,0,0,,nyti.ms,https://nyti.ms/4aicL2U,57,13
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnup4bkybe2v,nytimes.com,2026-06-09T17:15:02.104861Z,183,external,0,0,,nyti.ms,https://nyti.ms/4e8ik55,55,3
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuobj5rin26,nytimes.com,2026-06-09T17:00:04.103405Z,99,external,0,0,,nyti.ms,https://nyti.ms/3PTT7n4,37,2
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuobj5rin26,nytimes.com,2026-06-09T17:00:04.103405Z,99,external,0,0,,nyti.ms,https://nyti.ms/3PTT7n4,38,2
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuo7rnq7e2a,nytimes.com,2026-06-09T16:59:05.790978Z,243,external,0,0,,nyti.ms,https://nyti.ms/43UdL9P,41,4
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuneh4i7p25,nytimes.com,2026-06-09T16:43:48.872374Z,250,external,0,0,,nyti.ms,https://nyti.ms/4gaiwU0,50,15
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnumlwxiaq2s,nytimes.com,2026-06-09T16:30:06.651346Z,245,images,1,0,,,,48,6
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnumlukfn22m,nytimes.com,2026-06-09T16:30:04.006085Z,155,external,0,0,,nyti.ms,https://nyti.ms/4dZiZHm,57,12
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuly67wk72m,nytimes.com,2026-06-09T16:19:03.057376Z,163,external,0,0,,nyti.ms,https://nyti.ms/4g9EI0y,47,4
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnulr26e3z2s,nytimes.com,2026-06-09T16:15:04.030004Z,186,external,0,0,,nyti.ms,https://nyti.ms/3S1iGTK,57,8
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuli6q2up2d,nytimes.com,2026-06-09T16:10:06.806349Z,197,external,0,0,,nyti.ms,https://nyti.ms/4eajwVE,88,36
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuli6q2up2d,nytimes.com,2026-06-09T16:10:06.806349Z,197,external,0,0,,nyti.ms,https://nyti.ms/4eajwVE,88,35
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnukwfmu352d,nytimes.com,2026-06-09T16:00:10.071719Z,254,external,0,0,,nyti.ms,https://nyti.ms/3RWJ7di,75,4
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnujspd3rt22,nytimes.com,2026-06-09T15:40:11.249793Z,184,external,0,0,,nyti.ms,https://nyti.ms/4v1kPgY,47,3
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuiagskmb2g,nytimes.com,2026-06-09T15:12:05.624600Z,141,external,0,0,,nyti.ms,https://nyti.ms/4usikDh,57,4
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuhaajdbh2y,nytimes.com,2026-06-09T14:54:05.174672Z,250,images,1,1,"Iranian national soccer team captain Ehsan Haji Safi talks to the press while wearing a blazer and a pin that reads ""#168.""",,,188,47
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuhaajdbh2y,nytimes.com,2026-06-09T14:54:05.174672Z,250,images,1,1,"Iranian national soccer team captain Ehsan Haji Safi talks to the press while wearing a blazer and a pin that reads ""#168.""",,,188,48
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuh4n2y5a26,nytimes.com,2026-06-09T14:52:04.227659Z,99,images,1,1,A Strands word search,,,40,1
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnugkuelss2m,nytimes.com,2026-06-09T14:42:07.812541Z,257,external,0,0,,nyti.ms,https://nyti.ms/4edLoIm,45,1
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnufj522tk2v,nytimes.com,2026-06-09T14:23:16.191Z,230,external,0,0,,nytimes.com,https://www.nytimes.com/interactive/2026/06/05/style/taylor-swift-travis-kelce-wedding-fantasy-planner.html?smtyp=cur&smid=bsky-nytimes,42,2
@@ -727,10 +636,10 @@ at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnue2bs5fw2s,nytimes.c
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnudwpntiz2b,nytimes.com,2026-06-09T13:55:04.422789Z,222,external,0,0,,nyti.ms,https://nyti.ms/4x8B6lw,58,23
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnudwowb7n26,nytimes.com,2026-06-09T13:55:03.564643Z,165,external,0,0,,nyti.ms,https://nyti.ms/4v0I3na,124,48
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnud24gh3l25,nytimes.com,2026-06-09T13:39:04.603496Z,241,images,1,1,"“I guess... I’m nowhere near Trae Young level, though.” - Victor Wembanyama, when asked about becoming a villain to New York Knicks fans",,,47,7
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnubpagbo222,nytimes.com,2026-06-09T13:15:05.936530Z,188,external,0,0,,nyti.ms,https://nyti.ms/4uZHM49,236,49
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnubpagbo222,nytimes.com,2026-06-09T13:15:05.936530Z,188,external,0,0,,nyti.ms,https://nyti.ms/4uZHM49,238,50
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnuaki4rz62s,nytimes.com,2026-06-09T12:54:32.624921Z,115,external,0,0,,nyti.ms,https://nyti.ms/4fvjryb,45,10
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnu7qkuty32n,nytimes.com,2026-06-09T12:40:03.088291Z,203,external,0,0,,nyti.ms,https://nyti.ms/4aDOi8i,75,14
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnu5abqey427,nytimes.com,2026-06-09T11:55:09.161906Z,193,external,0,0,,nyti.ms,https://nyti.ms/49NLPYE,52,5
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnu5abqey427,nytimes.com,2026-06-09T11:55:09.161906Z,193,external,0,0,,nyti.ms,https://nyti.ms/49NLPYE,51,5
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnu3khwmsx2s,nytimes.com,2026-06-09T11:25:03.705023Z,198,external,0,0,,nyti.ms,https://nyti.ms/4fvEQax,53,3
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mntyzym2ve26,nytimes.com,2026-06-09T10:40:03.275534Z,241,external,0,0,,nyti.ms,https://nyti.ms/4uzoUrK,70,11
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnty74tktq26,nytimes.com,2026-06-09T10:25:01.406828Z,156,external,0,0,,nyti.ms,https://nyti.ms/4v081Hq,47,5
@@ -744,23 +653,23 @@ at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mntbmnxq2l26,nytimes.c
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mntbkyo7bl2y,nytimes.com,2026-06-09T03:40:03.871440Z,140,external,0,0,,nyti.ms,https://nyti.ms/4xl6D3W,65,4
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnt7djjh2o2n,nytimes.com,2026-06-09T03:00:05.717353Z,78,external,0,0,,nyti.ms,https://nyti.ms/4eb5cMN,50,1
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnt53wh5ts26,nytimes.com,2026-06-09T02:20:03.359421Z,188,external,0,0,,nyti.ms,https://nyti.ms/4up0qRE,115,35
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnt2uhfwp22m,nytimes.com,2026-06-09T01:40:05.109963Z,283,external,0,0,,nyti.ms,https://nyti.ms/4g5ShxZ,195,47
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnt2uhfwp22m,nytimes.com,2026-06-09T01:40:05.109963Z,283,external,0,0,,nyti.ms,https://nyti.ms/4g5ShxZ,196,47
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnsymw2oy72t,nytimes.com,2026-06-09T01:00:04.422233Z,277,external,0,0,,nyti.ms,https://nyti.ms/4fzN8yc,79,12
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnsw4hw5u52m,nytimes.com,2026-06-09T00:15:05.483770Z,156,images,1,1,"Nithya Raman is pictured standing. Headline reads: ""Nithya Raman Secures Second LA Mayor Spot, Ending Spencer Pratt’s Run."" Photo credit: Gabriela Bhaskar/The New York Times.",,,400,46
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnsw4hw5u52m,nytimes.com,2026-06-09T00:15:05.483770Z,156,images,1,1,"Nithya Raman is pictured standing. Headline reads: ""Nithya Raman Secures Second LA Mayor Spot, Ending Spencer Pratt’s Run."" Photo credit: Gabriela Bhaskar/The New York Times.",,,399,46
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnsvbnqblb2m,nytimes.com,2026-06-09T00:00:05.608648Z,230,external,0,0,,nyti.ms,https://nyti.ms/4uXQNui,222,50
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnst22a4sn2a,nytimes.com,2026-06-08T23:20:02.786558Z,165,external,0,0,,nyti.ms,https://nyti.ms/4ukUnO0,77,7
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnsqsixgri23,nytimes.com,2026-06-08T22:40:02.321795Z,270,external,0,0,,nyti.ms,https://nyti.ms/3RVAJuy,55,8
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnsorjnd3s2b,nytimes.com,2026-06-08T22:03:41.994831Z,244,external,0,0,,nyti.ms,https://nyti.ms/3RV0NpG,52,13
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnsmmg37632q,nytimes.com,2026-06-08T21:25:02.998826Z,183,external,0,0,,nyti.ms,https://nyti.ms/4uZeLW0,104,33
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnskwcqluh26,nytimes.com,2026-06-08T20:54:47.571892Z,132,images,1,0,,,,115,30
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnsknwwxon26,nytimes.com,2026-06-08T20:50:06.758549Z,96,external,0,0,,nyti.ms,https://nyti.ms/4vBdSCT,57,0
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnsknwwxon26,nytimes.com,2026-06-08T20:50:06.758549Z,96,external,0,0,,nyti.ms,https://nyti.ms/4vBdSCT,56,0
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnsk3xuqjk2o,nytimes.com,2026-06-08T20:40:03.738633Z,222,external,0,0,,nyti.ms,https://nyti.ms/4vtrpN0,51,3
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnsjb7zmyq2q,nytimes.com,2026-06-08T20:25:06.334547Z,156,external,0,0,,nyti.ms,https://nyti.ms/4uHniMF,56,9
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnsiwif3dt2q,nytimes.com,2026-06-08T20:19:05.902937Z,175,images,1,1,Ben Stiller films a Knicks player using his iPhone.,,,88,11
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnsiwif3dt2q,nytimes.com,2026-06-08T20:19:05.902937Z,175,images,1,1,Ben Stiller films a Knicks player using his iPhone.,,,88,12
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnsipczoov2v,nytimes.com,2026-06-08T20:15:05.501558Z,240,external,0,0,,nyti.ms,https://nyti.ms/4xfKGTP,65,17
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnsigg7k4p2a,nytimes.com,2026-06-08T20:10:06.776066Z,248,external,0,0,,nyti.ms,https://nyti.ms/4xf6Lll,52,13
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnshli7xpf26,nytimes.com,2026-06-08T19:55:02.995841Z,208,external,0,0,,nyti.ms,https://nyti.ms/4fyyoQ6,48,4
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnsgqq4bib23,nytimes.com,2026-06-08T19:40:05.186352Z,222,external,0,0,,nyti.ms,https://nyti.ms/4okHi6a,61,10
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnsgqq4bib23,nytimes.com,2026-06-08T19:40:05.186352Z,222,external,0,0,,nyti.ms,https://nyti.ms/4okHi6a,61,9
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnsgakyhqv2y,nytimes.com,2026-06-08T19:31:03.052109Z,203,external,0,0,,nyti.ms,https://nyti.ms/3ROGPNh,37,1
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnsf2km74o26,nytimes.com,2026-06-08T19:09:47.583376Z,138,external,0,0,,nyti.ms,https://nyti.ms/49MwAPG,188,42
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnseaabf252o,nytimes.com,2026-06-08T18:55:04.280486Z,197,external,0,0,,nyti.ms,https://nyti.ms/49OMF7t,57,13
@@ -771,27 +680,6 @@ at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnsbv4zgih2s,nytimes.c
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnsbd5rfvs2o,nytimes.com,2026-06-08T18:03:01.131821Z,170,external,0,0,,nyti.ms,https://nyti.ms/4ewfYOI,59,11
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnsb5zrx3k22,nytimes.com,2026-06-08T18:00:09.186797Z,254,external,0,0,,nyti.ms,https://nyti.ms/4opXfYD,57,10
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnsaijicjm2t,nytimes.com,2026-06-08T17:48:07.359604Z,239,external,0,0,,nyti.ms,https://nyti.ms/4uW1LAq,51,10
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mns7b6xlyt23,nytimes.com,2026-06-08T17:26:07.701561Z,190,external,0,0,,nyti.ms,https://nyti.ms/4e8VHgK,39,0
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mns77da52s2o,nytimes.com,2026-06-08T17:25:05.164341Z,230,external,0,0,,nyti.ms,https://nyti.ms/43UEIKx,116,35
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mns5xxoyjx2q,nytimes.com,2026-06-08T17:03:04.445204Z,185,images,1,1,A sheetpan of Baked Buffalo Wings,,,52,2
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mns5jn2h2726,nytimes.com,2026-06-08T16:55:03.491124Z,145,external,0,0,,nyti.ms,https://nyti.ms/3RVxcwn,41,1
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mns5ealdfi26,nytimes.com,2026-06-08T16:52:02.592463Z,255,external,0,0,,nyti.ms,https://nyti.ms/4uRC8Rm,47,5
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mns4znjy7n22,nytimes.com,2026-06-08T16:46:07.158471Z,195,external,0,0,,nyti.ms,https://nyti.ms/4ui5Hui,47,1
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mns4ov4o552l,nytimes.com,2026-06-08T16:40:06.020764Z,162,external,0,0,,nyti.ms,https://nyti.ms/4eiwq4a,68,15
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mns44xvlmf2l,nytimes.com,2026-06-08T16:30:04.946665Z,218,external,0,0,,nyti.ms,https://nyti.ms/4dXpcUd,56,8
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mns3u2i2r62y,nytimes.com,2026-06-08T16:25:05.666086Z,236,external,0,0,,nyti.ms,https://nyti.ms/4aC0V3I,81,21
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mns2hjuuab2s,nytimes.com,2026-06-08T16:00:11.864262Z,129,images,1,0,,,,53,3
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnrzvi5rcs2s,nytimes.com,2026-06-08T15:50:05.972726Z,269,external,0,0,,nyti.ms,https://nyti.ms/4fy0gns,185,42
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnrzknuhpy2o,nytimes.com,2026-06-08T15:44:02.860675Z,212,images,1,1,A man wears a white Ghana kit with a colorful spidery pattern. Headline: The Best and Worst Kits at the 2026 World Cup,,,49,1
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnrxlzookp26,nytimes.com,2026-06-08T15:09:01.315161Z,228,external,0,0,,nyti.ms,https://nyti.ms/4uhJ3lL,46,1
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnrvnl7jv62s,nytimes.com,2026-06-08T14:34:05.761941Z,229,external,0,0,,nyti.ms,https://nyti.ms/4xatcrP,63,18
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnrvgfgnsl2z,nytimes.com,2026-06-08T14:30:04.940903Z,99,images,1,1,A Strands word search,,,41,0
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnrsmzfdes26,nytimes.com,2026-06-08T13:40:05.968223Z,245,external,0,0,,nyti.ms,https://nyti.ms/4dTTqaC,73,18
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnrsfvif7x23,nytimes.com,2026-06-08T13:36:06.886717Z,191,images,1,1,Ranking the 48 Teams at the 2026 World Cup,,,62,6
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnrrj65k5n2z,nytimes.com,2026-06-08T13:20:02.993466Z,139,images,1,1,The Connections game shows a 4x4 grid of words or phrases,,,41,1
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnrqxfbpga2o,nytimes.com,2026-06-08T13:10:06.487041Z,178,external,0,0,,nyti.ms,https://nyti.ms/43l28ss,96,19
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnrpbqi6452s,nytimes.com,2026-06-08T12:40:06.299385Z,224,external,0,0,,nyti.ms,https://nyti.ms/4ohPrrU,79,7
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mnrogulfcj2s,nytimes.com,2026-06-08T12:25:04.633238Z,204,external,0,0,,nyti.ms,https://nyti.ms/4aeGHwQ,61,16
 at://did:plc:qqavis3fg5675o3steyynvfh/app.bsky.feed.post/3mnva6ezyrs2h,knightcolumbia.org,2026-06-09T22:20:26.503Z,300,external,0,0,,knightcolumbia.org,https://knightcolumbia.org/content/westchester-drivers-challenge-county-police-departments-warrantless-mass-vehicle-surveillance-system,10,5
 at://did:plc:qqavis3fg5675o3steyynvfh/app.bsky.feed.post/3mnuw4q5pp22l,knightcolumbia.org,2026-06-09T19:20:33.634Z,260,external,0,0,,knightcolumbia.org,https://knightcolumbia.org/blog/a-nongovernmental-disbursement-structure-to-fund-research,11,6
 at://did:plc:qqavis3fg5675o3steyynvfh/app.bsky.feed.post/3mnselr7cy223,knightcolumbia.org,2026-06-08T19:01:31.223Z,299,video,0,0,,,,0,0

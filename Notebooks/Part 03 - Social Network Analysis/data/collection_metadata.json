@@ -1,8 +1,8 @@
 {
-  "ego_handle": "brianckeegan.com",
-  "ego_did": "did:plc:lse7quaysss2d3xxm76mouhd",
-  "collected_at": "2026-06-10T10:58:04+00:00",
-  "ego_follows_at_collection": 2399,
+  "ego_handle": "nytimes.com",
+  "ego_did": "did:plc:eclio37ymobqex2ncko63h4r",
+  "collected_at": "2026-06-10T16:23:02+00:00",
+  "ego_follows_at_collection": 116,
   "n_alters_sampled": 100,
   "sampling_seed": 42,
   "max_pages_per_alter": 2

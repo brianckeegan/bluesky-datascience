@@ -1,39 +1,39 @@
 {
   "account": {
-    "handle": "brianckeegan.com",
-    "did": "did:plc:lse7quaysss2d3xxm76mouhd"
+    "handle": "nytimes.com",
+    "did": "did:plc:eclio37ymobqex2ncko63h4r"
   },
-  "collected_at_utc": "2026-06-10T10:59:56.500895+00:00",
+  "collected_at_utc": "2026-06-10T16:28:39.286488+00:00",
   "authenticated": false,
   "atproto_sdk_version": "0.0.67",
   "collections": {
     "posts.parquet": {
       "endpoint": "app.bsky.feed.getAuthorFeed",
       "params": {
-        "actor": "brianckeegan.com",
+        "actor": "nytimes.com",
         "limit": 100,
         "max_pages": 100
       },
-      "n_records": 3368,
+      "n_records": 8959,
       "notes": "Original posts only; reposts of other accounts excluded."
     },
     "follows.csv": {
       "endpoint": "app.bsky.graph.getFollows",
       "params": {
-        "actor": "brianckeegan.com",
+        "actor": "nytimes.com",
         "limit": 100,
         "max_pages": 40
       },
-      "n_records": 2399
+      "n_records": 116
     },
     "followers.csv": {
       "endpoint": "app.bsky.graph.getFollowers",
       "params": {
-        "actor": "brianckeegan.com",
+        "actor": "nytimes.com",
         "limit": 100,
-        "max_pages": 80
+        "max_pages": 20
       },
-      "n_records": 4402
+      "n_records": 1713
     }
   }
 }

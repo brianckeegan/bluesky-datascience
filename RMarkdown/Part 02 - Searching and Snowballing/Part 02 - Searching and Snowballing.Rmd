@@ -1,0 +1,479 @@
+---
+title: "Part 02 — Searching and Snowballing: Building a Post Archive"
+subtitle: "Bluesky Data Science in R"
+output:
+  github_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+```
+
+This document is the R counterpart of the Python notebook
+[Part 02 - Searching and Snowballing](../../Notebooks/Part%2002%20-%20Searching%20and%20Snowballing/Part%2002%20-%20Searching%20and%20Snowballing.ipynb).
+Part 01 archived one account we chose in advance. This part builds a
+*topical* archive when we don't know in advance whose posts matter, by
+two complementary routes: keyword search, and snowball sampling along the
+mention and reply ties embedded in posts.
+
+### Learning objectives
+
+* Query `app.bsky.feed.searchPosts` with date, language, and tag filters.
+* Read the anatomy of a post record, especially its *facets*.
+* Implement snowball sampling over mention and reply-parent edges.
+* Diagnose saturation: when does another wave stop adding new material?
+* Assemble, deduplicate, and persist a documented post archive.
+
+## Setup
+
+```{r libraries}
+library(bskyr)
+library(tidyverse)
+library(jsonlite)
+library(lubridate)
+```
+
+As in every part of this series, the shared helper `bsky_client.R` looks
+for credentials (an `atproto.json` file or bskyr's environment
+variables), authenticates if it finds them, and sets `bsky_authed`. The
+`knitr::opts_chunk$set(eval = bsky_authed)` line then makes that flag the
+default for the whole document: with credentials every chunk runs;
+without them the document still knits, but the API chunks are skipped.
+
+```{r connect}
+source("bsky_client.R")
+knitr::opts_chunk$set(eval = bsky_authed)
+```
+
+One difference from the Python series is worth flagging immediately: in
+Python, search is the *one* endpoint in this part that demands
+authentication (the public AppView returns 403 for it). bskyr
+authenticates every call, so when this document runs at all, search runs
+too.
+
+## 1. Searching for posts
+
+`bs_search_posts()` wraps `app.bsky.feed.searchPosts`. A quoted phrase
+matches exactly; `since`/`until`, `lang`, and `tag` narrow the window:
+
+```{r search-basic}
+hits <- bs_search_posts('"snowball sampling"', limit = 5)
+
+hits |>
+  mutate(text = map_chr(record, "text", .default = NA)) |>
+  select(author_handle, text)
+```
+
+### Paginating a search
+
+Like every list endpoint, search paginates with cursors, and bskyr
+follows them automatically when `limit > 100`. Here are the last seven
+days of English-language posts tagged `#openscience`:
+
+```{r search-paged}
+until <- now("UTC")
+since <- until - days(7)
+
+results <- bs_search_posts(
+  "#openscience",
+  since = format(since, "%Y-%m-%dT%H:%M:%SZ"),
+  until = format(until, "%Y-%m-%dT%H:%M:%SZ"),
+  lang  = "en",
+  sort  = "latest",
+  limit = 300
+)
+
+c(posts = nrow(results), accounts = n_distinct(results$author_did))
+```
+
+### When you cannot search
+
+Search indexes only what the index operator chooses to index, ranks
+results opaquely, and (on some platforms) disappears entirely. The
+snowball design in Section 4 builds a topical archive from *public graph
+structure alone* — a strategy that survives even when search does not.
+
+## 2. The anatomy of a post record
+
+Every post is a record in its author's repository. The *view* of a post
+adds engagement counters and author info; the *record* holds what the
+author wrote. In bskyr's cleaned tibbles the record is a list-column:
+
+```{r record-anatomy}
+feed <- bs_get_author_feed("nytimes.com", limit = 100)
+
+example <- feed |>
+  mutate(n_facets = map_int(record, \(r) length(r$facets[[1]]))) |>
+  filter(n_facets > 0) |>
+  slice_max(n_facets, n = 1, with_ties = FALSE)
+
+example |> mutate(text = map_chr(record, "text")) |> pull(text)
+```
+
+### Facets
+
+Mentions, hashtags, and links are not parsed out of the text by clients —
+they are declared by the author's client as **facets**: byte ranges of
+the text paired with typed *features*. Inspect the example post's facets:
+
+```{r facets}
+facets <- example$record[[1]]$facets[[1]]
+
+str(facets, max.level = 3, list.len = 4)
+```
+
+Each feature's `$type` ends in `#mention` (with a `did`), `#tag` (with a
+`tag`), or `#link` (with a `uri`). Because mentions carry DIDs — stable
+account identifiers — facets turn a pile of text into a *network*.
+
+### Languages, replies, and embeds
+
+The record also declares its languages (`langs`), whether it replies to
+another post, and any embedded media — all of which later parts use.
+
+## 3. Facet helpers
+
+Three small functions pull the network out of a feed tibble; they are
+this part's equivalent of the Python `snowball.py` module. The logic of
+`extract_features()`: a record's `facets` element is a list of facets,
+each facet holds a list of features, and each feature has a `$type`
+ending in `#mention`, `#tag`, or `#link`. We walk that nesting with two
+layers of `map()`, keep the features whose type matches, and pull out
+the field we want (`did` for mentions, `tag` for hashtags, `uri` for
+links). `discard(..., is.na)` then drops the non-matches:
+
+```{r helpers}
+extract_features <- function(record, feature_type, field) {
+  facets <- record$facets[[1]]
+  if (is.null(facets)) return(character(0))
+  out <- map(facets, \(facet) {
+    map_chr(facet$features, \(feature) {
+      if (endsWith(feature$`$type`, feature_type)) feature[[field]]
+      else NA_character_
+    })
+  })
+  discard(unlist(out), is.na)
+}
+
+extract_mentions <- function(record) extract_features(record, "#mention", "did")
+extract_tags     <- function(record) extract_features(record, "#tag", "tag")
+extract_links    <- function(record) extract_features(record, "#link", "uri")
+
+example_record <- example$record[[1]]
+list(
+  mentions = extract_mentions(example_record),
+  hashtags = extract_tags(example_record),
+  links    = extract_links(example_record)
+)
+```
+
+## 4. Snowball sampling: from one seed to a corpus
+
+Snowball sampling starts from a *seed*, observes whom the seed engages,
+collects those accounts, and repeats. Set the design parameters first —
+every cap is a promise to the API and to your own time:
+
+```{r params}
+SEED_ACTOR         <- "nytimes.com"
+WAVE0_MAX_POSTS    <- 200  # posts to collect from the seed
+WAVE1_ACCOUNTS     <- 8    # most-engaged accounts to crawl in wave 1
+POSTS_PER_ACCOUNT  <- 100  # posts per snowballed account
+MAX_TOTAL_ACCOUNTS <- 15   # hard cap across all waves
+
+COLLECTED_AT <- format(now("UTC"), "%Y-%m-%dT%H:%M:%SZ")
+COLLECTED_AT
+```
+
+### Wave 0: the seed account
+
+A small fetcher that returns original posts (reposts dropped) with the
+columns the snowball needs:
+
+```{r fetch-author}
+fetch_author_posts <- function(actor, max_posts = 100) {
+  feed <- bs_get_author_feed(actor, limit = max_posts)
+  if (!is.null(feed) && "reason_type" %in% names(feed)) {
+    feed <- filter(feed, is.na(reason_type))
+  }
+  feed |>
+    mutate(
+      text       = map_chr(record, "text", .default = NA),
+      created_at = map_chr(record, "created_at", .default = NA),
+      is_reply   = if ("reply_parent_uri" %in% names(feed))
+                     !is.na(reply_parent_uri) else FALSE,
+      reply_parent_did = if ("reply_parent_author_did" %in% names(feed))
+                           reply_parent_author_did else NA_character_,
+      mentions   = map(record, extract_mentions),
+      hashtags   = map(record, extract_tags)
+    ) |>
+    select(uri, author_did, author_handle, created_at, text, is_reply,
+           reply_parent_did, mentions, hashtags,
+           like_count, repost_count, reply_count)
+}
+
+wave0 <- fetch_author_posts(SEED_ACTOR, WAVE0_MAX_POSTS)
+seed_did <- wave0$author_did[[1]]
+
+c(posts = nrow(wave0))
+range(wave0$created_at)
+```
+
+### Whom does the seed engage?
+
+Whom did those 200 posts engage? We pool every mentioned DID and every
+reply-parent DID, tally them with base R's `table()`, and sort so the
+most-engaged accounts come first. The top `WAVE1_ACCOUNTS` of them form
+the next wave's crawl list — note that we exclude the seed itself, since
+we already have its posts:
+
+```{r engaged}
+count_engaged <- function(posts, exclude = character(0)) {
+  c(unlist(posts$mentions), discard(posts$reply_parent_did, is.na)) |>
+    discard(\(did) did %in% exclude) |>
+    table() |>
+    sort(decreasing = TRUE)
+}
+
+engaged0 <- count_engaged(wave0, exclude = seed_did)
+wave1_dids <- names(head(engaged0, WAVE1_ACCOUNTS))
+
+bs_get_profile(wave1_dids) |>
+  mutate(posts_engaging = as.integer(engaged0[did])) |>
+  select(handle, did, posts_engaging)
+```
+
+### Wave 1: crawl the frontier
+
+```{r wave1}
+crawl_accounts <- function(dids, posts_each) {
+  map(dids, \(did) {
+    posts <- tryCatch(fetch_author_posts(did, posts_each),
+                      error = function(e) NULL)
+    Sys.sleep(0.1)
+    posts
+  }) |> list_rbind()
+}
+
+wave1 <- crawl_accounts(wave1_dids, POSTS_PER_ACCOUNT)
+crawled <- c(seed_did, wave1_dids)
+
+c(posts = nrow(wave1), accounts = length(wave1_dids))
+```
+
+### Wave 2: one more hop
+
+```{r wave2}
+engaged1 <- count_engaged(wave1, exclude = crawled)
+budget <- MAX_TOTAL_ACCOUNTS - length(crawled)
+wave2_dids <- names(head(engaged1, budget))
+
+wave2 <- crawl_accounts(wave2_dids, POSTS_PER_ACCOUNT)
+crawled <- c(crawled, wave2_dids)
+
+c(posts = nrow(wave2), total_accounts_crawled = length(crawled))
+```
+
+## 5. Saturation diagnostics: when to stop
+
+Each wave should be judged by its *marginal yield*: how many genuinely
+new posts, accounts, and hashtags it added. When the curves flatten, the
+snowball has saturated the neighborhood of the seed.
+
+One piece of R syntax to flag in the next chunk: the `<<-` operator
+assigns to a variable *outside* the current function, which lets our
+per-wave function update the running sets of already-seen posts,
+accounts, and hashtags as `imap()` walks over the waves in order:
+
+```{r saturation, fig.width=10, fig.height=3.5}
+waves <- list(`0` = wave0, `1` = wave1, `2` = wave2)
+
+seen_posts <- seen_accounts <- seen_tags <- character(0)
+wave_stats <- imap(waves, \(posts, wave) {
+  new_posts <- setdiff(posts$uri, seen_posts)
+  accounts  <- unique(c(posts$author_did, unlist(posts$mentions),
+                        discard(posts$reply_parent_did, is.na)))
+  new_accounts <- setdiff(accounts, seen_accounts)
+  tags <- unique(unlist(posts$hashtags))
+  new_tags <- setdiff(tags, seen_tags)
+  seen_posts    <<- c(seen_posts, new_posts)
+  seen_accounts <<- c(seen_accounts, new_accounts)
+  seen_tags     <<- c(seen_tags, new_tags)
+  tibble(wave = wave, posts_collected = nrow(posts),
+         new_posts = length(new_posts),
+         new_accounts = length(new_accounts),
+         new_hashtags = length(new_tags))
+}) |> list_rbind()
+
+wave_stats
+
+wave_stats |>
+  pivot_longer(starts_with("new_"), names_to = "yield") |>
+  ggplot(aes(wave, value, fill = yield)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~yield, scales = "free_y") +
+  labs(x = "Wave", y = "New per wave",
+       title = "Marginal yield of each snowball wave") +
+  theme_minimal()
+```
+
+## 6. Building the archive
+
+Now assemble the deliverable. `list_rbind()` stacks the three waves into
+one tibble (tagging each post with the wave that found it),
+`distinct(uri, ...)` keeps only the first sighting of each post — the
+same post can be collected twice when snowballed accounts reply to each
+other — and `ymd_hms()` parses the timestamps:
+
+```{r archive}
+archive <- imap(waves, \(posts, wave) mutate(posts, wave = as.integer(wave))) |>
+  list_rbind() |>
+  distinct(uri, .keep_all = TRUE) |>
+  mutate(created_at = ymd_hms(created_at, quiet = TRUE)) |>
+  arrange(created_at)
+
+dim(archive)
+```
+
+### Saving the archive — and its provenance
+
+List-columns (mentions, hashtags) don't fit CSV, so the full archive goes
+to RDS and a flat projection to CSV; the metadata records every design
+parameter:
+
+```{r save-archive}
+dir.create("data", showWarnings = FALSE)
+
+saveRDS(archive, "data/archive.rds")
+archive |>
+  mutate(across(c(mentions, hashtags),
+                \(col) map_chr(col, paste, collapse = " "))) |>
+  write_csv("data/archive.csv")
+
+metadata <- list(
+  collected_at = COLLECTED_AT,
+  collection_method = "snowball sample over mention and reply-parent edges",
+  seed_actor = SEED_ACTOR,
+  seed_did = seed_did,
+  parameters = list(
+    wave0_max_posts = WAVE0_MAX_POSTS,
+    wave1_accounts = WAVE1_ACCOUNTS,
+    posts_per_account = POSTS_PER_ACCOUNT,
+    max_total_accounts = MAX_TOTAL_ACCOUNTS,
+    reposts_included = FALSE,
+    replies_included = TRUE
+  ),
+  accounts_crawled = sort(crawled),
+  total_posts = nrow(archive)
+)
+write_json(metadata, "data/archive_metadata.json",
+           pretty = TRUE, auto_unbox = TRUE)
+```
+
+### Proving the round trip
+
+```{r roundtrip}
+reloaded <- readRDS("data/archive.rds")
+
+stopifnot(nrow(reloaded) == nrow(archive),
+          all(reloaded$uri == archive$uri))
+c(posts = nrow(reloaded), authors = n_distinct(reloaded$author_did))
+```
+
+### Re-hydrating archived posts
+
+Archives go stale: posts get deleted, counters keep moving. `bs_get_posts()`
+re-fetches a batch of URIs so you can measure attrition:
+
+```{r rehydrate}
+set.seed(42)
+sample_uris <- sample(reloaded$uri, 10)
+
+fresh <- bs_get_posts(sample_uris)
+
+tibble(uri = sample_uris) |>
+  left_join(select(fresh, uri, like_count_now = like_count), by = "uri") |>
+  left_join(select(reloaded, uri, like_count), by = "uri") |>
+  mutate(still_exists = !is.na(like_count_now)) |>
+  select(like_count, like_count_now, still_exists)
+```
+
+## 7. A first look at the archive
+
+```{r top-tags, fig.width=8, fig.height=5}
+archive |>
+  select(hashtags) |>
+  unnest(hashtags) |>
+  count(hashtags, sort = TRUE) |>
+  slice_head(n = 15) |>
+  ggplot(aes(n, fct_reorder(hashtags, n))) +
+  geom_col(fill = "seagreen") +
+  labs(x = "Posts using hashtag", y = NULL,
+       title = paste0("Top hashtags in the archive (n=", nrow(archive), " posts)")) +
+  theme_minimal()
+```
+
+```{r by-author}
+archive |>
+  group_by(author_handle) |>
+  summarise(posts = n(), replies = sum(is_reply),
+            median_likes = median(like_count, na.rm = TRUE)) |>
+  arrange(desc(posts))
+```
+
+## 8. Research design: what kind of sample is this?
+
+A snowball sample is not a probability sample: every inclusion
+probability depends on the seed, and well-connected accounts are
+oversampled by construction. That makes it excellent for *mapping a
+community around a known starting point* and unsuitable for estimating
+population frequencies. Respondent-driven sampling (Heckathorn 1997)
+shows how far the design can be pushed when you track recruitment chains
+carefully; our wave column preserves exactly that information.
+
+## Ethics and limitations
+
+The snowball pulls in *third parties* — people the seed mentioned who
+never interacted with us — so minimize what you keep about them and
+aggregate wherever possible. Mentions and replies are public performance,
+not consent to study. The archive freezes posts people may later delete
+(re-hydration showed attrition is real); honor deletions in long-lived
+datasets. And remember the design's blind spots: accounts the seed never
+engages are invisible, no matter how central they are to the topic.
+
+## Exercises
+
+1. Re-run the snowball with a different seed and compare the top-hashtag
+   tables — how much do the archives overlap?
+2. Extend `count_engaged()` to weight reply-parents more heavily than
+   mentions. Does wave 1 change?
+3. Add a third wave. What does the marginal-yield plot say about it?
+4. Use `bs_search_posts()` with a `tag` filter to collect the same topic
+   by search, and compare author sets with the snowball archive.
+5. Measure attrition: re-hydrate 50 archived posts a week after
+   collection and estimate the deletion rate.
+
+## Research project ideas
+
+* **Community boundary mapping.** Seed snowballs from three accounts in
+  different communities and measure where the resulting archives begin to
+  overlap — an empirical map of community boundaries.
+* **Search versus snowball coverage.** For a topic with a clear hashtag,
+  quantify what fraction of search-retrieved posts the snowball recovers,
+  and what the snowball finds that search misses.
+
+## References
+
+### Scholarship
+
+* Heckathorn, D. D. (1997). Respondent-driven sampling: A new approach to the study of hidden populations. *Social Problems*, 44(2), 174–199.
+* González-Bailón, S., Wang, N., Rivero, A., Borge-Holthoefer, J., & Moreno, Y. (2014). Assessing the bias in samples of large online networks. *Social Networks*, 38, 16–27.
+* Tufekci, Z. (2014). Big questions for social media big data. *ICWSM*, 8(1), 505–514.
+* Bruns, A., & Burgess, J. (2011). The use of Twitter hashtags in the formation of ad hoc publics. *ECPR General Conference*.
+
+### Documentation
+
+* `app.bsky.feed.searchPosts`: <https://docs.bsky.app/docs/api/app-bsky-feed-search-posts>
+* Richtext facets: <https://docs.bsky.app/docs/advanced-guides/post-richtext>
+* bskyr: <https://christophertkenny.com/bskyr/>
+* R Markdown: <https://rmarkdown.rstudio.com/docs/>

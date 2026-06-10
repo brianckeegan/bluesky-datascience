@@ -1,0 +1,252 @@
+---
+title: "Bluesky Data Science — Part 00: Introduction"
+subtitle: "An R counterpart to the Python notebook, using bskyr"
+output:
+  github_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+```
+
+This document is the R Markdown counterpart of the Python notebook
+[Part 00 - Introduction](../Notebooks/Part%2000%20-%20Introduction.ipynb).
+It performs the same first steps — authenticating, retrieving profiles,
+feeds, follows, and followers, and (carefully) writing content — using
+[bskyr](https://christophertkenny.com/bskyr/), an R interface to the
+Bluesky API by Christopher Kenny, together with the
+[tidyverse](https://www.tidyverse.org/).
+
+## Background
+
+Researchers studying social media spent a decade building methods on
+Twitter's APIs; when that access was shut off, attention turned to open
+platforms. Bluesky runs on the [AT Protocol](https://atproto.com), an
+open protocol whose data is public by design: profiles, posts, follows,
+likes, and reposts can all be retrieved through documented endpoints at
+[docs.bsky.app](https://docs.bsky.app). The Python series accesses those
+endpoints through the `atproto` SDK; here we use bskyr, which wraps the
+same endpoints in R functions that return
+[tibbles](https://tibble.tidyverse.org/) ready for tidyverse analysis.
+
+### Code
+
+Install the packages once:
+
+```{r install, eval=FALSE}
+install.packages(c("bskyr", "tidyverse", "jsonlite"))
+```
+
+Then load them. Each plays a distinct role that you will see in every
+part of this series: **bskyr** talks to the Bluesky API, the
+**tidyverse** (dplyr, ggplot2, purrr, and friends) manipulates and
+plots the data that comes back, and **jsonlite** reads and writes JSON,
+the format APIs speak:
+
+```{r libraries}
+library(bskyr)
+library(tidyverse)
+library(jsonlite)
+```
+
+### Setup
+
+bskyr authenticates with your handle and an **app password** — create one
+at [bsky.app/settings/app-passwords](https://bsky.app/settings/app-passwords),
+never your main account password. There are two ways to supply credentials:
+
+1. Set `BLUESKY_APP_USER` and `BLUESKY_APP_PASS` in your `~/.Renviron`
+   (bskyr's native mechanism, via `bs_set_user()` and `bs_set_pass()`).
+2. Save an `atproto.json` file — the same file the Python notebooks use —
+   in the repository root: `{"handle": "you.bsky.social", "password": "..."}`.
+   It is gitignored, so credentials never end up in version control.
+
+The shared helper `bsky_client.R` checks both locations and records
+whether we are authenticated. **Unlike the Python series, which falls
+back to Bluesky's public AppView for read endpoints, bskyr (as of 0.4.x)
+sends every request through the authenticated PDS** — so without
+credentials the API chunks in this document are skipped when knitting.
+
+## Client
+
+```{r connect}
+source("bsky_client.R")
+# Without credentials, skip every chunk from here on but keep the prose
+knitr::opts_chunk$set(eval = bsky_authed)
+```
+
+When credentials are present, `bs_auth()` exchanges them for a session
+token that every subsequent bskyr call reuses (it is cached for a few
+minutes, so repeated calls don't re-authenticate).
+
+## Profile
+
+`bs_get_profile()` wraps the API endpoint `app.bsky.actor.getProfiles`
+and returns one row per requested account. Let's look at our own profile
+first. Two pieces of R syntax to get comfortable with right away: the
+pipe `|>` sends the result of one step into the next (read it as
+"then"), and `glimpse()` prints a wide tibble sideways so every column
+fits on screen:
+
+```{r own-profile}
+me <- bs_get_profile(bs_get_user())
+
+me |>
+  select(handle, display_name, followers_count, follows_count,
+         posts_count, created_at) |>
+  glimpse()
+```
+
+The numbers you see are live: run this tomorrow and the follower count
+may differ. The `description`, `avatar`, and other fields are columns
+too — a tibble row plays the role the typed `ProfileView` model plays in
+the Python series.
+
+### Retrieving other users' profiles
+
+Any public account can be looked up by handle. `bsky.app` is the
+platform's official account:
+
+```{r bsky-profile}
+bsky_app <- bs_get_profile("bsky.app")
+
+bsky_app |>
+  select(handle, display_name, followers_count, posts_count, created_at)
+```
+
+`bs_get_profile()` is vectorized: pass several handles at once and each
+becomes a row, which is how Part 01 hydrates accounts in batches.
+
+## Posts
+
+`bs_get_author_feed()` wraps `app.bsky.feed.getAuthorFeed` and returns an
+account's recent posts, newest first. Each row is one feed item, and the
+post's engagement counters (`like_count`, `repost_count`, ...) are
+ordinary columns. The author's actual words live somewhere new: a
+**list-column** named `record`, where each cell holds the structured
+record the author's client wrote (text, timestamp, languages, facets).
+List-columns are how tibbles store nested API data, and
+`purrr::map_chr()` is how we reach into them — "for each element of
+`record`, pull out `text` as a character string":
+
+```{r author-feed}
+profile_feed <- bs_get_author_feed("nytimes.com", limit = 100)
+
+nrow(profile_feed)
+
+profile_feed |>
+  mutate(text = map_chr(record, "text", .default = NA)) |>
+  select(created_at = indexed_at, text, like_count, repost_count) |>
+  head(5)
+```
+
+This `mutate()` + `map_chr()` pattern appears in every part of the
+series — it is the single most useful idiom for working with bskyr's
+output.
+
+## Timeline
+
+The home timeline — the reverse-chronological feed of accounts *you*
+follow — is defined relative to the logged-in account, which is why this
+endpoint always requires authentication:
+
+```{r timeline}
+timeline <- bs_get_timeline(limit = 25)
+
+timeline |>
+  mutate(text = map_chr(record, "text", .default = NA)) |>
+  select(author_handle, text) |>
+  head(5)
+```
+
+## Relationships
+
+### Follows
+
+`bs_get_follows()` wraps `app.bsky.graph.getFollows`: the accounts an
+actor follows, one profile per row.
+
+```{r follows}
+follows <- bs_get_follows("nytimes.com", limit = 100)
+
+nrow(follows)
+follows |> select(did, handle, display_name) |> head(5)
+```
+
+These endpoints are *paginated*: each request returns at most 100
+records plus a `cursor` — an opaque bookmark marking where the next page
+starts. bskyr tucks the cursor away as an *attribute* of the tibble
+(metadata attached to the object, read with `attr()`), and —
+conveniently — when you ask for `limit > 100` it follows the cursors for
+you, making one request per hundred records:
+
+```{r follows-cursor}
+attr(follows, "cursor")$cursor
+
+all_follows <- bs_get_follows("nytimes.com", limit = 1000)
+nrow(all_follows)
+```
+
+If `nrow(all_follows)` came back smaller than 1,000, that is not an
+error — it means we reached the end of the list before reaching our
+limit. The limit is a *budget*, not a promise.
+
+Part 01 unpacks exactly what is happening under the hood here.
+
+### Followers
+
+`bs_get_followers()` is the mirror image: accounts that follow the actor.
+
+```{r followers}
+followers <- bs_get_followers("nytimes.com", limit = 100)
+
+followers |> select(handle, display_name) |> head(5)
+```
+
+## Posting content
+
+Reading is safe to do freely; **writing changes the public record**, so
+the chunks below are shown but never executed when this document is knit
+(`eval=FALSE`). Run them deliberately, from your own account, when you
+mean to.
+
+### Writing a post
+
+```{r post, eval=FALSE}
+bs_post(text = "I am posting this from an R Markdown notebook!")
+```
+
+### Liking a post
+
+`bs_like()` needs the post's `uri` (its AT-protocol address) and `cid`
+(its content hash) — both are columns in any feed tibble:
+
+```{r like, eval=FALSE}
+bs_like(
+  uri = "at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3lareilifis2h",
+  cid = "bafyreifacygwvqtrqc7dts2fk67iyv2sa2u3irqdlry7trusq424zmqu7a"
+)
+```
+
+### Writing a post with an image
+
+`bs_post()` uploads images for you and attaches alt text — which Part 07
+shows is both an accessibility practice and a research object:
+
+```{r post-image, eval=FALSE}
+bs_post(
+  text = "Now we are sending images from a notebook!",
+  images = "small_class.jpg",
+  images_alt = "Selfie with class"
+)
+```
+
+## References
+
+* bskyr documentation: <https://christophertkenny.com/bskyr/>
+* Kenny, C. T. (2023). bskyr: Interact with 'Bluesky' Social. R package. <https://CRAN.R-project.org/package=bskyr>
+* Bluesky HTTP API reference: <https://docs.bsky.app>
+* AT Protocol: <https://atproto.com>
+* R Markdown documentation: <https://rmarkdown.rstudio.com/docs/>
+* Wickham, H., Çetinkaya-Rundel, M., & Grolemund, G. (2023). *R for Data Science* (2nd ed.). <https://r4ds.hadley.nz/>

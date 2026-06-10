@@ -1,0 +1,428 @@
+---
+title: "Part 10 — Real-Time Streams and Bots: Drinking from the Firehose"
+subtitle: "Bluesky Data Science in R"
+output:
+  github_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+```
+
+This document is the R counterpart of the Python notebook
+[Part 10 - Real-Time Streams and Bots](../../Notebooks/Part%2010%20-%20Real-Time%20Streams%20and%20Bots/Part%2010%20-%20Real-Time%20Streams%20and%20Bots.ipynb).
+Every previous part asked the network about its past; this one watches
+it happen. We subscribe to the **Jetstream** — Bluesky's friendly JSON
+event stream — collect a live sample, characterize a minute of the whole
+network, and then close the loop: a minimal, well-behaved bot that reads
+its notifications and (only in dry-run) replies.
+
+### Learning objectives
+
+* Distinguish retrospective collection from streaming collection.
+* Subscribe to the Jetstream with server-side collection filters.
+* Practice data minimization on high-volume streams.
+* Understand the raw firehose and why Jetstream usually suffices.
+* Design a bot with rate limits, disclosure, and a kill switch.
+
+## Setup
+
+Streaming needs a websocket client; bot actions need bskyr. The
+[websocket](https://cran.r-project.org/package=websocket) package is the
+one extra dependency of this part:
+
+```{r libraries}
+library(bskyr)
+library(tidyverse)
+library(jsonlite)
+library(lubridate)
+
+has_websocket <- requireNamespace("websocket", quietly = TRUE)
+```
+
+As in every part, the shared helper `bsky_client.R` looks for
+credentials and sets `bsky_authed`. This part's gating differs from the
+others in one interesting way: **the Jetstream requires no
+authentication at all** — anyone can listen to the public event stream —
+so the streaming chunks are gated on having the websocket package rather
+than on credentials. Only the bot sections at the end, which read
+notifications and (hypothetically) post, need an account:
+
+```{r connect}
+source("bsky_client.R")
+# Jetstream needs no authentication; bot sections do.
+knitr::opts_chunk$set(eval = has_websocket)
+```
+
+## 1. The Jetstream: the network's pulse as friendly JSON
+
+The raw firehose (`com.atproto.sync.subscribeRepos`) speaks CBOR and CAR
+archives; **Jetstream** is a public service that re-serves it as plain
+JSON over a websocket, with server-side filters so you receive only the
+record types you ask for:
+
+```{r jetstream-url}
+JETSTREAM_URL <- "wss://jetstream2.us-east.bsky.network/subscribe"
+
+WANTED_COLLECTIONS <- c(
+  "app.bsky.feed.post",     # posts (and replies and quotes)
+  "app.bsky.feed.like",     # likes
+  "app.bsky.graph.follow"   # follows
+)
+
+build_jetstream_url <- function(collections) {
+  paste0(JETSTREAM_URL, "?",
+         paste0("wantedCollections=", collections, collapse = "&"))
+}
+
+build_jetstream_url(WANTED_COLLECTIONS)
+```
+
+### Anatomy of a Jetstream event
+
+Each event is one JSON object: the actor's `did`, a microsecond
+`time_us`, and for commits the `collection`, `operation`
+(create/update/delete), and the full `record`. No decoding required —
+that is the entire pitch.
+
+## 2. Collecting a live sample
+
+A bounded collector: listen for a fixed duration with a hard event cap —
+*every* streaming collector needs both. Websockets are event-driven, so
+the code reads differently from everything else in this series: we
+register an `onMessage` callback that fires once per arriving event, and
+then run a small loop that hands control to the event system
+(`later::run_now()`) until the deadline. The `<<-` assignments let the
+callback update the shared `events` list that lives outside it:
+
+```{r collect}
+collect_events <- function(duration_seconds = 60, max_events = 20000,
+                           collections = WANTED_COLLECTIONS) {
+  events <- vector("list", max_events)
+  n <- 0
+  done <- FALSE
+  ws <- websocket::WebSocket$new(build_jetstream_url(collections),
+                                 autoConnect = FALSE)
+  ws$onMessage(function(event) {
+    if (n >= max_events) {
+      done <<- TRUE
+      return()
+    }
+    n <<- n + 1
+    events[[n]] <<- fromJSON(event$data, simplifyVector = FALSE)
+  })
+  ws$onClose(function(event) done <<- TRUE)
+  ws$connect()
+  deadline <- Sys.time() + duration_seconds
+  while (!done && Sys.time() < deadline) {
+    later::run_now(0.25)
+  }
+  ws$close()
+  later::run_now(0.5)
+  compact(events[seq_len(n)])
+}
+
+collection_started <- now("UTC")
+events <- collect_events(duration_seconds = 60)
+
+length(events)
+```
+
+### How fast is the network moving?
+
+```{r rate}
+times_us <- map_dbl(events, "time_us")
+window_seconds <- (max(times_us) - min(times_us)) / 1e6
+
+c(events = length(events),
+  seconds = round(window_seconds, 1),
+  events_per_second = round(length(events) / window_seconds, 1))
+```
+
+## 3. What a minute of Bluesky looks like
+
+Flatten each event to five fields. Note what we keep: **hashed** DIDs
+and *no post text* — Section 5 explains why. The hash (SHA-256 via the
+digest package, truncated) is one-way: it lets us count how many events
+came from the same actor without being able to say *which* actor, which
+is exactly the property data minimization wants:
+
+```{r flatten}
+hash_did <- function(did) {
+  map_chr(did, \(d) substr(digest::digest(d, algo = "sha256"), 1, 16))
+}
+
+events_df <- map(events, \(e) tibble(
+  author_hash = hash_did(e$did),
+  timestamp = as_datetime(e$time_us / 1e6),
+  kind = e$kind %||% NA_character_,
+  operation = e$commit$operation %||% NA_character_,
+  collection = e$commit$collection %||% NA_character_
+)) |> list_rbind()
+
+head(events_df)
+```
+
+### The event mix
+
+```{r mix}
+events_df |>
+  count(collection, sort = TRUE) |>
+  mutate(share = round(n / sum(n), 3))
+
+count(events_df, operation, sort = TRUE)
+```
+
+Likes outnumber posts severalfold — most platform activity is reaction,
+not production. Deletes flow past constantly too, which is why archives
+and live streams never quite agree.
+
+### Events per second over time
+
+```{r eps, fig.width=10, fig.height=4}
+per_second <- events_df |>
+  mutate(second = floor_date(timestamp, "second")) |>
+  count(second, collection) |>
+  # first and last seconds are partial windows
+  filter(second > min(second), second < max(second))
+
+ggplot(per_second, aes(second, n, color = collection)) +
+  geom_line() +
+  labs(x = "Time (UTC)", y = "Events per second",
+       title = paste("Live Bluesky events,",
+                     format(collection_started, "%Y-%m-%d %H:%M UTC"))) +
+  theme_minimal()
+```
+
+### Post-level features (without the posts)
+
+```{r post-features}
+posts_live <- map(events, \(e) {
+  commit <- e$commit
+  if (is.null(commit) || commit$operation != "create" ||
+      commit$collection != "app.bsky.feed.post") {
+    return(NULL)
+  }
+  record <- commit$record
+  tibble(
+    author_hash = hash_did(e$did),
+    timestamp = as_datetime(e$time_us / 1e6),
+    lang = unlist(record$langs)[1] %||% NA_character_,
+    is_reply = !is.null(record$reply),
+    has_embed = !is.null(record$embed),
+    has_image = identical(record$embed$`$type`, "app.bsky.embed.images")
+  )
+}) |> list_rbind()
+
+posts_live |>
+  summarise(across(c(is_reply, has_embed, has_image), mean))
+```
+
+```{r langs, fig.width=8, fig.height=4}
+posts_live |>
+  mutate(lang = replace_na(lang, "(none declared)")) |>
+  count(lang, sort = TRUE) |>
+  slice_head(n = 10) |>
+  ggplot(aes(n, fct_reorder(lang, n))) +
+  geom_col(fill = "steelblue") +
+  labs(x = "New posts in window", y = NULL,
+       title = "Declared languages of live posts (top 10)") +
+  theme_minimal()
+```
+
+## 4. From one minute to the whole network
+
+```{r extrapolate}
+events_df |>
+  count(collection) |>
+  mutate(per_second = n / window_seconds,
+         per_hour = round(per_second * 3600),
+         per_day = round(per_second * 86400))
+```
+
+### What a 1% sample would mean
+
+Twitter's "Decahose" and 1% "Spritzer" defined a decade of research. A
+1% sample of this window keeps only a few posts — enough for trends,
+hopeless for rare events. Sample-size arithmetic *before* collection is
+the difference between a design and a wish.
+
+## 5. Data minimization in practice
+
+A naive stream collector is a surveillance machine: full text, all
+identities, at network scale. We keep aggregate per-second counts and an
+anonymized post sample — enough to reproduce every figure above, nothing
+that profiles an individual:
+
+```{r minimize}
+dir.create("data", showWarnings = FALSE)
+
+per_second |>
+  pivot_wider(names_from = collection, values_from = n, values_fill = 0) |>
+  write_csv("data/stream_summary.csv")
+
+set.seed(42)
+posts_live |>
+  slice_sample(n = min(200, nrow(posts_live))) |>
+  arrange(timestamp) |>
+  write_csv("data/stream_sample.csv")
+
+fs::dir_info("data")[, c("path", "size")]
+```
+
+## 6. The raw firehose: `com.atproto.sync.subscribeRepos`
+
+The full firehose carries every repository commit as CBOR-encoded CAR
+blocks — cryptographically verifiable, and laborious to decode. R has no
+mature decoder; the Python notebook demonstrates one in ~10 lines with
+the `atproto` SDK. The practical guidance is language-independent: use
+Jetstream unless you need verifiability or collections Jetstream won't
+filter, and budget for reconnection logic in anything long-running.
+
+## 7. Building a bot: closing the loop
+
+A bot is a loop: read notifications, decide, (maybe) write. The decision
+logic should be pure — testable with no network at all:
+
+```{r bot-logic, eval=TRUE}
+build_reply <- function(text) {
+  if (str_detect(str_to_lower(text), "\\bping\\b")) "pong 🏓" else NA_character_
+}
+
+c(build_reply("hey @examplebot.bsky.social ping"),
+  build_reply("lovely weather today"))   # NA: silence is a feature
+```
+
+### Reading the bot's inbox
+
+Notifications are private to the account, so this — like everything
+below — requires authentication:
+
+```{r notifications, eval=FALSE}
+notifications <- bs_get_notifications(limit = 25)
+
+count(notifications, reason, sort = TRUE)
+mentions <- filter(notifications, reason == "mention")
+```
+
+### One full cycle, as a dry run
+
+The cycle enforces every safety invariant: a cap on replies per run, a
+pause between sends, persistent deduplication so restarts never
+double-reply, and a `dry_run` flag that defaults to TRUE. **This chunk
+is never executed when knitting** (`eval=FALSE`) — write actions are
+deliberate acts:
+
+```{r bot-cycle, eval=FALSE}
+MAX_REPLIES_PER_RUN <- 3
+SECONDS_BETWEEN_REPLIES <- 5
+ANSWERED_FILE <- "data/answered_notifications.json"
+
+run_bot_once <- function(dry_run = TRUE) {
+  answered <- if (file.exists(ANSWERED_FILE))
+    unlist(read_json(ANSWERED_FILE)) else character(0)
+
+  mentions <- bs_get_notifications(limit = 25) |>
+    filter(reason == "mention", !uri %in% answered) |>
+    mutate(text = map_chr(record, "text", .default = "")) |>
+    mutate(reply = map_chr(text, build_reply)) |>
+    filter(!is.na(reply)) |>
+    slice_head(n = MAX_REPLIES_PER_RUN)
+
+  for (i in seq_len(nrow(mentions))) {
+    if (dry_run) {
+      message("DRY RUN - would reply to ", mentions$uri[[i]],
+              ": ", mentions$reply[[i]])
+    } else {
+      bs_post(text = mentions$reply[[i]],
+              reply = bs_uri_to_url(mentions$uri[[i]]))
+      Sys.sleep(SECONDS_BETWEEN_REPLIES)
+    }
+    answered <- c(answered, mentions$uri[[i]])
+  }
+  write_json(as.list(answered), ANSWERED_FILE)
+}
+
+run_bot_once(dry_run = TRUE)
+```
+
+### Scheduling the bot
+
+Production bots are scheduled scripts, not notebooks: `Rscript bot.R`
+from cron (or the [cronR](https://cran.r-project.org/package=cronR)
+package), every few minutes, with logging.
+
+### Write rate limits: the points system
+
+Bluesky meters writes in points (creates cost 3, deletes 1) with hourly
+and daily budgets per account. A polite bot stays far inside them; the
+caps above are not optional decoration.
+
+### What your bot must never do
+
+Reply to strangers uninvited at scale, impersonate a human, follow/like
+en masse, or run from your personal account. Bluesky norms expect bots
+to be **disclosed as bots in their profile**, opt-in by mention, and
+removable: a kill switch (stop replying when anyone says "stop") is part
+of the minimum viable bot.
+
+## 8. Research designs with streams
+
+Streams enable designs retrospection cannot: measuring deletion rates
+(what fraction of posts vanish within an hour?), event detection as news
+breaks, true prospective sampling for cascade studies (Part 04's
+selection problem dissolves when you sample posts *at birth*), and
+platform-level activity baselines for event studies (Part 05). Each
+inherits the stream's blind spot: you see only what happens while you
+listen.
+
+## Ethics and limitations
+
+Streaming magnifies every issue from Part 01: you observe *everyone*,
+including people who will delete what they wrote minutes later. Minimize
+ruthlessly (we stored no text and no raw identities), aggregate before
+sharing, and treat deletion as a signal to honor, not a nuisance. Bots
+act in public: disclosure, rate limits, and opt-in interaction are
+ethical requirements, not technical suggestions. And our one-minute
+window is a vignette, not an estimate — time-of-day and day-of-week
+effects swamp short samples.
+
+## Exercises
+
+1. Re-run the collector at a different time of day and compare
+   events-per-second and the language mix.
+2. Add `app.bsky.feed.repost` to `WANTED_COLLECTIONS` and measure the
+   repost:post ratio.
+3. Estimate the deletion rate: collect post creates for five minutes,
+   wait an hour, and re-fetch a sample with `bs_get_posts()`.
+4. Extend `build_reply()` with a "stop" kill switch that persists a
+   do-not-reply list.
+5. Compute the Gini coefficient of events per author hash — how
+   concentrated is live activity?
+
+## Research project ideas
+
+* **The lifetime of a post.** Stream post creates, then measure
+  engagement accumulation and deletion over the following week — a
+  prospective cascade study without selection on success.
+* **Bots in the open.** Identify disclosed bots (profile keywords),
+  stream their activity, and characterize the automated layer of the
+  network's activity mix.
+
+## References
+
+### Scholarship
+
+* Morstatter, F., Pfeffer, J., Liu, H., & Carley, K. M. (2013). Is the sample good enough? Comparing data from Twitter's streaming API with Twitter's firehose. *ICWSM*.
+* Almuhimedi, H., Wilson, S., Liu, B., Sadeh, N., & Acquisti, A. (2013). Tweets are forever: A large-scale quantitative analysis of deleted tweets. *CSCW '13*.
+* Veale, T., & Cook, M. (2018). *Twitterbots: Making Machines that Make Meaning*. MIT Press.
+* Gorwa, R., & Guilbeault, D. (2020). Unpacking the social media bot: A typology to guide research and policy. *Policy & Internet*, 12(2).
+
+### Documentation
+
+* Jetstream: <https://github.com/bluesky-social/jetstream>
+* Firehose: <https://docs.bsky.app/docs/advanced-guides/firehose>
+* Rate limits (points): <https://docs.bsky.app/docs/advanced-guides/rate-limits>
+* websocket for R: <https://rstudio.github.io/websocket/>
+* bskyr: <https://christophertkenny.com/bskyr/>

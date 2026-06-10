@@ -1,8 +1,8 @@
 {
-  "collected_at": "2026-06-10T11:01:13+00:00",
+  "collected_at": "2026-06-10T16:21:46+00:00",
   "collection_method": "snowball sample over mention and reply-parent edges",
-  "seed_actor": "brianckeegan.com",
-  "seed_did": "did:plc:lse7quaysss2d3xxm76mouhd",
+  "seed_actor": "nytimes.com",
+  "seed_did": "did:plc:eclio37ymobqex2ncko63h4r",
   "parameters": {
     "wave0_max_posts": 200,
     "wave1_accounts": 8,
@@ -13,44 +13,44 @@
     "replies_included": true
   },
   "accounts_crawled": [
-    "did:plc:363cn3qkdwze3yu73yqybmms",
-    "did:plc:36lot6lvgs2vmhb3xyclrgdc",
-    "did:plc:6folivh3kuvuljku7ytxwbbf",
-    "did:plc:7lqpdof4fqal4imvharp66vb",
-    "did:plc:afyhnkb4g2jmyuvoagei3ik6",
-    "did:plc:atqzwnyldfdj47r6c2sc3z5a",
-    "did:plc:batgjai2f2zxgvjr7niiapem",
-    "did:plc:bbvwih4x3leppgzbwclat57t",
-    "did:plc:c5pgebskvz35wxtkopm7osm5",
-    "did:plc:gu5az3iedw32t4kmsqmtwvjn",
-    "did:plc:lse7quaysss2d3xxm76mouhd",
-    "did:plc:qyplxeo7t45fzpypryc5auy6",
-    "did:plc:r3hl5udsbhenyneix6nnydod",
-    "did:plc:rbjag77ol7yqto2ph5gxttf2",
-    "did:plc:szt5gohiatgtykukx627lh7w"
+    "did:plc:3dhjfhx2bnydk4akjrcyasok",
+    "did:plc:3kf2k7zfamwpwjf5x5lazrpu",
+    "did:plc:56ojnkucm6ylfmz3h3otztfh",
+    "did:plc:6j654bfrsgzqxto4x74c466d",
+    "did:plc:b2kutgxqlltwc6lhs724cfwr",
+    "did:plc:eclio37ymobqex2ncko63h4r",
+    "did:plc:fa7xejyd32fvuar5hpa2n2yi",
+    "did:plc:hmdj5mhly2rbpm2kqxzknstd",
+    "did:plc:itzjvkn3qzkx7lonrgh2zm5a",
+    "did:plc:j62szermx6ods7lp3xqyembx",
+    "did:plc:jebo5skidaoy4c43j3yj6uel",
+    "did:plc:jrin4u344pirosyfjo7qwvsx",
+    "did:plc:mpa43z7u2yc5wlajvghcio3q",
+    "did:plc:txkmlm4tjnu5hh53nlx4iyd2",
+    "did:plc:yllqcfu4oy424rlfpnzj32ka"
   ],
   "wave_yields": [
     {
       "wave": 0,
       "posts_collected": 200,
       "new_posts": 200,
-      "new_accounts": 84,
-      "new_hashtags": 8
+      "new_accounts": 5,
+      "new_hashtags": 0
     },
     {
       "wave": 1,
-      "posts_collected": 700,
-      "new_posts": 700,
-      "new_accounts": 154,
-      "new_hashtags": 8
+      "posts_collected": 388,
+      "new_posts": 388,
+      "new_accounts": 30,
+      "new_hashtags": 1
     },
     {
       "wave": 2,
-      "posts_collected": 532,
-      "new_posts": 532,
-      "new_accounts": 184,
-      "new_hashtags": 9
+      "posts_collected": 825,
+      "new_posts": 825,
+      "new_accounts": 104,
+      "new_hashtags": 61
     }
   ],
-  "total_posts": 1432
+  "total_posts": 1413
 }

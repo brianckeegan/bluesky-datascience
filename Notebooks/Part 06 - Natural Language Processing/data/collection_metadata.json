@@ -1,18 +1,17 @@
 {
   "collected_on": "2026-06-10",
-  "seed_account": "brianckeegan.com",
+  "seed_account": "nytimes.com",
   "panel_accounts": [
-    "boulderrl.bsky.social",
-    "danlarremore.bsky.social",
-    "caseynewton.bsky.social",
-    "matplotlib.org",
-    "hickenlooper.senate.gov",
-    "nytpitchbot.bsky.social"
+    "theathletic.com",
+    "nytopinion.nytimes.com",
+    "theathleticfc.bsky.social",
+    "thomaslfriedman.bsky.social",
+    "nickkristof.bsky.social"
   ],
   "max_seed_posts": 600,
   "max_panel_posts_each": 150,
   "language_filter": "en",
-  "n_posts_saved": 1376,
+  "n_posts_saved": 498,
   "lda_topics": 8,
   "lda_random_state": 42
 }
