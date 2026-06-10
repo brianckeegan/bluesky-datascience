@@ -1,0 +1,462 @@
+---
+title: "Part 04 — Threads, Engagement, and Information Diffusion"
+subtitle: "Bluesky Data Science in R"
+output:
+  github_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+```
+
+This document is the R counterpart of the Python notebook
+[Part 04 - Threads Engagement and Diffusion](../../Notebooks/Part%2004%20-%20Threads%20Engagement%20and%20Diffusion/Part%2004%20-%20Threads%20Engagement%20and%20Diffusion.ipynb).
+It reconstructs a reply *cascade* from `app.bsky.feed.getPostThread`,
+measures its shape with [igraph](https://r.igraph.org/), traces who
+liked, reposted, and quoted the post and when, and shows that engagement
+across posts is radically unequal.
+
+### Learning objectives
+
+* Traverse nested thread views recursively into a reply tree.
+* Compute cascade metrics: size, depth, breadth, structural virality.
+* Analyze the timing of engagement: the burst and the decay.
+* Plot heavy-tailed engagement distributions correctly (CCDFs, log-log).
+* Recognize selection on the dependent variable in diffusion research.
+
+## Setup
+
+```{r libraries}
+library(bskyr)
+library(tidyverse)
+library(jsonlite)
+library(lubridate)
+library(igraph)
+```
+
+As in every part of this series, the shared helper `bsky_client.R` looks
+for credentials (an `atproto.json` file or bskyr's environment
+variables), authenticates if it finds them, and sets `bsky_authed`. The
+`knitr::opts_chunk$set(eval = bsky_authed)` line then makes that flag the
+default for the whole document: with credentials every chunk runs;
+without them the document still knits, but the API chunks are skipped.
+
+```{r connect}
+source("bsky_client.R")
+knitr::opts_chunk$set(eval = bsky_authed)
+
+COLLECTED_AT <- format(now("UTC"), "%Y-%m-%dT%H:%M:%SZ")
+```
+
+### A note on parsing, and a platform in flux
+
+The Python notebook opens with a lesson about *strict* SDK parsing:
+typed models crash when Bluesky ships an embed type the SDK hasn't met.
+R sidesteps the issue by temperament — `clean = FALSE` hands us plain
+nested lists, and lists don't validate anything. The price is that *we*
+must know the structure; the reward is that nothing the platform adds
+can crash us. For deeply nested responses like threads, this part works
+with raw lists and `purrr`.
+
+## 1. Finding a study post
+
+We need a post with a deep conversation under it. The official
+`bsky.app` account reliably draws large reply threads:
+
+```{r find-post}
+feed <- bs_get_author_feed("bsky.app", limit = 100)
+
+is_reply  <- if ("reply_parent_uri" %in% names(feed))
+               !is.na(feed$reply_parent_uri) else FALSE
+is_repost <- if ("reason_type" %in% names(feed))
+               !is.na(feed$reason_type) else FALSE
+
+originals <- feed |>
+  filter(!is_reply, !is_repost) |>
+  mutate(text = map_chr(record, "text", .default = ""))
+
+originals |>
+  select(reply_count, like_count, repost_count, quote_count) |>
+  summary()
+
+case_study <- originals |> slice_max(reply_count, n = 1, with_ties = FALSE)
+
+case_study |> select(uri, reply_count, like_count, repost_count, text)
+```
+
+## 2. From thread views to reply trees
+
+`bs_get_post_thread()` returns the post and its replies nested `depth`
+levels down. With `clean = FALSE` the response is a plain list whose
+`$thread$replies` elements each contain their own `$replies` — a
+recursive structure, which calls for a *recursive function*: one that
+handles a single node (build its row) and then calls itself on each of
+that node's children. Two idioms to note: `%||%` means "use the left
+side unless it is NULL, then use the right side" (our defense against
+missing fields), and a node without a `$post` is the stub left behind by
+a deleted or blocked reply — we record nothing for it, but its existence
+is a data-quality fact worth remembering:
+
+```{r thread-to-edges}
+thread_to_edges <- function(node, parent_uri = NA_character_) {
+  post <- node$post
+  if (is.null(post)) {
+    # a notFoundPost or blockedPost stub: the hole a deletion leaves
+    return(tibble(uri = character(0)))
+  }
+  row <- tibble(
+    uri = post$uri,
+    parent_uri = parent_uri,
+    author_did = post$author$did,
+    created_at = post$record$createdAt %||% NA_character_,
+    reply_count = post$replyCount %||% 0L,
+    like_count = post$likeCount %||% 0L,
+    truncated = (post$replyCount %||% 0L) > 0 && length(node$replies) == 0
+  )
+  children <- map(node$replies, thread_to_edges, parent_uri = post$uri)
+  bind_rows(row, children)
+}
+
+response <- bs_get_post_thread(case_study$uri, depth = 6, clean = FALSE)
+tree <- thread_to_edges(response[[1]]$thread)
+
+c(posts = nrow(tree),
+  truncated_branches = sum(tree$truncated))
+```
+
+A single request only reaches `depth` levels, so deep conversations get
+*truncated*: nodes that claim replies we have not seen. The fetcher
+below keeps a **frontier** — a queue of truncated nodes still to expand
+— and works through it with follow-up requests until the frontier is
+empty or the request budget runs out. The `seen` vector prevents
+double-counting posts that appear in overlapping responses:
+
+```{r fetch-full-tree}
+fetch_thread_tree <- function(uri, depth = 6, max_requests = 40) {
+  requests <- 0
+  frontier <- uri
+  seen <- character(0)
+  pieces <- list()
+  while (length(frontier) > 0 && requests < max_requests) {
+    target <- frontier[[1]]
+    frontier <- frontier[-1]
+    response <- tryCatch(
+      bs_get_post_thread(target, depth = depth, clean = FALSE),
+      error = function(e) NULL
+    )
+    requests <- requests + 1
+    Sys.sleep(0.1)
+    if (is.null(response)) next
+    piece <- thread_to_edges(response[[1]]$thread)
+    piece <- filter(piece, !uri %in% seen)
+    seen <- c(seen, piece$uri)
+    pieces <- c(pieces, list(piece))
+    frontier <- c(frontier, piece$uri[piece$truncated])
+  }
+  out <- bind_rows(pieces)
+  attr(out, "requests_made") <- requests
+  attr(out, "frontier_remaining") <- length(frontier)
+  out
+}
+
+tree <- fetch_thread_tree(case_study$uri, depth = 6, max_requests = 40)
+
+c(posts = nrow(tree),
+  requests = attr(tree, "requests_made"),
+  unexpanded = attr(tree, "frontier_remaining"))
+```
+
+### How much of the cascade did we get?
+
+Every node advertises its `reply_count`; comparing promised replies to
+retrieved edges is an honest coverage check:
+
+```{r coverage}
+promised <- sum(tree$reply_count)
+retrieved <- sum(!is.na(tree$parent_uri))
+
+c(promised = promised, retrieved = retrieved,
+  coverage = round(retrieved / promised, 3))
+```
+
+## 3. Cascade metrics
+
+Build the tree as an igraph object and measure its shape. **Structural
+virality** (Goel et al. 2016) is the mean shortest-path distance between
+all pairs of nodes: low for broadcast (everyone replies to the root),
+high for chains that spread hand-to-hand.
+
+```{r metrics}
+edges <- tree |> filter(!is.na(parent_uri)) |> select(parent_uri, uri)
+Gt <- graph_from_data_frame(edges, directed = TRUE,
+                            vertices = tibble(name = tree$uri))
+
+depths <- distances(Gt, v = case_study$uri, mode = "out")[1, ]
+
+structural_virality <- function(g) {
+  mean_distance(as_undirected(g), unconnected = FALSE)
+}
+
+tibble(
+  size = vcount(Gt),
+  depth = max(depths[is.finite(depths)]),
+  max_breadth = max(table(depths[is.finite(depths)])),
+  unique_repliers = n_distinct(tree$author_did),
+  structural_virality = structural_virality(Gt)
+)
+```
+
+Calibrate the structural-virality number against synthetic extremes of
+the same size:
+
+```{r calibrate}
+n <- vcount(Gt)
+c(
+  star_broadcast = structural_virality(make_star(n, mode = "out")),
+  observed = structural_virality(Gt),
+  chain_viral = structural_virality(make_ring(n, circular = FALSE))
+)
+```
+
+```{r depth-profile, fig.width=8, fig.height=4}
+tibble(depth = depths[is.finite(depths)]) |>
+  count(depth) |>
+  ggplot(aes(depth, n)) +
+  geom_col(fill = "steelblue") +
+  labs(x = "Depth (replies away from the root)", y = "Posts at this depth",
+       title = "Depth profile of the case-study reply tree") +
+  theme_minimal()
+```
+
+### Drawing the reply tree
+
+```{r draw-tree, fig.width=9, fig.height=9}
+set.seed(42)
+layout <- layout_as_tree(Gt, root = case_study$uri, circular = TRUE)
+
+plot(Gt, layout = layout,
+     vertex.size = ifelse(V(Gt)$name == case_study$uri, 6, 1.5),
+     vertex.color = ifelse(V(Gt)$name == case_study$uri,
+                           "crimson", "steelblue"),
+     vertex.label = NA, edge.arrow.size = 0,
+     edge.color = adjustcolor("gray", alpha.f = 0.4),
+     main = paste0("Reply tree of the case-study post (",
+                   vcount(Gt), " posts retrieved)"))
+```
+
+## 4. Who engages, and when
+
+Replying is one engagement among several. Likes carry two timestamps —
+`createdAt` from the liker's client and `indexedAt` from the network —
+which lets us reconstruct the post's attention curve. With
+`clean = FALSE`, `bs_get_post_likes()` hands back a list of raw response
+pages; each page has a `$likes` list whose elements we flatten into one
+row apiece, then convert "when was this like indexed" into "hours since
+the post was born":
+
+```{r likes}
+likes_raw <- bs_get_post_likes(case_study$uri, limit = 3000, clean = FALSE)
+
+likes <- map(likes_raw, \(page) {
+  map(page$likes, \(l) tibble(
+    did = l$actor$did,
+    handle = l$actor$handle,
+    created_at = l$createdAt,
+    indexed_at = l$indexedAt
+  )) |> list_rbind()
+}) |> list_rbind()
+
+post_time <- ymd_hms(case_study$record[[1]]$created_at, quiet = TRUE)
+
+likes <- likes |>
+  mutate(
+    indexed_at = ymd_hms(indexed_at, quiet = TRUE),
+    hours_since_post = as.numeric(difftime(indexed_at, post_time,
+                                           units = "hours"))
+  ) |>
+  filter(hours_since_post >= 0) |>
+  arrange(hours_since_post)
+
+c(likes_retrieved = nrow(likes),
+  reported_at_collection = case_study$like_count)
+```
+
+### The burst, then the decay
+
+```{r burst, fig.width=8, fig.height=4}
+likes |>
+  mutate(cumulative = row_number()) |>
+  ggplot(aes(hours_since_post / 24, cumulative)) +
+  geom_line(color = "steelblue") +
+  labs(x = "Days since post", y = "Cumulative likes",
+       title = "Cumulative likes over time") +
+  theme_minimal()
+
+likes |>
+  filter(hours_since_post <= 72) |>
+  ggplot(aes(hours_since_post)) +
+  geom_histogram(bins = 72, fill = "steelblue") +
+  labs(x = "Hours since post (first 72)", y = "Likes per hour",
+       title = "The initial burst") +
+  theme_minimal()
+```
+
+Most attention arrives within hours — the universal "burst then decay"
+shape of social media attention.
+
+### Reposters and quoters
+
+```{r reposts-quotes}
+reposters <- bs_get_reposts(case_study$uri, limit = 500)
+quotes <- bs_get_quotes(case_study$uri, limit = 200)
+
+c(reposters = nrow(reposters), quotes = nrow(quotes),
+  quote_likes = sum(quotes$like_count, na.rm = TRUE))
+```
+
+Each quote post can seed its own cascade — diffusion on Bluesky is a
+forest, not a single tree.
+
+### Do the same people like and repost?
+
+```{r overlap}
+both <- intersect(likes$did, reposters$did)
+
+c(likers = n_distinct(likes$did),
+  reposters = n_distinct(reposters$did),
+  both = length(both),
+  share_of_reposters_who_liked = round(length(both) / nrow(reposters), 2))
+```
+
+## 5. Heavy-tailed engagement across posts
+
+Single cascades mislead; the *distribution* across posts is the durable
+fact. Compare the official platform account with a national newsroom, on a
+complementary CDF with log-log axes:
+
+```{r heavy-tails, fig.width=10, fig.height=4.5}
+nyt_feed <- bs_get_author_feed("nytimes.com", limit = 200)
+nyt_originals <- nyt_feed |>
+  filter(if ("reason_type" %in% names(nyt_feed))
+           is.na(reason_type) else TRUE)
+
+ccdf <- function(x) {
+  x <- sort(x[!is.na(x)])
+  tibble(value = x, p = 1 - (seq_along(x) - 1) / length(x))
+}
+
+bind_rows(
+  ccdf(originals$like_count) |> mutate(account = "bsky.app"),
+  ccdf(nyt_originals$like_count) |> mutate(account = "nytimes.com")
+) |>
+  filter(value > 0) |>
+  ggplot(aes(value, p, color = account)) +
+  geom_step() +
+  scale_x_log10() + scale_y_log10() +
+  labs(x = "Likes per post", y = "P(X ≥ x)",
+       title = "Like-count CCDF (log-log)") +
+  theme_minimal()
+```
+
+```{r top10-share}
+bind_rows(
+  mutate(originals, account = "bsky.app"),
+  mutate(nyt_originals, account = "nytimes.com")
+) |>
+  group_by(account) |>
+  summarise(
+    median_likes = median(like_count, na.rm = TRUE),
+    max_likes = max(like_count, na.rm = TRUE),
+    top10pct_share = {
+      l <- sort(like_count, decreasing = TRUE)
+      sum(head(l, ceiling(length(l) * .1))) / max(sum(l), 1)
+    }
+  )
+```
+
+A handful of posts capture most of the attention — the heavy tail that
+makes "the average post" a misleading unit of analysis.
+
+## 6. Saving the data
+
+```{r save}
+dir.create("data", showWarnings = FALSE)
+
+bind_rows(
+  mutate(originals, account = "bsky.app"),
+  mutate(nyt_originals, account = "nytimes.com")
+) |>
+  select(account, uri, reply_count, like_count,
+         repost_count, quote_count) |>
+  mutate(collected_at = COLLECTED_AT) |>
+  write_csv("data/engagement_summary.csv")
+
+likes |>
+  transmute(liker_index = row_number(),   # anonymous index, not an identity
+            hours_since_post, collected_at = COLLECTED_AT) |>
+  write_csv("data/case_study_likes.csv")
+
+fs::dir_info("data")[, c("path", "size")]
+```
+
+## 7. Research design: studying diffusion without sampling on success
+
+The fatal error in diffusion research is **selecting on the dependent
+variable**: studying only the cascades that went viral and "discovering"
+the properties of viral content. Goel et al. (2012) showed that when you
+sample *all* cascades, the overwhelming majority are tiny — depth one,
+size one. Vosoughi, Roy, & Aral (2018) compared true and false news by
+conditioning on *content verified externally*, not on success. The
+honest design defines the population of posts first (an account's full
+history, a time window from the firehose — Part 10) and treats cascade
+size as the outcome, never the sampling criterion.
+
+## Ethics and limitations
+
+Reply trees include ordinary people who answered a prominent account;
+analyze the *structure*, and avoid republishing individual repliers'
+words or identities (our saved likes table keeps only timing, not
+identities). Coverage is never complete: deleted and blocked replies
+leave holes, the thread endpoint truncates, and counters drift. The
+case-study post was selected *because* it was successful — fine for
+illustrating methods, fatal for causal claims, as Section 7 explains.
+
+## Exercises
+
+1. Re-run the cascade collection for the *second*-most-replied post. How
+   do its depth and structural virality compare?
+2. Compute the share of all replies that are depth-1. What does it say
+   about broadcast versus conversation?
+3. Plot likes-per-hour for the first week on log-log axes and estimate
+   the decay exponent with a linear fit.
+4. Use `bs_get_quotes()` to fetch the largest quote post's own thread.
+   How big is the secondary cascade?
+5. Build the CCDF comparison with `repost_count` instead of likes. Is
+   reposting more or less unequal than liking?
+
+## Research project ideas
+
+* **Structural virality on Bluesky.** Sample posts from the firehose
+  (Part 10), reconstruct their cascades after one week, and replicate
+  Goel et al.'s (2016) distribution of structural virality on an open
+  platform.
+* **Quote-post framing.** Compare the language of quote posts to the
+  posts they quote (Part 06's methods) to measure how reframing changes
+  as information diffuses.
+
+## References
+
+### Scholarship
+
+* Goel, S., Watts, D. J., & Goldstein, D. G. (2012). The structure of online diffusion networks. *EC '12*.
+* Goel, S., Anderson, A., Hofman, J., & Watts, D. J. (2016). The structural virality of online diffusion. *Management Science*, 62(1), 180–196.
+* Vosoughi, S., Roy, D., & Aral, S. (2018). The spread of true and false news online. *Science*, 359(6380), 1146–1151.
+* Crane, R., & Sornette, D. (2008). Robust dynamic classes revealed by measuring the response function of a social system. *PNAS*, 105(41).
+
+### Documentation
+
+* `app.bsky.feed.getPostThread`: <https://docs.bsky.app/docs/api/app-bsky-feed-get-post-thread>
+* `app.bsky.feed.getLikes`: <https://docs.bsky.app/docs/api/app-bsky-feed-get-likes>
+* igraph: <https://r.igraph.org/>
+* bskyr: <https://christophertkenny.com/bskyr/>

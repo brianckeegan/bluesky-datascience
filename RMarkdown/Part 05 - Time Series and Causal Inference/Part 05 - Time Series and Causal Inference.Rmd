@@ -1,0 +1,489 @@
+---
+title: "Part 05 — Time Series and Causal Inference: Event Studies on Bluesky"
+subtitle: "Bluesky Data Science in R"
+output:
+  github_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+```
+
+This document is the R counterpart of the Python notebook
+[Part 05 - Time Series and Causal Inference](../../Notebooks/Part%2005%20-%20Time%20Series%20and%20Causal%20Inference/Part%2005%20-%20Time%20Series%20and%20Causal%20Inference.ipynb).
+It turns complete posting histories into time series, describes their
+rhythms, and then asks a harder question: did a real-world event *cause*
+a change in behavior? The same two quasi-experimental designs —
+interrupted time series and difference-in-differences — are fit here
+with base R's `lm()` in place of statsmodels.
+
+### Learning objectives
+
+* Collect complete posting histories and handle timestamps and timezones.
+* Describe diurnal, weekly, and seasonal posting rhythms.
+* Fit and interpret an interrupted time series (ITS) regression.
+* Fit difference-in-differences (DiD) and check the parallel-trends assumption.
+* Articulate the threats to validity that observational designs face.
+
+## Setup
+
+```{r libraries}
+library(bskyr)
+library(tidyverse)
+library(jsonlite)
+library(lubridate)
+```
+
+As in every part of this series, the shared helper `bsky_client.R` looks
+for credentials (an `atproto.json` file or bskyr's environment
+variables), authenticates if it finds them, and sets `bsky_authed`. The
+`knitr::opts_chunk$set(eval = bsky_authed)` line then makes that flag the
+default for the whole document: with credentials every chunk runs;
+without them the document still knits, but the API chunks are skipped.
+
+```{r connect}
+source("bsky_client.R")
+knitr::opts_chunk$set(eval = bsky_authed)
+```
+
+## 1. Collecting complete posting histories
+
+The event we will study is the November 2024 US election and the surge
+of Twitter-to-Bluesky migration that followed it. We need two complete
+histories: a *treated* account (The New York Times, a newsroom whose
+audience and posting we suspect changed when millions of users arrived)
+and a *comparison* account:
+
+```{r collect}
+TREATED <- "nytimes.com"
+COMPARISON <- "bsky.app"
+
+treated_feed <- bs_get_author_feed(TREATED, limit = 40000)
+comparison_feed <- bs_get_author_feed(COMPARISON, limit = 10000)
+
+c(treated = nrow(treated_feed), comparison = nrow(comparison_feed))
+```
+
+These histories include everything the feed returns — original posts,
+replies, and reposts are all *actions* in the account's timeline, which
+is what we want for an activity study.
+
+## 2. Timestamps and timezones
+
+API timestamps are UTC; humans live in local time, and diurnal rhythms
+only make sense in the timezone where the humans behind the account
+work — for a New York newsroom, Eastern time. The helper below
+does three jobs: it classifies each feed item as a post, reply, or
+repost (`case_when()` is dplyr's vectorized if/else ladder); it parses
+the ISO timestamp with `ymd_hms()` and converts it to local time with
+`with_tz()`; and it returns one tidy row per action, oldest first:
+
+```{r timestamps}
+history_frame <- function(feed, actor, tz = "America/New_York") {
+  is_repost <- if ("reason_type" %in% names(feed))
+    !is.na(feed$reason_type) else rep(FALSE, nrow(feed))
+  is_reply <- if ("reply_parent_uri" %in% names(feed))
+    !is.na(feed$reply_parent_uri) else rep(FALSE, nrow(feed))
+  feed |>
+    mutate(
+      actor = actor,
+      action = case_when(is_repost ~ "repost",
+                         is_reply ~ "reply",
+                         .default = "post"),
+      created_at = ymd_hms(
+        coalesce(map_chr(record, "created_at", .default = NA), indexed_at),
+        quiet = TRUE) |> with_tz(tz)
+    ) |>
+    filter(!is.na(created_at)) |>
+    select(actor, uri, action, created_at) |>
+    arrange(created_at)
+}
+
+treated_posts <- history_frame(treated_feed, TREATED)
+comparison_posts <- history_frame(comparison_feed, COMPARISON)
+
+count(treated_posts, action)
+```
+
+## 3. Descriptive time series: the rhythms of posting
+
+### Daily counts and a rolling mean
+
+Counting actions per day gives a noisy series; a *rolling mean* smooths
+it so the trend is visible. Two details: `complete()` fills in
+zero-count days (a day with no posts is data, not a gap!), and
+`stats::filter()` with equal weights of 1/k computes a centered k-day
+moving average — base R's one-line rolling mean:
+
+```{r daily, fig.width=10, fig.height=4}
+daily_counts <- function(posts) {
+  posts |>
+    count(date = as_date(created_at)) |>
+    complete(date = seq(min(date), max(date), by = "day"),
+             fill = list(n = 0))
+}
+
+rolling_mean <- function(x, k = 28) {
+  as.numeric(stats::filter(x, rep(1 / k, k), sides = 2))
+}
+
+treated_daily <- daily_counts(treated_posts)
+
+treated_daily |>
+  mutate(rolling = rolling_mean(n)) |>
+  ggplot(aes(date)) +
+  geom_line(aes(y = n), color = "lightsteelblue", linewidth = 0.4) +
+  geom_line(aes(y = rolling), color = "navy", linewidth = 1) +
+  labs(x = "Date", y = "Actions per day",
+       title = paste("Daily activity:", TREATED),
+       subtitle = "28-day centered rolling mean in navy") +
+  theme_minimal()
+```
+
+### Weekly counts
+
+```{r weekly, fig.width=10, fig.height=4}
+weekly_counts <- function(posts) {
+  posts |>
+    count(week = floor_date(created_at, "week")) |>
+    complete(week = seq(min(week), max(week), by = "week"),
+             fill = list(n = 0))
+}
+
+treated_weekly <- weekly_counts(treated_posts)
+
+ggplot(treated_weekly, aes(week, n)) +
+  geom_line(color = "navy") +
+  labs(x = "Week", y = "Actions per week",
+       title = paste("Weekly activity:", TREATED)) +
+  theme_minimal()
+```
+
+### Hour-of-day and day-of-week profiles
+
+```{r rhythms, fig.width=10, fig.height=4}
+treated_posts |>
+  count(hour = hour(created_at)) |>
+  ggplot(aes(hour, n)) +
+  geom_line(color = "navy") + geom_point(color = "navy") +
+  scale_x_continuous(breaks = seq(0, 22, 2)) +
+  labs(x = "Hour of day (America/New_York)", y = "Total actions",
+       title = paste("Diurnal profile:", TREATED)) +
+  theme_minimal()
+
+treated_posts |>
+  count(dow = wday(created_at, label = TRUE, week_start = 1)) |>
+  ggplot(aes(dow, n)) +
+  geom_col(fill = "navy", alpha = 0.85) +
+  labs(x = "Day of week", y = "Total actions",
+       title = paste("Weekly rhythm:", TREATED)) +
+  theme_minimal()
+```
+
+### Year-over-year seasonality
+
+```{r yoy, fig.width=10, fig.height=4}
+treated_posts |>
+  count(year = factor(year(created_at)), month = month(created_at)) |>
+  ggplot(aes(month, n, color = year)) +
+  geom_line() + geom_point() +
+  scale_x_continuous(breaks = 1:12) +
+  labs(x = "Month", y = "Actions per month", color = "Year",
+       title = paste("Year-over-year monthly activity:", TREATED)) +
+  theme_minimal()
+```
+
+## 4. An event: the November 2024 Bluesky surge
+
+```{r event-line, fig.width=10, fig.height=4}
+EVENT <- as_date("2024-11-05")
+
+ggplot(treated_weekly, aes(week, n)) +
+  geom_line(color = "navy") +
+  geom_vline(xintercept = EVENT, color = "crimson", linetype = "dashed") +
+  labs(x = "Week", y = "Actions per week",
+       title = paste("Weekly activity with event line:", TREATED)) +
+  theme_minimal()
+```
+
+A before/after eyeball is not a causal estimate: activity has trends and
+seasonality, and anything else that changed in November 2024 is bundled
+into the comparison. The designs below discipline that comparison.
+
+## 5. Interrupted time series
+
+ITS fits the segmented regression
+*y* = β₀ + β₁·t + β₂·post + β₃·(t − t_event)·post + ε:
+a pre-period trend, a level shift at the event, and a trend change after
+it. The counterfactual is the pre-trend extended forward.
+
+Read the chunk below as building the regression's design matrix by hand:
+`t` numbers the weeks 1, 2, 3, ...; `post` is 0 before the event and 1
+after; and `time_since` counts weeks elapsed since the event (0 before
+it). Then `lm()` — R's workhorse linear-regression function — fits the
+model, and `summary()` prints coefficients, standard errors, and
+p-values:
+
+```{r its}
+its_data <- treated_weekly |>
+  mutate(
+    t = row_number(),
+    post = as.integer(as_date(week) >= EVENT),
+    time_since = pmax(0, t - min(t[post == 1]) + 1) * post
+  )
+
+its_fit <- lm(n ~ t + post + time_since, data = its_data)
+summary(its_fit)
+```
+
+```{r its-table}
+its_table <- broom::tidy(its_fit, conf.int = TRUE) |>
+  mutate(term = c("intercept", "trend", "level_shift", "trend_change"))
+its_table
+```
+
+```{r its-plot, fig.width=10, fig.height=4}
+its_data |>
+  mutate(
+    fitted = fitted(its_fit),
+    counterfactual = coef(its_fit)["(Intercept)"] + coef(its_fit)["t"] * t
+  ) |>
+  ggplot(aes(week)) +
+  geom_line(aes(y = n), color = "lightsteelblue", linewidth = 0.5) +
+  geom_line(aes(y = fitted), color = "navy", linewidth = 1) +
+  geom_line(aes(y = counterfactual), color = "gray40",
+            linetype = "dashed") +
+  geom_vline(xintercept = EVENT, color = "crimson", linetype = "dashed") +
+  labs(x = "Week", y = "Actions per week",
+       title = paste("Interrupted time series:", TREATED),
+       subtitle = "Dashed gray: pre-trend extended as counterfactual") +
+  theme_minimal()
+```
+
+### An honest aside: autocorrelation
+
+Weekly counts are autocorrelated — this week predicts next week — which
+makes OLS standard errors too small. Check with Durbin–Watson and refit
+with heteroskedasticity-and-autocorrelation-consistent (HAC) errors:
+
+```{r hac}
+resids <- residuals(its_fit)
+dw <- sum(diff(resids)^2) / sum(resids^2)
+round(dw, 3)  # 2 = no autocorrelation; < 2 = positive autocorrelation
+
+if (requireNamespace("sandwich", quietly = TRUE) &&
+    requireNamespace("lmtest", quietly = TRUE)) {
+  lmtest::coeftest(its_fit, vcov = sandwich::NeweyWest(its_fit, lag = 4))
+} else {
+  message("Install the sandwich and lmtest packages for HAC standard errors.")
+}
+```
+
+## 6. Difference-in-differences
+
+ITS extrapolates the treated unit's own trend; DiD instead uses a
+*comparison unit* to absorb shocks common to both. Its identifying
+assumption is **parallel trends**: absent the event, the two series
+would have moved together. Always plot the pre-trends first:
+
+```{r pretrends, fig.width=10, fig.height=4}
+comparison_weekly <- weekly_counts(comparison_posts)
+
+bind_rows(
+  mutate(treated_weekly, account = TREATED),
+  mutate(comparison_weekly, account = COMPARISON)
+) |>
+  ggplot(aes(week, n, color = account)) +
+  geom_line() +
+  geom_vline(xintercept = EVENT, color = "crimson", linetype = "dashed") +
+  labs(x = "Week", y = "Actions per week",
+       title = "Pre-trend plot: treated vs. comparison account") +
+  theme_minimal()
+```
+
+The DiD estimate itself can be computed two equivalent ways, and seeing
+both demystifies the regression: first as arithmetic on the 2×2 table of
+means (treated/comparison × pre/post), then as the interaction
+coefficient in `lm(n ~ treated * post)`, which adds standard errors:
+
+```{r did}
+panel <- bind_rows(
+  mutate(treated_weekly, treated = 1L),
+  mutate(comparison_weekly, treated = 0L)
+) |>
+  mutate(post = as.integer(as_date(week) >= EVENT))
+
+# The 2x2 of means, and the DiD by hand
+panel |>
+  group_by(treated, post) |>
+  summarise(mean_actions = mean(n), .groups = "drop") |>
+  pivot_wider(names_from = post, values_from = mean_actions,
+              names_prefix = "post_")
+
+did_fit <- lm(n ~ treated * post, data = panel)
+broom::tidy(did_fit, conf.int = TRUE) |>
+  mutate(term = c("intercept", "treated", "post", "treated_post"))
+```
+
+The `treated_post` interaction is the DiD estimate.
+
+### Why this DiD should not be believed
+
+Our comparison unit is the platform's *official account* — its posting
+is driven by product launches, not by the news cycle that drives a
+newsroom's account, and the November surge changed *its* behavior too.
+A comparison that responds to the treatment violates the design. The
+lesson generalizes: DiD is only as good as the comparison group.
+
+## 7. Building a better comparison group: matching on profile covariates
+
+A principled comparison pool: accounts similar to the treated unit on
+observables. Here is nearest-neighbor matching on (logged) followers,
+posts, and account age. We log the heavy-tailed counts so one
+mega-account doesn't dominate, standardize each feature with `scale()`
+(subtract the mean, divide by the standard deviation — so all three are
+in comparable units), and rank candidates by Euclidean distance to the
+treated account:
+
+```{r matching}
+candidates <- bs_get_follows(TREATED, limit = 50)
+
+pool <- bs_get_profile(c(TREATED, head(candidates$handle, 24))) |>
+  mutate(account_age_days = as.numeric(
+    difftime(now("UTC"), ymd_hms(created_at, quiet = TRUE), units = "days"))) |>
+  filter(!is.na(followers_count), !is.na(account_age_days))
+
+features <- pool |>
+  transmute(handle,
+            log_followers = log1p(followers_count),
+            log_posts = log1p(posts_count),
+            account_age_days) |>
+  mutate(across(-handle, scale))
+
+target <- features |> filter(handle == TREATED)
+
+features |>
+  filter(handle != TREATED) |>
+  mutate(distance = sqrt((log_followers - target$log_followers)^2 +
+                         (log_posts - target$log_posts)^2 +
+                         (account_age_days - target$account_age_days)^2)) |>
+  left_join(select(pool, handle, followers_count, posts_count),
+            by = "handle") |>
+  slice_min(distance, n = 5) |>
+  select(handle, followers_count, posts_count, distance)
+```
+
+A full design would collect histories for several matched accounts and
+average them — see the MatchIt package for the industrial version.
+
+## 8. Keyword volume around an event
+
+`bs_search_posts()` with `since`/`until` windows builds a topic-level
+series — e.g., weekly volume of posts mentioning "twitter" around the
+election. Capped to stay polite:
+
+```{r keyword-volume, fig.width=10, fig.height=4}
+edges <- seq(as_date("2024-10-01"), as_date("2024-12-31"), by = "week")
+
+volume <- map2_int(head(edges, -1), tail(edges, -1), \(from, to) {
+  hits <- tryCatch(
+    bs_search_posts("twitter",
+                    since = format(from, "%Y-%m-%dT00:00:00Z"),
+                    until = format(to, "%Y-%m-%dT00:00:00Z"),
+                    limit = 1000),
+    error = function(e) NULL)
+  Sys.sleep(0.2)
+  if (is.null(hits)) NA_integer_ else nrow(hits)
+})
+
+tibble(week = tail(edges, -1), posts = volume) |>
+  ggplot(aes(week, posts)) +
+  geom_line(color = "navy") +
+  geom_vline(xintercept = as_date("2024-11-05"),
+             color = "crimson", linetype = "dashed") +
+  labs(y = "Posts per week (capped at 1,000)",
+       title = "Weekly volume of posts matching 'twitter'") +
+  theme_minimal()
+```
+
+## 9. Saving and reloading the data
+
+```{r save}
+dir.create("data", showWarnings = FALSE)
+
+daily_both <- bind_rows(
+  mutate(daily_counts(treated_posts), account = TREATED),
+  mutate(daily_counts(comparison_posts), account = COMPARISON)
+)
+
+write_csv(daily_both, "data/daily_counts.csv")
+write_csv(its_table, "data/its_results.csv")
+write_json(
+  list(collected_at = format(now("UTC"), "%Y-%m-%dT%H:%M:%SZ"),
+       accounts = list(treated = TREATED, comparison = COMPARISON),
+       event = "2024-11-05", timezone = "America/New_York",
+       endpoint = "app.bsky.feed.getAuthorFeed"),
+  "data/collection_metadata.json", pretty = TRUE, auto_unbox = TRUE)
+
+reloaded <- read_csv("data/daily_counts.csv", show_col_types = FALSE)
+nrow(reloaded) == nrow(daily_both)
+```
+
+## 10. Research design: what it takes to claim causation
+
+Neither design above randomizes anything. ITS assumes nothing else
+changed at the event date that affects the outcome; DiD assumes parallel
+trends. Both fail silently when violated. The discipline is: specify the
+design *before* looking at the post-period; plot pre-trends; run placebo
+tests (fake event dates, unaffected outcomes); and treat estimates as
+"the effect under these assumptions," stated plainly. Natural
+experiments on platforms — outages, feature launches, deplatformings —
+are the cleanest events because their timing is plausibly exogenous to
+any one account's behavior.
+
+## Ethics and limitations
+
+Activity histories reveal sleep, work, travel, and life disruptions —
+treat even public timing data as sensitive, aggregate when reporting,
+and avoid building behavioral profiles of private individuals. Our data
+are two accounts chosen for pedagogy, weekly bins hide within-week
+dynamics, the author feed omits deleted posts (survivorship in time!),
+and every caveat from Sections 5–7 applies to any causal language.
+
+## Exercises
+
+1. Refit the ITS with daily instead of weekly counts. How do the
+   estimates and their standard errors change?
+2. Run a placebo ITS with a fake event date of 2024-06-01. Is the
+   level shift "significant"? What does that teach you?
+3. Restrict the panel to ±12 weeks around the event and refit the DiD.
+4. Use the matching table to pick the nearest neighbor, collect its
+   history, and refit the DiD with it as the comparison.
+5. Decompose the treated series by `action` type — did replies and
+   reposts respond to the event differently?
+
+## Research project ideas
+
+* **Migration waves.** Using account creation dates from profiles,
+  identify accounts that joined during the November 2024 surge and
+  compare their retention curves to earlier cohorts.
+* **Event studies of platform shocks.** Build an ITS around a Bluesky
+  feature launch (e.g., DMs or video) using keyword volume as the
+  outcome, with placebo dates as robustness checks.
+
+## References
+
+### Scholarship
+
+* Bernal, J. L., Cummins, S., & Gasparrini, A. (2017). Interrupted time series regression for the evaluation of public health interventions. *International Journal of Epidemiology*, 46(1), 348–355.
+* Angrist, J. D., & Pischke, J.-S. (2009). *Mostly Harmless Econometrics*. Princeton University Press.
+* Golder, S. A., & Macy, M. W. (2011). Diurnal and seasonal mood vary with work, sleep, and daylength across diverse cultures. *Science*, 333(6051), 1878–1881.
+* Cunningham, S. (2021). *Causal Inference: The Mixtape*. Yale University Press. <https://mixtape.scunning.com/>
+
+### Documentation
+
+* lubridate: <https://lubridate.tidyverse.org/>
+* sandwich (HAC errors): <https://sandwich.R-Forge.R-project.org/>
+* MatchIt: <https://kosukeimai.github.io/MatchIt/>
+* bskyr: <https://christophertkenny.com/bskyr/>

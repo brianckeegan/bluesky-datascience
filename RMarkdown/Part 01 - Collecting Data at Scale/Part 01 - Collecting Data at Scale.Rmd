@@ -1,0 +1,403 @@
+---
+title: "Part 01 — Collecting Data at Scale: Pagination, Rate Limits, and Research Ethics"
+subtitle: "Bluesky Data Science in R"
+output:
+  github_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+```
+
+This document is the R counterpart of the Python notebook
+[Part 01 - Collecting Data at Scale](../../Notebooks/Part%2001%20-%20Collecting%20Data%20at%20Scale/Part%2001%20-%20Collecting%20Data%20at%20Scale.ipynb).
+It builds the same documented archive of one account's posts, follows,
+and followers — and teaches the same craft of collecting it responsibly
+— using [bskyr](https://christophertkenny.com/bskyr/) and the tidyverse.
+
+## Background
+
+Part 00 made single API calls and looked at the first page of results.
+Real research needs collections that are *complete where completeness is
+feasible and deliberately bounded where it is not*: every account our
+case study follows, but only a defensible sample of its 1.3 million
+followers. Getting from one page to an archive raises the questions this
+part answers: how endpoints paginate, how fast we may call them, how to
+flatten nested API responses into tidy data frames, and how to store an
+archive so that our future selves — and other researchers — can use it.
+
+### Learning objectives
+
+* Define a sampling frame before collecting anything.
+* Explain cursor-based pagination, and use bskyr's automatic paging.
+* Wrap API calls in retry logic with exponential backoff.
+* Flatten nested responses into tidy tibbles.
+* Persist archives to disk with collection metadata for reproducibility.
+
+## Setup
+
+Alongside the core trio from Part 00, this part adds **lubridate**, the
+tidyverse's package for parsing and manipulating dates and times — API
+timestamps arrive as ISO-8601 strings, and lubridate turns them into
+objects we can sort, bin, and plot:
+
+```{r libraries}
+library(bskyr)
+library(tidyverse)
+library(jsonlite)
+library(lubridate)
+```
+
+As in every part of this series, the shared helper `bsky_client.R` looks
+for credentials (an `atproto.json` file or bskyr's environment
+variables), authenticates if it finds them, and sets `bsky_authed`. The
+`knitr::opts_chunk$set(eval = bsky_authed)` line then makes that flag the
+default for the whole document: with credentials every chunk runs;
+without them the document still knits, but the API chunks are skipped.
+
+```{r connect}
+source("bsky_client.R")
+knitr::opts_chunk$set(eval = bsky_authed)
+```
+
+## 1. Before you collect: define a sampling frame
+
+A *sampling frame* is the explicit list of units your data could possibly
+contain. Ours is one account's complete public activity. Checking the
+profile first tells us how much work is ahead:
+
+```{r frame}
+HANDLE <- "nytimes.com"
+
+profile <- bs_get_profile(HANDLE)
+
+profile |>
+  select(handle, did, created_at, posts_count, follows_count, followers_count)
+```
+
+Each paginated endpoint returns at most 100 records per request, so the
+counters above translate directly into a request budget. The
+`pivot_longer()` call below reshapes the three counter columns into
+rows — one row per collection — so we can compute the budget for all
+three with a single `mutate()`:
+
+```{r budget}
+PAGE_SIZE <- 100
+
+profile |>
+  select(posts_count, follows_count, followers_count) |>
+  pivot_longer(everything(), names_to = "collection", values_to = "records") |>
+  mutate(requests_needed = ceiling(records / PAGE_SIZE))
+```
+
+This arithmetic is the lesson. The follows list is two requests. The
+posts are a few hundred. The followers of a major newsroom are over a
+million records — more than *ten thousand* requests: hours of collection
+that would strain the API and hand us a giant file of third parties we
+have no question about. Always do this arithmetic *before* you start
+collecting, and let it talk you out of "collect everything."
+
+## 2. The anatomy of a paginated endpoint
+
+Ask for one page of the author feed and bskyr returns a tibble of (up to)
+100 posts, with the *cursor* — an opaque bookmark marking where the next
+page begins — stored as an attribute:
+
+```{r page1}
+page1 <- bs_get_author_feed(HANDLE, limit = 100)
+
+nrow(page1)
+attr(page1, "cursor")$cursor
+```
+
+Passing that cursor back retrieves the next page; the two pages should
+not overlap:
+
+```{r page2}
+page2 <- bs_get_author_feed(HANDLE, limit = 100,
+                            cursor = attr(page1, "cursor")$cursor)
+
+length(intersect(page1$uri, page2$uri))
+```
+
+Zero overlap: page 2 picks up exactly where page 1 left off. Walking
+cursors until the server stops returning one is all "collecting at
+scale" means.
+
+## 3. A reusable collection loop
+
+In the Python series we wrote `fetch_all_pages()` by hand. bskyr builds
+the same loop into every paginated function: ask for `limit > 100` and it
+issues ceiling(limit/100) requests behind the scenes, following cursors
+until the limit — or the end of the data — is reached.
+
+```{r collect-all}
+posts_raw <- bs_get_author_feed(HANDLE, limit = 10000)
+follows   <- bs_get_follows(HANDLE, limit = 500)
+followers <- bs_get_followers(HANDLE, limit = 2000)
+
+c(posts = nrow(posts_raw), follows = nrow(follows), followers = nrow(followers))
+```
+
+Note what the caps did. The follows list (a couple hundred accounts)
+came back *complete*. The posts came back capped at 10,000 — the most
+recent slice of a longer history. And the followers stopped at 2,000 of
+more than a million: a deliberate **sample of the most recent
+followers**, because no analysis below needs all of them. A `limit` is a
+budget and a design decision at once; never write a loop whose only
+stopping condition is "the API ran out of data."
+
+## 4. Rate limits, polite clients, and exponential backoff
+
+Bluesky's PDS publishes its rate limits in `RateLimit-*` response
+headers. We can read them with a single raw request:
+
+```{r rate-headers}
+resp <- httr2::request("https://bsky.social/xrpc/com.atproto.server.describeServer") |>
+  httr2::req_perform()
+
+httr2::resp_headers(resp)[c("ratelimit-limit", "ratelimit-remaining",
+                            "ratelimit-reset")]
+```
+
+### Handling 429s with exponential backoff
+
+When you do hit the limit the server answers `429 Too Many Requests`. The
+standard response is *exponential backoff*: wait, retry, and double the
+wait each time, so a struggling server gets breathing room instead of a
+stampede. The wrapper below uses R's `tryCatch()` — which runs a chunk of
+code and, instead of crashing on an error, hands the error to us as an
+object we can inspect and respond to. We try the call; if it fails we
+sleep `base_wait^attempt` seconds and try again, up to `max_tries`:
+
+```{r backoff}
+call_with_backoff <- function(fun, ..., max_tries = 5, base_wait = 2) {
+  for (attempt in seq_len(max_tries)) {
+    result <- tryCatch(fun(...), error = function(e) e)
+    if (!inherits(result, "error")) {
+      return(result)
+    }
+    if (attempt == max_tries) {
+      stop(result)
+    }
+    wait <- base_wait^attempt
+    message("Request failed (", conditionMessage(result),
+            "); retrying in ", wait, "s")
+    Sys.sleep(wait)
+  }
+}
+
+bsky_profile <- call_with_backoff(bs_get_profile, "bsky.app")
+bsky_profile$followers_count
+```
+
+(Under the hood, bskyr's HTTP engine [httr2](https://httr2.r-lib.org/)
+can also retry transparently via `req_retry()` — worth knowing when you
+write raw XRPC requests, as later parts do.)
+
+### Doing more with fewer requests
+
+The cheapest request is the one you never make. `bs_get_profile()`
+accepts up to 25 actors per call, so hydrating accounts in batches cuts
+your request count 25-fold:
+
+```{r batch}
+sample_dids <- head(follows$did, 25)
+
+batch <- bs_get_profile(sample_dids)
+
+batch |> select(handle, followers_count, posts_count) |> head(3)
+```
+
+## 5. Flattening nested models into tidy data frames
+
+A feed item nests several objects: the post, its author, the record the
+author wrote, and an optional `reason` marking reposts. bskyr has already
+widened most of this into columns; what remains is to pull the fields we
+want out of the `record` list-column (the `map_chr()` idiom from Part 00)
+and drop reposts of other people's words.
+
+Two defensive moves in this chunk deserve explanation, because you will
+reuse them constantly. First, the `reason_type` and `reply_parent_uri`
+columns *only exist if at least one post on the page was a repost or a
+reply* — so we check with `%in% names(...)` before filtering on them.
+Second, every extraction supplies a `.default` so that one malformed
+record produces an `NA` instead of an error:
+
+```{r flatten}
+has_reason <- "reason_type" %in% names(posts_raw)
+
+posts <- posts_raw |>
+  filter(if (has_reason) is.na(reason_type) else TRUE) |>
+  mutate(
+    text       = map_chr(record, "text", .default = NA),
+    created_at = ymd_hms(map_chr(record, "created_at", .default = NA),
+                         quiet = TRUE),
+    langs      = map_chr(record, \(r) paste(unlist(r$langs), collapse = ",")),
+    is_reply   = if ("reply_parent_uri" %in% names(posts_raw))
+                   !is.na(reply_parent_uri) else FALSE,
+    has_embed  = !map_lgl(embed, is.null)
+  ) |>
+  select(uri, cid, created_at, text, is_reply,
+         like_count, repost_count, reply_count, quote_count,
+         langs, has_embed) |>
+  arrange(created_at)
+
+glimpse(posts)
+```
+
+One row per post, one column per feature, timestamps parsed — the *tidy
+data* shape every later part consumes.
+
+## 6. Persisting archives: CSV, RDS, and metadata
+
+Collection is slow and the network changes under you, so collect once and
+analyze from disk. CSV travels everywhere; RDS preserves R types exactly
+(the Python series uses Parquet for the same reason):
+
+```{r persist}
+dir.create("data", showWarnings = FALSE)
+
+write_csv(posts, "data/posts.csv")
+saveRDS(posts, "data/posts.rds")
+write_csv(select(follows, did, handle, display_name), "data/follows.csv")
+write_csv(select(followers, did, handle, display_name), "data/followers.csv")
+
+file.size(c("data/posts.csv", "data/posts.rds")) / 1024
+```
+
+### Recording collection metadata
+
+An archive without provenance is a liability. Write down what you
+collected, when, how, and as whom:
+
+```{r metadata}
+metadata <- list(
+  account = list(handle = HANDLE, did = profile$did),
+  collected_at_utc = format(now("UTC"), "%Y-%m-%dT%H:%M:%SZ"),
+  bskyr_version = as.character(packageVersion("bskyr")),
+  collections = list(
+    posts = list(endpoint = "app.bsky.feed.getAuthorFeed",
+                 n_records = nrow(posts),
+                 notes = "Original posts only; reposts excluded."),
+    follows = list(endpoint = "app.bsky.graph.getFollows",
+                   n_records = nrow(follows)),
+    followers = list(endpoint = "app.bsky.graph.getFollowers",
+                     n_records = nrow(followers))
+  )
+)
+
+write_json(metadata, "data/collection_metadata.json",
+           pretty = TRUE, auto_unbox = TRUE)
+```
+
+### Proving the round trip
+
+```{r roundtrip}
+reloaded <- readRDS("data/posts.rds")
+
+identical(reloaded, posts)
+```
+
+## 7. A first look at the archive
+
+The payoff: a complete posting history, summarized in a few lines of
+dplyr and ggplot2. `floor_date()` rounds each timestamp down to the
+first of its month, and `count()` tallies posts per month — the
+month-binning pattern that Part 05 builds a whole time-series toolkit
+on:
+
+```{r posts-per-month, fig.width=10, fig.height=4}
+posts |>
+  count(month = floor_date(created_at, "month")) |>
+  ggplot(aes(month, n)) +
+  geom_col(fill = "steelblue") +
+  labs(x = "Month", y = "Posts",
+       title = paste0("Posts per month by @", HANDLE)) +
+  theme_minimal()
+```
+
+```{r engagement-summary}
+posts |>
+  summarise(
+    share_replies = mean(is_reply),
+    share_embeds  = mean(has_embed),
+    median_likes  = median(like_count, na.rm = TRUE),
+    max_likes     = max(like_count, na.rm = TRUE)
+  )
+```
+
+And the relationship between whom the account follows and who follows
+it. `intersect()` finds the DIDs present in both lists — accounts with a
+*mutual* (reciprocated) tie, a concept Part 03 returns to as
+reciprocity. One honesty note: our followers table is a 2,000-account
+sample of more than a million, so `share_followed` describes that recent
+sample, not the full follower population:
+
+```{r mutuals}
+mutuals <- intersect(follows$did, followers$did)
+
+tibble(
+  follows = nrow(follows),
+  followers = nrow(followers),
+  mutuals = length(mutuals),
+  share_follows_back = length(mutuals) / nrow(follows),
+  share_followed     = length(mutuals) / nrow(followers)
+)
+```
+
+## Ethics and limitations
+
+Everything we collected is public, but **public is not the same as
+consented**: the people in these archives did not agree to be studied
+(boyd & Crawford 2012; Fiesler & Proferes 2018). Practice *data
+minimization* — collect only what your question needs, prefer aggregates,
+and think hard before storing third parties (the followers list is a
+list of people who never interacted with you). People delete posts and
+accounts; an archive freezes what the network has moved past, so decide
+in advance how you will honor deletion and withdrawal. Your collection
+also runs under Bluesky's terms of service and, if you are doing human
+subjects research, your IRB's rules. Methodologically, remember that one
+account is a case study, the author feed omits deleted and moderated
+posts, and engagement counters are point-in-time snapshots that change
+after collection.
+
+## Exercises
+
+1. Re-run the collection for a different public account (e.g.
+   `bsky.app`) and compare its posting cadence to this one.
+2. Modify `call_with_backoff()` to give up immediately on errors that
+   will never succeed on retry (e.g. an account that does not exist).
+3. Use the `subject_*` columns of `bs_get_follows()` to check whether the
+   follows list itself records when each follow was created.
+4. Compute the share of posts that are replies, by month — is the account
+   becoming more or less conversational?
+5. Compare the on-disk size of the posts archive as CSV, RDS, and (with
+   the [arrow](https://arrow.apache.org/docs/r/) package) Parquet.
+
+## Research project ideas
+
+* **Activity and audience growth.** Collect monthly posting volume and
+  follower counts for a panel of public accounts and model how posting
+  consistency relates to audience growth.
+* **Reciprocity norms.** For accounts of different sizes, measure the
+  share of follows that are mutual; test whether reciprocity declines
+  with audience size, as it did on Twitter.
+
+## References
+
+### Scholarship
+
+* boyd, d., & Crawford, K. (2012). Critical questions for big data. *Information, Communication & Society*, 15(5), 662–679.
+* Fiesler, C., & Proferes, N. (2018). "Participant" perceptions of Twitter research ethics. *Social Media + Society*, 4(1).
+* Freelon, D. (2018). Computational research in the post-API age. *Political Communication*, 35(4), 665–668.
+* Zimmer, M. (2010). "But the data is already public": On the ethics of research in Facebook. *Ethics and Information Technology*, 12(4), 313–325.
+
+### Documentation
+
+* bskyr: <https://christophertkenny.com/bskyr/>
+* `app.bsky.feed.getAuthorFeed`: <https://docs.bsky.app/docs/api/app-bsky-feed-get-author-feed>
+* Bluesky rate limits: <https://docs.bsky.app/docs/advanced-guides/rate-limits>
+* httr2 retries: <https://httr2.r-lib.org/reference/req_retry.html>
+* R Markdown: <https://rmarkdown.rstudio.com/docs/>

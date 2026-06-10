@@ -1,9 +1,9 @@
 {
-  "actor": "brianckeegan.com",
+  "actor": "nytimes.com",
   "endpoint": "app.bsky.feed.getAuthorFeed",
   "filter": "posts_no_replies",
   "reposts_excluded": true,
   "target_posts": 150,
-  "n_collected": 138,
-  "collected_at": "2026-06-10T11:00:03.917860+00:00"
+  "n_collected": 150,
+  "collected_at": "2026-06-10T16:26:51.604287+00:00"
 }

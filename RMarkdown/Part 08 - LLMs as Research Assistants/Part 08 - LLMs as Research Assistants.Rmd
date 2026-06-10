@@ -1,0 +1,416 @@
+---
+title: "Part 08 — LLMs as Research Assistants: Classification and Annotation at Scale"
+subtitle: "Bluesky Data Science in R"
+output:
+  github_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+```
+
+This document is the R counterpart of the Python notebook
+[Part 08 - LLMs as Research Assistants](../../Notebooks/Part%2008%20-%20LLMs%20as%20Research%20Assistants/Part%2008%20-%20LLMs%20as%20Research%20Assistants.ipynb).
+Content analysis at scale used to require teams of trained coders; large
+language models now offer to do the labeling for pennies. Whether their
+labels are *defensible as research measures* is an empirical question
+that this part answers the traditional way: a codebook, a gold-standard
+sample, agreement metrics, and an honest baseline.
+
+### Learning objectives
+
+* Construct a codebook with categories, definitions, and edge rules.
+* Build an LLM annotation prompt with structured (JSON) output.
+* Always compare against a transparent baseline (keyword rules).
+* Compute accuracy, Cohen's kappa, confusion matrices, and per-class
+  precision/recall.
+* Read disagreements, because that is where the methodology lives.
+
+## Setup
+
+```{r libraries}
+library(bskyr)
+library(tidyverse)
+library(jsonlite)
+library(lubridate)
+```
+
+As in every part of this series, the shared helper `bsky_client.R` looks
+for credentials (an `atproto.json` file or bskyr's environment
+variables), authenticates if it finds them, and sets `bsky_authed`. The
+`knitr::opts_chunk$set(eval = bsky_authed)` line then makes that flag the
+default for the whole document: with credentials every chunk runs;
+without them the document still knits, but the API chunks are skipped.
+
+```{r connect}
+source("bsky_client.R")
+knitr::opts_chunk$set(eval = bsky_authed)
+```
+
+## 1. Collecting a corpus of posts
+
+One account's original, non-reply posts — short, varied, and exactly the
+kind of material a topic codebook is built for:
+
+```{r corpus}
+ACTOR <- "nytimes.com"
+
+feed <- bs_get_author_feed(ACTOR, limit = 200)
+if ("reason_type" %in% names(feed)) {
+  feed <- filter(feed, is.na(reason_type))
+}
+if ("reply_parent_uri" %in% names(feed)) {
+  feed <- filter(feed, is.na(reply_parent_uri))
+}
+
+posts <- feed |>
+  transmute(
+    uri,
+    created_at = map_chr(record, "created_at", .default = NA),
+    text = map_chr(record, "text", .default = ""),
+    like_count, repost_count, reply_count
+  ) |>
+  filter(str_squish(text) != "") |>
+  slice_head(n = 150)
+
+dir.create("data", showWarnings = FALSE)
+write_csv(posts, "data/posts.csv")
+write_json(
+  list(actor = ACTOR, endpoint = "app.bsky.feed.getAuthorFeed",
+       reposts_excluded = TRUE, replies_excluded = TRUE,
+       n_collected = nrow(posts),
+       collected_at = format(now("UTC"), "%Y-%m-%dT%H:%M:%SZ")),
+  "data/collection_metadata.json", pretty = TRUE, auto_unbox = TRUE)
+
+nrow(posts)
+```
+
+## 2. Constructing a codebook
+
+A codebook is the *measurement instrument*: mutually exclusive,
+collectively exhaustive categories with decision rules a stranger could
+apply. Ours mirrors the Python notebook's three-way scheme:
+
+```{r codebook}
+LABELS <- c("politics", "science_tech", "other")
+
+CODEBOOK <- '
+You are annotating public social media posts with exactly one topic label.
+
+Categories:
+- politics: elections, parties, politicians, public policy, government,
+  political events and commentary, civic institutions.
+- science_tech: research, universities, data science, technology
+  platforms and tools, software, scientific findings, academia.
+- other: personal life, sports, food, humor with no political or
+  scientific referent, and anything that fits neither category above.
+
+Rules:
+- Choose ONE label. If a post mixes categories, choose the dominant one.
+- Judge only the text given; do not guess at links you cannot see.
+- Respond with JSON: {"label": "<one of politics|science_tech|other>",
+  "confidence": <0 to 1>}
+'
+cat(CODEBOOK)
+```
+
+## 3. Gold-standard labels
+
+Validation requires labels we trust: a human reads a random sample and
+applies the codebook. The Python series hand-coded 60 posts from this
+account and committed them with the repository, and because they live in
+a plain CSV, the R series can validate against the *same* gold standard
+— a nice illustration of why archives beat live collections for
+reproducibility:
+
+```{r gold}
+gold <- read_csv(
+  file.path("..", "..", "Notebooks",
+            "Part 08 - LLMs as Research Assistants", "data",
+            "gold_labels.csv"),
+  show_col_types = FALSE
+) |>
+  mutate(label_rationale = replace_na(label_rationale, ""))
+
+count(gold, gold_label)
+```
+
+```{r gold-rationales}
+gold |>
+  filter(label_rationale != "") |>
+  transmute(text = str_trunc(text, 90), gold_label, label_rationale) |>
+  head(4)
+```
+
+How many of the gold posts are still in today's live corpus? Posts get
+deleted; gold standards should record the text they coded:
+
+```{r gold-overlap}
+sum(gold$uri %in% posts$uri)
+```
+
+## 4. LLM annotation with the Claude API
+
+### 4.1 The prompt
+
+A per-post prompt pairs the codebook with one post and demands JSON:
+
+```{r prompt}
+build_prompt <- function(codebook, post_text) {
+  paste0(codebook, "\nPost to annotate:\n\"\"\"\n", post_text, "\n\"\"\"")
+}
+
+cat(str_trunc(build_prompt(CODEBOOK, gold$text[[1]]), 700))
+```
+
+### 4.2 The annotation loop
+
+The Claude API is an ordinary HTTP API, so
+[httr2](https://httr2.r-lib.org/) talks to it directly: build a request
+with the authentication headers, attach the JSON body (model, token
+budget, and our prompt as a user message), perform it, and parse the
+JSON response. Two robustness pieces surround the call:
+`parse_label_response()` digs the JSON out of the model's reply — models
+sometimes wrap it in prose or code fences, and sometimes invent labels
+outside the codebook, both of which must map to `NA`, not crash — and
+the half-second sleep keeps us inside API rate limits. Models are listed
+at <https://docs.claude.com/en/docs/about-claude/models>:
+
+```{r annotator}
+parse_label_response <- function(raw) {
+  json <- str_extract(raw, "\\{[^}]*\\}")
+  parsed <- tryCatch(fromJSON(json), error = function(e) NULL)
+  label <- parsed$label
+  if (is.null(label) || !label %in% LABELS) {
+    return(list(label = NA_character_, confidence = NA_real_))
+  }
+  list(label = label, confidence = parsed$confidence %||% NA_real_)
+}
+
+annotate_posts_llm <- function(texts, model = "claude-haiku-4-5") {
+  map(texts, \(text) {
+    resp <- httr2::request("https://api.anthropic.com/v1/messages") |>
+      httr2::req_headers(
+        "x-api-key" = Sys.getenv("ANTHROPIC_API_KEY"),
+        "anthropic-version" = "2023-06-01"
+      ) |>
+      httr2::req_body_json(list(
+        model = model,
+        max_tokens = 100,
+        messages = list(list(role = "user",
+                             content = build_prompt(CODEBOOK, text)))
+      )) |>
+      httr2::req_perform() |>
+      httr2::resp_body_json()
+    Sys.sleep(0.5)
+    parse_label_response(resp$content[[1]]$text)
+  }) |> bind_rows()
+}
+```
+
+### 4.3 What will this cost?
+
+Annotation cost is input tokens × price. At roughly 4 characters per
+token, 60 posts under this codebook are ~25k input tokens — fractions
+of a dollar on a small model. Estimate before you run; budget before
+you scale.
+
+```{r cost}
+est_tokens <- sum(nchar(map_chr(gold$text, \(t) build_prompt(CODEBOOK, t)))) / 4
+round(est_tokens)
+```
+
+### 4.4 Running the annotator (guarded)
+
+Calls leave your machine and cost money, so the chunk runs only when an
+API key is present:
+
+```{r run-llm}
+if (nzchar(Sys.getenv("ANTHROPIC_API_KEY"))) {
+  llm_labels <- annotate_posts_llm(gold$text)
+  gold$llm_label <- llm_labels$label
+  write_csv(bind_cols(select(gold, uri, text), llm_labels),
+            "data/llm_labels.csv")
+} else {
+  message("No ANTHROPIC_API_KEY set, so no posts were sent to an API. ",
+          "The validation below uses the keyword baseline instead.")
+}
+```
+
+## 5. A baseline annotator that always runs
+
+Never evaluate an exciting method without a boring one. Keyword rules
+are transparent, free, and embarrassingly often competitive. The
+function counts how many keywords from each category's list appear in
+the lowercased text and picks the category with the most hits, falling
+back to `other` when nothing matches — every decision it makes is
+auditable by reading 20 lines:
+
+```{r baseline}
+KEYWORD_RULES <- list(
+  politics = c("election", "vote", "senate", "congress", "policy",
+               "democrat", "republican", "trump", "biden", "court",
+               "government", "political", "campaign", "ballot"),
+  science_tech = c("data", "research", "science", "universit", "paper",
+                   "study", "ai", "model", "code", "software", "api",
+                   "network", "compute", "course", "student", "bluesky")
+)
+
+keyword_label <- function(text) {
+  text <- str_to_lower(text)
+  hits <- map_int(KEYWORD_RULES, \(words) sum(str_detect(text, fixed(words))))
+  if (max(hits) == 0) "other" else names(which.max(hits))
+}
+
+gold <- gold |>
+  mutate(baseline_label = map_chr(text, keyword_label))
+
+count(gold, baseline_label)
+write_csv(select(gold, uri, text, gold_label, baseline_label),
+          "data/baseline_predictions.csv")
+```
+
+## 6. Validation: how good is the automated annotator?
+
+### 6.1 Accuracy, percent agreement, and Cohen's kappa
+
+Accuracy alone flatters annotators on imbalanced data. Cohen's kappa
+corrects for chance agreement — the difference between a coder and a
+coin that knows the base rates:
+
+```{r metrics}
+cohen_kappa <- function(truth, pred, labels) {
+  truth <- factor(truth, levels = labels)
+  pred <- factor(pred, levels = labels)
+  cm <- table(truth, pred)
+  n <- sum(cm)
+  po <- sum(diag(cm)) / n
+  pe <- sum(rowSums(cm) * colSums(cm)) / n^2
+  (po - pe) / (1 - pe)
+}
+
+annotator <- if ("llm_label" %in% names(gold)) "llm_label" else "baseline_label"
+pred <- gold[[annotator]]
+
+tibble(
+  annotator = annotator,
+  accuracy = mean(gold$gold_label == pred),
+  kappa = cohen_kappa(gold$gold_label, pred, LABELS)
+)
+```
+
+Benchmarks: kappa above ~0.8 is conventionally "almost perfect," 0.6–0.8
+"substantial" — but report the number, not the adjective.
+
+### 6.2 Confusion matrix
+
+Where do the errors live? A confusion matrix cross-tabulates gold labels
+(rows) against machine labels (columns); the diagonal is agreement, and
+each off-diagonal cell is a specific *kind* of mistake:
+
+```{r confusion}
+table(gold = factor(gold$gold_label, LABELS),
+      machine = factor(pred, LABELS))
+```
+
+### 6.3 Per-category precision and recall
+
+Overall numbers hide category-level failures, so compute, per category:
+**precision** (when the machine says "politics," how often is it right?)
+and **recall** (of the truly political posts, how many did it find?),
+plus their harmonic mean **F1**:
+
+```{r per-class}
+per_class <- map(LABELS, \(label) {
+  tp <- sum(gold$gold_label == label & pred == label)
+  fp <- sum(gold$gold_label != label & pred == label)
+  fn <- sum(gold$gold_label == label & pred != label)
+  tibble(category = label,
+         precision = tp / max(tp + fp, 1),
+         recall = tp / max(tp + fn, 1)) |>
+    mutate(f1 = 2 * precision * recall / max(precision + recall, 1e-9))
+}) |> list_rbind()
+
+per_class
+
+per_class |>
+  mutate(validated_at = format(today()), annotator = annotator) |>
+  write_csv("data/agreement_metrics.csv")
+```
+
+## 7. Error analysis: read the disagreements
+
+Aggregate metrics tell you *how much* the annotator errs; only reading
+the disagreements tells you *how* — systematically or randomly, on edge
+cases or on the codebook's blind spots:
+
+```{r disagreements}
+gold |>
+  filter(gold_label != .data[[annotator]]) |>
+  transmute(text = str_trunc(text, 110),
+            gold_label, machine = .data[[annotator]]) |>
+  head(5)
+```
+
+## 8. When are LLM labels defensible as research measures?
+
+The emerging consensus (Gilardi et al. 2023; Ziems et al. 2024; Ollion
+et al. 2024): LLM annotation is defensible when (1) validated against
+human gold labels *on your own task and corpus*, (2) accompanied by the
+exact prompt and model version, (3) re-validated when either changes,
+and (4) reported with the same agreement statistics you would demand of
+human coders. It is not defensible as an oracle. The workflow in this
+document *is* the argument: instrument, gold standard, baseline,
+metrics, error analysis.
+
+## Ethics and limitations
+
+Sending posts to a commercial API is a *disclosure* of user content to a
+third party — minimize (send text only, never handles or DIDs), check
+the provider's retention policy, and consider whether your IRB considers
+this sharing. LLMs encode training biases that can label minority
+dialects or stances systematically differently; per-class metrics and
+error reading are your detection tools. Our gold labels were coded by a
+single human coder (the author); a real study needs double coding with
+inter-coder reliability reported before the gold standard itself can be
+trusted.
+
+## Exercises
+
+1. Draw your own random sample of 30 posts, hand-label it with the
+   codebook, and compute *your* agreement with the committed gold labels
+   on any overlapping posts — inter-coder reliability in miniature.
+2. Add a fourth category to the codebook and rerun. Which metrics
+   degrade, and why does adding categories usually lower kappa?
+3. Write a second keyword baseline with different word lists and measure
+   baseline-to-baseline agreement — a floor for what "agreement" means.
+4. If you have an API key: run the LLM twice at temperature defaults and
+   measure its self-agreement (test-retest reliability).
+5. Compute kappa weighted by the LLM's reported confidence. Is the model
+   better-calibrated on posts it claims to be sure about?
+
+## Research project ideas
+
+* **Annotator drift audit.** Re-run the same prompt and gold sample
+  monthly across model versions and chart agreement over time — a
+  reliability study of the instrument itself.
+* **Dialect fairness.** Build gold samples in two language varieties and
+  test whether LLM agreement differs — extending the algorithmic-bias
+  audit tradition to annotation.
+
+## References
+
+### Scholarship
+
+* Gilardi, F., Alizadeh, M., & Kubli, M. (2023). ChatGPT outperforms crowd workers for text-annotation tasks. *PNAS*, 120(30).
+* Ziems, C., Held, W., Shaikh, O., Chen, J., Zhang, Z., & Yang, D. (2024). Can large language models transform computational social science? *Computational Linguistics*, 50(1), 237–291.
+* Ollion, É., Shen, R., Macanovic, A., & Chokri, A. (2024). The dangers of using proprietary LLMs for research. *Nature Machine Intelligence*, 6, 4–5.
+* Krippendorff, K. (2018). *Content Analysis: An Introduction to Its Methodology* (4th ed.). SAGE.
+* Cohen, J. (1960). A coefficient of agreement for nominal scales. *Educational and Psychological Measurement*, 20(1), 37–46.
+
+### Documentation
+
+* Claude API: <https://docs.claude.com/en/api/messages>
+* httr2: <https://httr2.r-lib.org/>
+* bskyr: <https://christophertkenny.com/bskyr/>

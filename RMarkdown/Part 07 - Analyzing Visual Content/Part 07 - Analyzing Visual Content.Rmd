@@ -1,0 +1,414 @@
+---
+title: "Part 07 — Analyzing Visual Content: Images, Alt Text, and Link Cards"
+subtitle: "Bluesky Data Science in R"
+output:
+  github_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+```
+
+This document is the R counterpart of the Python notebook
+[Part 07 - Analyzing Visual Content](../../Notebooks/Part%2007%20-%20Analyzing%20Visual%20Content/Part%2007%20-%20Analyzing%20Visual%20Content.ipynb).
+Posts are more than text: images, video, link cards, and quoted posts
+arrive as typed **embeds**, and the alt text attached to images is both
+an accessibility practice and a measurable research object. We collect a
+panel of accounts' posts as raw lists (`clean = FALSE`), classify their
+embeds, audit alt-text provision, map link-card domains, and assemble a
+small documented image corpus.
+
+### Learning objectives
+
+* Read the anatomy of Bluesky's embed union types.
+* Collect posts as raw lists that survive new, unmodeled embed types.
+* Measure media composition and alt-text provision across accounts.
+* Analyze link cards as an outlink map.
+* Download a small image corpus responsibly, with a manifest.
+
+## Setup
+
+```{r libraries}
+library(bskyr)
+library(tidyverse)
+library(jsonlite)
+library(lubridate)
+```
+
+As in every part of this series, the shared helper `bsky_client.R` looks
+for credentials (an `atproto.json` file or bskyr's environment
+variables), authenticates if it finds them, and sets `bsky_authed`. The
+`knitr::opts_chunk$set(eval = bsky_authed)` line then makes that flag the
+default for the whole document: with credentials every chunk runs;
+without them the document still knits, but the API chunks are skipped.
+
+```{r connect}
+source("bsky_client.R")
+knitr::opts_chunk$set(eval = bsky_authed)
+```
+
+## 1. The anatomy of a Bluesky embed
+
+A post's `record$embed` is a *union type*: exactly one of
+`app.bsky.embed.images`, `...video`, `...external` (link cards),
+`...record` (quote posts), or `...recordWithMedia`. The Python notebook
+opens with a war story: its strictly-typed SDK *crashed* on an embed
+type the platform had just shipped, and the fix was to fall back to raw
+JSON. R's list-of-lists representation has that robustness built in —
+`clean = FALSE` returns whatever the server sent:
+
+```{r raw-page}
+page <- bs_get_author_feed("bsky.app", limit = 30, clean = FALSE)
+
+items <- page[[1]]$feed
+
+map_chr(items, \(item) item$post$embed$`$type` %||% "(no embed)") |>
+  table()
+```
+
+A classifier that collapses view types into analytic classes — and
+shunts anything it has never seen into `"other"` instead of crashing:
+
+```{r classify}
+classify_embed <- function(post) {
+  type <- post$embed$`$type` %||% return("none")
+  type <- sub("#view$", "", type)
+  switch(type,
+    "app.bsky.embed.images" = "images",
+    "app.bsky.embed.video" = "video",
+    "app.bsky.embed.external" = "external",
+    "app.bsky.embed.record" = "record",
+    "app.bsky.embed.recordWithMedia" = "record_with_media",
+    "other")
+}
+```
+
+## 2. Collecting a media panel
+
+Visual practice varies by *kind* of account, so we compare a panel:
+platform, public broadcaster, local newsroom, national newsrooms,
+and a policy institute. The collector below fetches each account's feed as raw pages
+(`clean = FALSE` returns a list of response pages, each with a `$feed`
+list of items), flattens the pages together, uses `purrr::keep()` to
+retain only original posts, and extracts the `post` object from each
+item:
+
+```{r panel}
+PANEL <- c("bsky.app", "npr.org", "boulderrl.bsky.social",
+           "propublica.org", "nytimes.com", "knightcolumbia.org")
+POSTS_PER_ACCOUNT <- 135
+COLLECTED_AT <- format(now("UTC"), "%Y-%m-%dT%H:%M:%SZ")
+
+collect_raw_posts <- function(actor, max_posts) {
+  pages <- bs_get_author_feed(actor, limit = max_posts, clean = FALSE)
+  items <- list_flatten(map(pages, "feed"))
+  # skip reposts: the feed item carries a 'reason' explaining its presence
+  originals <- keep(items, \(item) is.null(item$reason))
+  map(originals, "post")
+}
+
+all_posts <- map(PANEL, \(actor) {
+  posts <- collect_raw_posts(actor, POSTS_PER_ACCOUNT)
+  Sys.sleep(0.1)
+  posts
+}) |> set_names(PANEL)
+
+map_int(all_posts, length)
+```
+
+Now three helpers that walk a raw post. `iter_images()` returns one row
+per attached image, with its alt text and declared dimensions; the
+`%||%` chains handle the fact that the image list lives in different
+places for plain image posts (`embed$images`) and posts that pair media
+with a quote (`embed$media$images`). `external_info()` pulls the link
+card and reduces its URL to a bare domain with a regular expression.
+`post_row()` assembles everything into the one-row-per-post summary our
+analysis runs on:
+
+```{r media-helpers}
+iter_images <- function(post) {
+  view <- post$embed
+  imgs <- view$images %||% view$media$images %||% list()
+  map(imgs, \(img) tibble(
+    alt = img$alt %||% "",
+    thumb = img$thumb %||% NA_character_,
+    width = img$aspectRatio$width %||% NA_integer_,
+    height = img$aspectRatio$height %||% NA_integer_
+  )) |> list_rbind()
+}
+
+url_domain <- function(url) {
+  str_match(url, "^https?://(?:www\\.)?([^/]+)")[, 2]
+}
+
+external_info <- function(post) {
+  ext <- post$embed$external
+  if (is.null(ext)) return(NULL)
+  tibble(title = ext$title %||% "",
+         domain = url_domain(ext$uri %||% ""))
+}
+
+post_row <- function(post) {
+  imgs <- iter_images(post)
+  ext <- external_info(post)
+  tibble(
+    uri = post$uri,
+    author = post$author$handle,
+    embed_class = classify_embed(post),
+    n_images = nrow(imgs),
+    n_images_with_alt = sum(str_squish(imgs$alt) != ""),
+    external_domain = if (is.null(ext)) NA_character_ else ext$domain
+  )
+}
+
+df <- map(all_posts, \(posts) map(posts, post_row) |> list_rbind()) |>
+  list_rbind()
+
+count(df, embed_class, sort = TRUE)
+```
+
+## 3. How visual is the panel?
+
+A stacked bar per account shows each one's *embed mix* — what share of
+its posts are bare text, images, video, link cards, or quotes. Newsrooms
+should lean on link cards; individuals on text and images:
+
+```{r composition, fig.width=9, fig.height=4.5}
+df |>
+  count(author, embed_class) |>
+  group_by(author) |>
+  mutate(share = n / sum(n)) |>
+  ggplot(aes(share, author, fill = embed_class)) +
+  geom_col() +
+  labs(x = "Share of posts", y = NULL, fill = "Embed type",
+       title = "Embed type composition by account") +
+  theme_minimal()
+```
+
+### Images per post and aspect ratios
+
+```{r aspect, fig.width=8, fig.height=4}
+images_df <- imap(all_posts, \(posts, actor) {
+  map(posts, iter_images) |> list_rbind() |> mutate(author = actor)
+}) |> list_rbind()
+
+c(image_posts = sum(df$n_images > 0), images = nrow(images_df))
+
+images_df |>
+  filter(!is.na(width), !is.na(height)) |>
+  mutate(aspect = width / height) |>
+  ggplot(aes(aspect)) +
+  geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+  geom_vline(xintercept = c(9 / 16, 1, 16 / 9),
+             color = "crimson", linetype = "dashed") +
+  labs(x = "Aspect ratio (width / height)", y = "Images",
+       title = "Aspect ratios of panel images",
+       subtitle = "Dashed: 9:16 portrait, 1:1 square, 16:9 landscape") +
+  theme_minimal()
+```
+
+## 4. Alt text: accessibility as a measurable practice
+
+Bluesky lets authors attach alt text to every image. Gleason et al.
+(2019) found only ~0.1% of image tweets carried alt text; Bluesky's
+culture is dramatically different, and we can measure it:
+
+```{r alt-rates}
+image_posts <- df |> filter(n_images > 0)
+
+tibble(
+  image_posts = nrow(image_posts),
+  all_images_described = mean(image_posts$n_images_with_alt ==
+                              image_posts$n_images),
+  any_image_described = mean(image_posts$n_images_with_alt > 0),
+  images_with_alt = mean(str_squish(images_df$alt) != "")
+)
+```
+
+```{r alt-by-account, fig.width=8, fig.height=4}
+images_df |>
+  group_by(author) |>
+  summarise(images = n(),
+            alt_rate = mean(str_squish(alt) != "")) |>
+  ggplot(aes(alt_rate, fct_reorder(author, alt_rate))) +
+  geom_col(fill = "seagreen") +
+  geom_text(aes(label = scales::percent(alt_rate, 1)), hjust = -0.1) +
+  geom_vline(xintercept = 0.001, color = "crimson", linetype = "dashed") +
+  scale_x_continuous(limits = c(0, 1.15)) +
+  labs(x = "Share of posted images with alt text", y = NULL,
+       title = "Alt-text provision rate by account",
+       subtitle = "Dashed red line: Twitter 2019 baseline (0.1%)") +
+  theme_minimal()
+```
+
+### How much do people write?
+
+```{r alt-length, fig.width=8, fig.height=4}
+alt_lengths <- images_df |>
+  filter(str_squish(alt) != "") |>
+  mutate(alt_len = nchar(alt))
+
+ggplot(alt_lengths, aes(alt_len)) +
+  geom_histogram(bins = 30, fill = "seagreen", color = "white") +
+  geom_vline(xintercept = median(alt_lengths$alt_len),
+             linetype = "dashed") +
+  labs(x = "Alt text length (characters)", y = "Images",
+       title = paste("Length of", nrow(alt_lengths), "non-empty alt texts")) +
+  theme_minimal()
+
+summary(alt_lengths$alt_len)
+```
+
+## 5. Link cards: who points where?
+
+External embeds carry a URL, title, and description — an outlink map of
+each account's information diet (and self-promotion):
+
+```{r domains}
+external_posts <- df |> filter(!is.na(external_domain))
+
+external_posts |>
+  count(external_domain, sort = TRUE) |>
+  mutate(share = round(n / nrow(external_posts), 3)) |>
+  slice_head(n = 10)
+```
+
+```{r self-links}
+OWN_DOMAINS <- list(
+  "bsky.app" = c("bsky.app", "bsky.social"),
+  "npr.org" = "npr.org",
+  "boulderrl.bsky.social" = "boulderreportinglab.org",
+  "propublica.org" = "propublica.org",
+  "nytimes.com" = c("nytimes.com", "nyti.ms"),
+  "knightcolumbia.org" = "knightcolumbia.org"
+)
+
+external_posts |>
+  group_by(author) |>
+  summarise(own_domain_share = mean(map2_lgl(
+    external_domain, author,
+    \(domain, a) any(endsWith(domain, OWN_DOMAINS[[a]]))
+  )))
+```
+
+## 6. Building a small image corpus
+
+Visual content analysis needs the images themselves. Download a *small*,
+documented sample of thumbnails (never originals at scale), with a
+manifest tying every file to its post, author, and alt text. `walk2()`
+is `map2()`'s sibling for side effects — it loops over URL/destination
+pairs calling `download.file()`, sleeping half a second between
+downloads out of politeness to the CDN:
+
+```{r download}
+dir.create("data/images", recursive = TRUE, showWarnings = FALSE)
+
+manifest <- imap(all_posts, \(posts, actor) {
+  map(posts, \(post) {
+    imgs <- iter_images(post)
+    if (nrow(imgs) == 0) return(NULL)
+    mutate(imgs[1, ], author = actor, uri = post$uri)
+  }) |> list_rbind()
+}) |>
+  list_rbind() |>
+  filter(!is.na(thumb)) |>
+  group_by(author) |>
+  slice_head(n = 2) |>
+  ungroup() |>
+  mutate(file = file.path("data/images",
+                          paste0("img_", row_number(), ".jpg")))
+
+walk2(manifest$thumb, manifest$file, \(url, dest) {
+  try(download.file(url, dest, mode = "wb", quiet = TRUE), silent = TRUE)
+  Sys.sleep(0.5)
+})
+
+write_csv(select(manifest, -thumb), "data/images_manifest.csv")
+
+c(images_saved = sum(file.exists(manifest$file)),
+  total_kb = round(sum(file.size(manifest$file), na.rm = TRUE) / 1024))
+```
+
+## 7. From pixels to measurements: CLIP embeddings
+
+Modern visual content analysis encodes images into the same vector
+space as text (CLIP), enabling zero-shot labeling and clustering. From
+R, CLIP is reachable through [reticulate](https://rstudio.github.io/reticulate/)
+and the `sentence-transformers` Python package; the Python notebook
+runs this exact workflow natively. The design point stands regardless of
+language: define a visual codebook in words, embed both, and label by
+cosine similarity.
+
+```{r clip, eval=FALSE}
+library(reticulate)
+st <- import("sentence_transformers")
+model <- st$SentenceTransformer("clip-ViT-B-32")
+image_embeddings <- model$encode(manifest$file)
+label_embeddings <- model$encode(c(
+  "a screenshot of text or a user interface",
+  "a photograph of one or more people",
+  "a chart, map, or data visualization"))
+```
+
+## 8. Saving and reloading the archive
+
+```{r save}
+write_csv(df, "data/media_summary.csv")
+write_json(
+  list(collected_at = COLLECTED_AT, panel = PANEL,
+       posts_per_account = POSTS_PER_ACCOUNT, reposts_excluded = TRUE,
+       endpoint = "app.bsky.feed.getAuthorFeed (raw lists)"),
+  "data/collection_metadata.json", pretty = TRUE, auto_unbox = TRUE)
+
+reloaded <- read_csv("data/media_summary.csv", show_col_types = FALSE)
+count(reloaded, embed_class, sort = TRUE)
+```
+
+## Ethics and limitations
+
+Images often contain *faces* — analyzing, clustering, or republishing
+them implicates people far beyond the account that posted. Download
+sparingly, prefer thumbnails, keep manifests so corpora are auditable
+and deletable, and never build face-recognition pipelines on collected
+social images. Alt text is written *for* blind and low-vision users;
+treating it as research data should not crowd out that purpose. Our
+panel is six hand-picked accounts — illustrative, not representative —
+and embed metadata (aspect ratios, alt text) is only as accurate as the
+posting client made it.
+
+## Exercises
+
+1. Add two accounts you follow to the panel and recompute the alt-text
+   table. Where do they fall?
+2. Classify alt texts as substantive vs. perfunctory (e.g., length
+   thresholds plus keyword rules) and re-estimate "real" provision.
+3. Map quoted-post authors from `record` embeds: whom does each panel
+   account amplify by quoting?
+4. Compare engagement (likes) of image posts vs. text-only posts within
+   each account.
+5. With the magick package, compute mean brightness for the downloaded
+   thumbnails and compare across accounts.
+
+## Research project ideas
+
+* **The accessibility gap.** Measure alt-text provision across account
+  types (news, government, individual) at scale and model its predictors
+  — following Gleason et al. (2019) on an open platform.
+* **Visual framing of news.** For newsrooms on the panel, classify
+  link-card thumbnails (people vs. charts vs. scenes) and compare visual
+  framing of the same story across outlets.
+
+## References
+
+### Scholarship
+
+* Gleason, C., Carrington, P., Cassidy, C., Morris, M. R., Kitani, K. M., & Bigham, J. P. (2019). "It's almost like they're trying to hide it": How user-provided image descriptions have failed to make Twitter accessible. *WWW '19*.
+* Casas, A., & Williams, N. W. (2019). Images that matter: Online protests and the mobilizing role of pictures. *Political Research Quarterly*, 72(2), 360–375.
+* Radford, A., et al. (2021). Learning transferable visual models from natural language supervision (CLIP). *ICML*.
+
+### Documentation
+
+* Embed lexicons: <https://docs.bsky.app/docs/advanced-guides/posts#embeds>
+* reticulate: <https://rstudio.github.io/reticulate/>
+* bskyr: <https://christophertkenny.com/bskyr/>

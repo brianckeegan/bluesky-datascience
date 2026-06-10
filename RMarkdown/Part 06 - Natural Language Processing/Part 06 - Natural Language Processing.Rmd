@@ -1,0 +1,501 @@
+---
+title: "Part 06 — Natural Language Processing of Post Content"
+subtitle: "Bluesky Data Science in R"
+output:
+  github_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+```
+
+This document is the R counterpart of the Python notebook
+[Part 06 - Natural Language Processing](../../Notebooks/Part%2006%20-%20Natural%20Language%20Processing/Part%2006%20-%20Natural%20Language%20Processing.ipynb).
+The methods map onto R's tidy text ecosystem: where Python used
+scikit-learn vectorizers and VADER, we use
+[tidytext](https://www.tidytextmining.com/) (Silge & Robinson) for
+tokenization and sentiment lexicons and
+[topicmodels](https://cran.r-project.org/package=topicmodels) for LDA.
+The analytical questions are identical: what does a corpus of posts talk
+about, in what tone, and how would we know if our measurements were wrong?
+
+### Learning objectives
+
+* Build a multi-account corpus from author feeds.
+* Tokenize short social text and weigh what stopword removal throws away.
+* Compute word/bigram frequencies and per-account distinctive terms.
+* Score sentiment with a lexicon and know where lexicons break.
+* Fit and read an LDA topic model, and validate everything.
+
+## Setup
+
+```{r libraries}
+library(bskyr)
+library(tidyverse)
+library(jsonlite)
+library(lubridate)
+library(tidytext)
+library(topicmodels)
+```
+
+As in every part of this series, the shared helper `bsky_client.R` looks
+for credentials (an `atproto.json` file or bskyr's environment
+variables), authenticates if it finds them, and sets `bsky_authed`. The
+`knitr::opts_chunk$set(eval = bsky_authed)` line then makes that flag the
+default for the whole document: with credentials every chunk runs;
+without them the document still knits, but the API chunks are skipped.
+
+```{r connect}
+source("bsky_client.R")
+knitr::opts_chunk$set(eval = bsky_authed)
+```
+
+## 1. Building a corpus from author feeds
+
+### 1.1 A seed account and one snowball wave
+
+We reuse Part 02's design in miniature: collect the seed's posts, find
+the accounts it mentions most, and add their posts to form a small
+*panel corpus*. The fetcher below should look familiar by now — drop
+reposts, pull `text`, `created_at`, `langs`, and `facets` out of the
+`record` list-column — with `transmute()` (a `mutate()` that keeps only
+the columns it names) producing exactly the tidy frame the rest of the
+pipeline needs:
+
+```{r corpus-seed}
+SEED_ACCOUNT <- "nytimes.com"
+COLLECTED_ON <- format(today(), "%Y-%m-%d")
+
+fetch_posts <- function(actor, max_posts) {
+  feed <- bs_get_author_feed(actor, limit = max_posts)
+  if ("reason_type" %in% names(feed)) {
+    feed <- filter(feed, is.na(reason_type))
+  }
+  feed |>
+    transmute(
+      uri,
+      author = author_handle,
+      created_at = map_chr(record, "created_at", .default = NA),
+      text = map_chr(record, "text", .default = ""),
+      langs = map(record, \(r) unlist(r$langs)),
+      facets = map(record, \(r) r$facets[[1]])
+    )
+}
+
+seed_posts <- fetch_posts(SEED_ACCOUNT, 600)
+nrow(seed_posts)
+```
+
+Next, the one-wave snowball. The nested `map()` calls walk the facet
+structure exactly as in Part 02 (facets → features → mention DIDs);
+`table()` tallies how often each account is mentioned; and we keep the
+six most-mentioned accounts that actually have posts:
+
+```{r corpus-panel}
+mention_dids <- seed_posts$facets |>
+  map(\(facets) {
+    map(facets, \(facet) {
+      map_chr(facet$features, \(f) {
+        if (endsWith(f$`$type`, "#mention")) f$did else NA_character_
+      })
+    })
+  }) |>
+  unlist() |>
+  discard(is.na)
+
+top_mentioned <- names(sort(table(mention_dids), decreasing = TRUE))[1:8]
+profiles <- bs_get_profile(top_mentioned)
+panel_handles <- profiles |>
+  filter(posts_count > 0) |>
+  slice_head(n = 6) |>
+  pull(handle)
+
+panel_posts <- map(panel_handles, \(h) {
+  out <- fetch_posts(h, 150)
+  Sys.sleep(0.1)
+  out
+}) |> list_rbind()
+
+c(seed = nrow(seed_posts), panel = nrow(panel_posts))
+```
+
+### 1.2 Tidying and filtering by language
+
+Text methods below assume English, so we keep posts whose record
+*declares* English in `langs` (a self-report by the posting client — a
+measurement choice worth remembering), drop empty texts, and
+de-duplicate by URI:
+
+```{r corpus-tidy}
+corpus <- bind_rows(seed_posts, panel_posts) |>
+  distinct(uri, .keep_all = TRUE) |>
+  mutate(
+    created_at = ymd_hms(created_at, quiet = TRUE),
+    english = map_lgl(langs, \(l) "en" %in% l)
+  ) |>
+  filter(english, str_squish(text) != "") |>
+  select(uri, author, created_at, text)
+
+corpus |> count(author, sort = TRUE)
+```
+
+## 2. Preprocessing short social text
+
+`unnest_tokens()` lowercases and splits on word boundaries; we then
+strip URLs and platform syntax and remove stopwords. Custom stopwords
+matter on social text — handles, "rt"-like artifacts, and bare domains
+are frequent but meaningless:
+
+```{r tokens}
+custom_stop <- tibble(word = c("https", "t.co", "bsky.app", "amp",
+                               "gt", "lt", "1", "2", "3"))
+
+tokens <- corpus |>
+  mutate(text_clean = text |>
+           str_remove_all("https?://\\S+") |>
+           str_remove_all("@[\\w.]+")) |>
+  unnest_tokens(word, text_clean) |>
+  anti_join(stop_words, by = "word") |>
+  anti_join(custom_stop, by = "word") |>
+  filter(str_detect(word, "[a-z]"))
+
+c(posts = n_distinct(tokens$uri), tokens = nrow(tokens),
+  vocabulary = n_distinct(tokens$word))
+```
+
+### What did we just throw away?
+
+Stopword lists built for documents amputate meaning from 300-character
+posts: negations ("not"), pronouns, and intensifiers all carry signal
+for some questions. Print a before/after pair whenever you change the
+pipeline, and keep the raw `text` column forever.
+
+```{r before-after}
+example <- corpus |> filter(author == SEED_ACCOUNT) |>
+  slice_head(n = 1)
+example$text
+tokens |> filter(uri == example$uri) |> pull(word)
+```
+
+## 3. Word and n-gram frequencies
+
+The simplest content analysis is a word count. Single words (*unigrams*)
+show vocabulary; adjacent pairs (*bigrams*, built by `unnest_tokens()`
+with `token = "ngrams", n = 2`) recover phrases that unigrams shred,
+like "data science". `reorder_within()` is a tidytext convenience that
+sorts the bars within each facet:
+
+```{r frequencies, fig.width=12, fig.height=6}
+unigrams <- tokens |> count(word, sort = TRUE)
+
+bigrams <- corpus |>
+  mutate(text_clean = str_remove_all(text, "https?://\\S+")) |>
+  unnest_tokens(bigram, text_clean, token = "ngrams", n = 2) |>
+  separate(bigram, c("w1", "w2"), sep = " ") |>
+  filter(!w1 %in% stop_words$word, !w2 %in% stop_words$word) |>
+  unite(bigram, w1, w2, sep = " ") |>
+  count(bigram, sort = TRUE)
+
+bind_rows(
+  unigrams |> slice_head(n = 20) |> transmute(term = word, n, kind = "unigrams"),
+  bigrams |> slice_head(n = 20) |> transmute(term = bigram, n, kind = "bigrams")
+) |>
+  ggplot(aes(n, reorder_within(term, n, kind))) +
+  geom_col(aes(fill = kind), show.legend = FALSE) +
+  scale_y_reordered() +
+  facet_wrap(~kind, scales = "free") +
+  labs(x = "Occurrences in corpus", y = NULL,
+       title = paste("Most frequent terms across", nrow(corpus), "posts")) +
+  theme_minimal()
+```
+
+### 3.1 What makes each account distinctive?
+
+Raw frequency rewards verbosity: the seed account posts the most, so it
+dominates every top-words list. *Log-odds ratios* fix this by comparing
+each account's rate of using a word against everyone else's rate of
+using it — a word scores high for an account when that account uses it
+disproportionately, not merely often. The +0.5 *smoothing* keeps words
+one group never uses from producing log(0):
+
+```{r log-odds}
+account_words <- tokens |> count(author, word)
+
+distinctive <- account_words |>
+  group_by(word) |>
+  mutate(total = sum(n)) |>
+  group_by(author) |>
+  mutate(
+    own_total = sum(n),
+    rest = total - n,
+    rest_total = sum(account_words$n) - own_total,
+    log_odds = log((n + 0.5) / (own_total - n + 0.5)) -
+               log((rest + 0.5) / (rest_total - rest + 0.5))
+  ) |>
+  filter(n >= 3) |>
+  slice_max(log_odds, n = 8) |>
+  summarise(distinctive_words = paste(word, collapse = ", "),
+            .groups = "drop")
+
+distinctive
+```
+
+## 4. Sentiment analysis with a lexicon
+
+Python used VADER, a lexicon tuned for social media. tidytext ships the
+Bing lexicon (positive/negative word lists); the mechanics — and the
+failure modes — are the same. First, the demos that show what
+lexicon-based scoring can and cannot see:
+
+```{r sentiment-demo}
+score_text <- function(texts) {
+  scores <- tibble(doc = seq_along(texts), text = texts) |>
+    unnest_tokens(word, text) |>
+    inner_join(get_sentiments("bing"), by = "word") |>
+    mutate(value = if_else(sentiment == "positive", 1L, -1L)) |>
+    group_by(doc) |>
+    summarise(score = sum(value))
+  tibble(doc = seq_along(texts)) |>
+    left_join(scores, by = "doc") |>
+    mutate(score = coalesce(score, 0L)) |>
+    pull(score)
+}
+
+demos <- c("The new feature is good.",
+           "The new feature is not good.",        # negation: NOT handled by Bing
+           "Oh great, ANOTHER outage. Just what I needed today.")  # sarcasm: no
+
+tibble(text = demos, score = score_text(demos))
+```
+
+Note the failures: unlike VADER, a plain word lexicon misses negation
+entirely, and no lexicon catches sarcasm. Validation (Section 7) is not
+optional.
+
+```{r sentiment-corpus, fig.width=8, fig.height=5}
+corpus <- corpus |> mutate(sentiment = score_text(text))
+
+ggplot(corpus, aes(sentiment)) +
+  geom_histogram(binwidth = 1, fill = "mediumpurple", color = "white") +
+  geom_vline(xintercept = 0, linewidth = 0.3) +
+  labs(x = "Bing sentiment score (positive − negative words)",
+       y = "Number of posts",
+       title = "Sentiment distribution across the corpus") +
+  theme_minimal()
+```
+
+### 4.1 Sentiment over time
+
+```{r sentiment-time, fig.width=10, fig.height=5}
+corpus |>
+  mutate(month = floor_date(created_at, "month")) |>
+  group_by(month) |>
+  filter(n() >= 20) |>
+  summarise(mean_sent = mean(sentiment),
+            se = sd(sentiment) / sqrt(n())) |>
+  ggplot(aes(month, mean_sent)) +
+  geom_ribbon(aes(ymin = mean_sent - 1.96 * se,
+                  ymax = mean_sent + 1.96 * se),
+              fill = "seagreen", alpha = 0.25) +
+  geom_line(color = "seagreen") + geom_point(color = "seagreen") +
+  geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.3) +
+  labs(x = "Month", y = "Mean sentiment score",
+       title = "Monthly mean sentiment across the panel corpus") +
+  theme_minimal()
+```
+
+### 4.2 Where dictionaries break
+
+Read the extremes — always:
+
+```{r sentiment-extremes}
+corpus |>
+  filter(author == SEED_ACCOUNT) |>
+  arrange(sentiment) |>
+  slice(c(1:3, (n() - 2):n())) |>
+  transmute(sentiment, text = str_trunc(text, 120))
+```
+
+## 5. Topic modeling with LDA
+
+Latent Dirichlet Allocation (LDA) treats each post as a *mixture* of
+topics and each topic as a *distribution over words* — and learns both
+from word co-occurrence alone, with no labels. The model wants a
+**document-term matrix** (rows = posts, columns = words, cells =
+counts), which `cast_dtm()` builds from our tidy token counts. We first
+drop words appearing in fewer than five posts — they carry almost no
+co-occurrence information and balloon the vocabulary — and fix the random
+seed, because LDA's fitting is stochastic:
+
+```{r lda}
+dtm <- tokens |>
+  count(uri, word) |>
+  group_by(word) |>
+  filter(n_distinct(uri) >= 5) |>          # word in >= 5 posts
+  ungroup() |>
+  cast_dtm(uri, word, n)
+
+N_TOPICS <- 8
+lda_fit <- LDA(dtm, k = N_TOPICS, control = list(seed = 42))
+
+dtm
+```
+
+### 5.1 Reading the topics
+
+A fitted LDA model has two faces, and tidytext exposes each as a tidy
+tibble. The **beta** matrix gives each word's probability under each
+topic — reading the top-12 words per topic is how humans decide what a
+topic "is":
+
+```{r topic-words}
+topic_words <- tidy(lda_fit, matrix = "beta") |>
+  group_by(topic) |>
+  slice_max(beta, n = 12) |>
+  summarise(top_words = paste(term, collapse = ", "))
+
+topic_words
+```
+
+### 5.2 Documents as topic mixtures
+
+The **gamma** matrix is the other face: each post's estimated mixture
+over the topics. Here is the single post in the corpus most dominated by
+one topic:
+
+```{r gamma}
+doc_topics <- tidy(lda_fit, matrix = "gamma")
+
+most_concentrated <- doc_topics |>
+  slice_max(gamma, n = 1, with_ties = FALSE)
+
+corpus |>
+  filter(uri == most_concentrated$document) |>
+  transmute(text = str_trunc(text, 200),
+            dominant_topic = most_concentrated$topic,
+            share = round(most_concentrated$gamma, 2))
+```
+
+### 5.3 Topic prevalence by account
+
+```{r prevalence, fig.width=10, fig.height=5}
+doc_topics |>
+  left_join(select(corpus, uri, author), by = c(document = "uri")) |>
+  group_by(author, topic) |>
+  summarise(mean_share = mean(gamma), .groups = "drop") |>
+  ggplot(aes(factor(topic), author, fill = mean_share)) +
+  geom_tile() +
+  geom_text(aes(label = round(mean_share, 2)), size = 3) +
+  scale_fill_gradient(low = "white", high = "darkblue") +
+  labs(x = "Topic", y = NULL, fill = "Mean share",
+       title = "Topic prevalence by account") +
+  theme_minimal()
+```
+
+### 5.4 Choosing k, and other confessions
+
+We set `k = 8` because it makes a readable demo. There is no true k:
+fit several, compare interpretability (and metrics like perplexity or
+the [ldatuning](https://cran.r-project.org/package=ldatuning) scores),
+and report the choice as a researcher degree of freedom.
+
+## 6. Beyond word counts: transformer sentence embeddings
+
+Modern NLP represents whole sentences as dense vectors that capture
+meaning beyond shared vocabulary. From R the practical routes are the
+[text](https://r-text.org/) package (which wraps Hugging Face
+transformers via reticulate) or calling a Python encoder directly. The
+workflow is the same as the Python notebook's: embed posts, then
+cluster, classify, or measure similarity in the embedding space.
+
+```{r embeddings, eval=FALSE}
+# install.packages("text"); text::textrpp_install()
+embeddings <- text::textEmbed(corpus$text[1:3])
+dim(embeddings$texts$texts)
+```
+
+## 7. Validate, validate, validate
+
+Every measurement above — tokens, sentiment scores, topic labels — is a
+*proxy* read off text by rules that do not understand it. The discipline
+(Grimmer & Stewart 2013): draw a random sample, read it against the
+machine's labels, and quantify the agreement before trusting any
+downstream result. Part 08 turns this into a full workflow with gold
+labels and agreement metrics.
+
+```{r validation-sample}
+set.seed(42)
+doc_topics |>
+  group_by(document) |>
+  slice_max(gamma, n = 1, with_ties = FALSE) |>
+  ungroup() |>
+  left_join(corpus, by = c(document = "uri")) |>
+  filter(author == SEED_ACCOUNT) |>
+  slice_sample(n = 8) |>
+  transmute(sentiment, dominant_topic = topic,
+            text = str_trunc(text, 140))
+```
+
+## 8. Saving the corpus and results
+
+```{r save}
+dir.create("data", showWarnings = FALSE)
+
+write_csv(corpus, "data/corpus.csv")
+write_csv(topic_words, "data/topic_top_words.csv")
+write_json(
+  list(collected_on = COLLECTED_ON, seed_account = SEED_ACCOUNT,
+       panel_accounts = panel_handles, language_filter = "en",
+       n_posts_saved = nrow(corpus), lda_topics = N_TOPICS, lda_seed = 42),
+  "data/collection_metadata.json", pretty = TRUE, auto_unbox = TRUE)
+
+read_csv("data/corpus.csv", show_col_types = FALSE) |> nrow()
+```
+
+## Ethics and limitations
+
+Text is people talking. Quoting strangers' posts verbatim in
+publications makes them findable and harassable; paraphrase or aggregate
+(our extremes table above is for *your* validation reading, not for
+publication). Sentiment lexicons encode the norms of their builders and
+miss negation, sarcasm, and community-specific language; LDA topics are
+statistical regularities, not meanings, and both will happily produce
+confident numbers from garbage. The corpus design (a seed plus its
+mention network, English-declared posts only) shapes every count above.
+
+## Exercises
+
+1. Re-run the pipeline keeping stopwords. Which analyses change most?
+2. Add the AFINN lexicon (`get_sentiments("afinn")`, via the textdata
+   package) and compare scores with Bing on the same posts.
+3. Fit LDA with k = 4 and k = 12 and compare the topic-word tables.
+   Which is more interpretable?
+4. Compute distinctive *bigrams* per account instead of unigrams.
+5. Hand-label 30 posts for positive/negative/neutral and compute the
+   lexicon's accuracy against your labels.
+
+## Research project ideas
+
+* **Linguistic accommodation.** Using log-odds over time, test whether
+  accounts that mention each other converge in vocabulary.
+* **Topic dynamics around events.** Fit a topic model to a snowball
+  archive (Part 02) spanning a news event and trace topic prevalence
+  before, during, and after (combining Parts 05 and 06).
+
+## References
+
+### Scholarship
+
+* Grimmer, J., & Stewart, B. M. (2013). Text as data: The promise and pitfalls of automatic content analysis. *Political Analysis*, 21(3), 267–297.
+* Silge, J., & Robinson, D. (2017). *Text Mining with R: A Tidy Approach*. O'Reilly. <https://www.tidytextmining.com/>
+* Blei, D. M., Ng, A. Y., & Jordan, M. I. (2003). Latent Dirichlet allocation. *JMLR*, 3, 993–1022.
+* Hutto, C., & Gilbert, E. (2014). VADER: A parsimonious rule-based model for sentiment analysis of social media text. *ICWSM*.
+* Monroe, B. L., Colaresi, M. P., & Quinn, K. M. (2008). Fightin' words: Lexical feature selection and evaluation for identifying the content of political conflict. *Political Analysis*, 16(4), 372–403.
+
+### Documentation
+
+* tidytext: <https://juliasilge.github.io/tidytext/>
+* topicmodels: <https://cran.r-project.org/package=topicmodels>
+* text (transformers in R): <https://r-text.org/>
+* bskyr: <https://christophertkenny.com/bskyr/>

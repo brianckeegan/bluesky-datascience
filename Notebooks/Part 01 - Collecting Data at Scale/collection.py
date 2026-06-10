@@ -38,7 +38,7 @@ def fetch_all_pages(
         ``client.get_follows``, or ``client.get_followers``.
     params : dict
         Keyword arguments passed to ``method`` on every call, e.g.
-        ``{"actor": "brianckeegan.com", "limit": 100}``. Do not include
+        ``{"actor": "nytimes.com", "limit": 100}``. Do not include
         ``cursor``; this function manages it.
     items_attr : str
         Name of the response attribute holding the list of items
