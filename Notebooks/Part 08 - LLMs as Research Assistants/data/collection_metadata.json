@@ -1,0 +1,9 @@
+{
+  "actor": "brianckeegan.com",
+  "endpoint": "app.bsky.feed.getAuthorFeed",
+  "filter": "posts_no_replies",
+  "reposts_excluded": true,
+  "target_posts": 150,
+  "n_collected": 138,
+  "collected_at": "2026-06-10T10:55:17.768126+00:00"
+}
