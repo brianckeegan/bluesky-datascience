@@ -180,12 +180,42 @@ This document outlines ten planned notebooks that build on [Part 00 - Introducti
 
 ---
 
-## Cross-cutting themes
+## Ethics
 
-Three threads run through all ten notebooks and recur in their closing discussion sections:
+Public availability is not blanket consent. Most Bluesky users have not read the protocol documentation and may not realize that their posts, likes, follows, and even blocks are globally readable; research consistently finds that social media users are surprised and sometimes upset to learn their posts are used in research (Fiesler & Proferes 2018). The notebooks therefore treat ethics as a design decision made *before* collection, not a disclaimer added afterward. Recurring principles:
 
-1. **Ethics.** Public availability is not blanket consent; each notebook flags the specific risks its data type raises (network data exposes third parties, images may contain faces, LLM processing sends data to another company's servers).
-2. **Reproducibility.** Archives are saved with collection dates and query parameters; analyses run from saved data so results can be re-checked even as the live network changes.
-3. **The decentralization advantage.** Where relevant, notebooks contrast what is possible on an open protocol (full graphs, inspectable feeds, a public firehose) with what closed platforms allow, and what that openness implies for both research and user privacy.
+* **Minimization and purpose limitation.** Collect only the fields a research question requires; prefer aggregate and derived measures over raw archives when sharing results.
+* **Third parties.** Network data (Parts 03–04) necessarily exposes people other than the seed account; reply trees and like lists include users who never opted into anything.
+* **De-identification and quoting.** Verbatim posts are trivially re-identifiable via search. Paraphrase or aggregate when reporting, especially for sensitive topics (Zimmer 2010).
+* **Deletion and withdrawal.** Users delete posts and accounts; archives should record collection dates and honor deletions when re-publishing or sharing data.
+* **Data-type-specific risks.** Images may contain faces and locations (Part 07); sending posts to an LLM API transmits user content to another company's servers (Part 08); bots interact with humans who have not consented to study participation and should disclose that they are automated (Part 10).
+* **Institutional review.** "Public data" does not automatically mean exempt; the notebooks point readers to their IRB and to the AoIR Internet Research Ethics guidelines (franzke et al. 2020) for contextual judgment.
+
+## Limitations
+
+The notebooks are explicit about what Bluesky data can and cannot support:
+
+* **Representativeness.** Bluesky's user base skews toward early adopters and several waves of Twitter migrants; prevalence estimates do not generalize to "the public," just as Twitter users were never representative of national populations (Mislove et al. 2011; Wojcik & Hughes 2019).
+* **The model-organism problem.** Findings from one heavily studied platform reflect its affordances and norms as much as human behavior in general (Tufekci 2014); single-platform designs should be framed accordingly.
+* **Behavioral traces, not attitudes.** Posts and likes measure expression and attention under platform incentives, not beliefs; absence of posting is not absence of opinion.
+* **No private or exposure data.** The protocol exposes public actions only — no DMs, and no impression or view counts — so engagement metrics condition on visible reactions, not on who saw a post.
+* **A platform in flux.** Lexicons, endpoints, rate limits, and moderation infrastructure are actively evolving; code that works today may need adjustment, which is why each notebook saves raw responses and records collection parameters (reproducibility over re-collection).
+* **Search and index completeness.** `searchPosts` queries an index, not the full network history; deletions, blocks, and opt-outs create survivorship bias relative to firehose-based collection (an issue with direct parallels in Twitter's Streaming vs. Decahose APIs — Morstatter et al. 2013).
+* **Identity instability.** Handles can change while DIDs persist; longitudinal designs should key on DIDs. Spam and automated accounts contaminate samples here as on every platform.
+
+## Related work from Twitter scholarship
+
+For fifteen years Twitter was computational social science's model organism (Tufekci 2014), and most of the research designs in these notebooks were first developed there. Each notebook situates its design in that literature — both to give credit and to let readers test whether Twitter-era findings replicate on a structurally different, decentralized platform. Key anchors by part:
+
+* **Part 01 (collection, ethics):** Ruths & Pfeffer (2014) on the pitfalls of social media samples; Freelon (2018) on computational research in the "post-API age" — a cautionary tale that motivates studying open protocols; Fiesler & Proferes (2018) on participant perceptions of Twitter research ethics.
+* **Part 02 (topical corpora):** Bruns & Burgess (2011) on hashtag publics and ad hoc issue communities; Tufekci (2014) on hashtag sampling bias.
+* **Part 03 (follow networks):** Kwak, Lee, Park, & Moon (2010), "What is Twitter, a social network or a news media?"; Conover et al. (2011) on political polarization in retweet vs. mention networks.
+* **Part 04 (diffusion):** boyd, Golder, & Lotan (2010) on retweeting as conversational practice; Bakshy, Hofman, Mason, & Watts (2011) on identifying influencers; Goel, Anderson, Hofman, & Watts (2016) on structural virality; Vosoughi, Roy, & Aral (2018) on the spread of true and false news.
+* **Part 05 (time series, causal inference):** Golder & Macy (2011) on diurnal and seasonal mood rhythms; Dodds et al. (2011) on the hedonometer; González-Bailón, Borge-Holthoefer, Rivero, & Moreno (2011) on protest recruitment dynamics.
+* **Part 06 (NLP):** O'Connor et al. (2010), "From tweets to polls"; Hutto & Gilbert (2014), the VADER sentiment lexicon built for microblog text; Grimmer & Stewart (2013) on validating automated text methods.
+* **Part 07 (visual content):** Highfield & Leaver (2016) on visual social media methods; Gleason et al. (2019) on how user-provided image descriptions failed to make Twitter accessible — a direct baseline for Bluesky's alt-text norms.
+* **Part 08 (LLM annotation):** Gilardi, Alizadeh, & Kubli (2023) on ChatGPT outperforming crowd workers for text annotation (on tweets); Törnberg (2023) on LLMs classifying political Twitter content; Ziems et al. (2024) on whether LLMs can transform computational social science.
+* **Part 09 (algorithmic curation):** Huszár et al. (2022) on algorithmic amplification of politics on Twitter — an audit that required internal access, whereas Bluesky's feeds are externally inspectable; Bandy & Diakopoulos (2021) on how algorithmic curation changed media exposure in Twitter timelines.
+* **Part 10 (streams, bots):** Morstatter, Pfeffer, Liu, & Carley (2013), "Is the sample good enough?", comparing Twitter's Streaming API to the firehose; Pfeffer, Mayer, & Morstatter (2018) on tampering with Twitter's sample API; Ferrara et al. (2016) on the rise of social bots.
 
 **Possible future parts.** OAuth-based authentication, developing and publishing a custom feed generator, working with PDS repositories and CAR files directly, and agent-based simulation calibrated on Bluesky data.
