@@ -1,0 +1,15 @@
+{
+  "collected_at": "2026-06-10T10:55:21.439523+00:00",
+  "accounts": {
+    "treated": "brianckeegan.com",
+    "comparison": "bsky.app"
+  },
+  "n_actions": {
+    "brianckeegan.com": 8190,
+    "bsky.app": 903
+  },
+  "event": "2024-11-05",
+  "timezone": "America/Denver",
+  "endpoint": "app.bsky.feed.getAuthorFeed",
+  "page_size": 100
+}
