@@ -42,7 +42,7 @@ The main libraries used are:
 * [NetworkX](https://networkx.org/), [statsmodels](https://www.statsmodels.org/), [scikit-learn](https://scikit-learn.org/)
 
 ## For contributors and coding agents
-[AGENTS.md](AGENTS.md) documents the project layout, notebook conventions, API environment facts, and how to re-execute notebooks.
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for how to report bugs, propose new notebooks, and submit pull requests, and our [Code of Conduct](CODE_OF_CONDUCT.md) for community expectations. [AGENTS.md](AGENTS.md) documents the project layout, notebook conventions, API environment facts, and how to re-execute notebooks.
 
 ## Future directions
 * OAuth-based authentication
