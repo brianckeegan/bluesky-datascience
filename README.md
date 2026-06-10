@@ -5,6 +5,8 @@ These are Jupyter Notebook tutorials for retrieving and analyzing data from Blue
 Here are the topics covered:
 * Introduction
 
+See [OUTLINE.md](OUTLINE.md) for the planned Parts 01–10, which pair Bluesky API endpoints with data science methods and computational social science research designs (and cover the TO-DO topics below).
+
 ## Dependencies
 This code was collected using Python scripts in a Jupyter Notebook. It also makes use of these other libraries, which I'd strongly recommend a package manager like [Anaconda](https://www.anaconda.com/products/individual) for managing.
 
