@@ -178,8 +178,10 @@ authoritative reference.
 This project teaches the collection and analysis of real, public social-media
 data, so we hold contributions to a high ethical standard:
 
-- Use `bsky.app` (the official account) and `brianckeegan.com` (the author) as
-  example accounts. Don't single out private individuals.
+- Use `bsky.app` (the official platform account) and `nytimes.com` (a large
+  institutional account) as the standing example accounts. Don't single out
+  private individuals, and bound your collections where an account's counts
+  are enormous.
 - Prefer aggregates and paraphrase over quoting strangers verbatim, and avoid
   de-anonymizing or re-identifying people.
 - Honor data minimization: collect only what a tutorial needs, and store hashed

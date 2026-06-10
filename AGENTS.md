@@ -66,7 +66,9 @@ RMarkdown/Part NN - Title/
 ```
 
 R helper functions are defined inline in each document rather than in separate
-module files; only the credential helper is shared. `bsky_client.py` and
+module files; only the credential helper is shared. Knitting an R part with
+credentials writes a `data/` directory next to the document, but unlike the
+Python series those outputs are not committed. `bsky_client.py` and
 `bsky_client.R` are intentionally duplicated into each directory so every part
 can be downloaded and run on its own. If you change one, change every copy.
 
@@ -83,7 +85,8 @@ R (4.3+):
 ```r
 install.packages(c("bskyr", "tidyverse", "jsonlite", "igraph",
                    "tidytext", "topicmodels", "rmarkdown",
-                   "websocket"))  # websocket only for Part 10
+                   "digest", "websocket"))  # websocket only for Part 10
+install.packages(c("sandwich", "lmtest"))   # optional: HAC errors in Part 05
 ```
 
 Authentication is optional for the Python series and **required for the R
