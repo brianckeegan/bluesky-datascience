@@ -1,8 +1,10 @@
 # Notebook Outline
 
-This document outlines the ten notebooks (Parts 01–10, each in its own directory under `Notebooks/`) that build on [Part 00 - Introduction](Notebooks/Part%2000%20-%20Introduction.ipynb). Each notebook pairs a set of Bluesky/ATProto API endpoints with a data science method and a computational social science research design, so that readers learn *how* to retrieve the data and *why* a researcher would want it.
+This document outlines the ten tutorials (Parts 01–10) that build on [Part 00 - Introduction](Notebooks/Part%2000%20-%20Introduction.ipynb). Each part pairs a set of Bluesky/ATProto API endpoints with a data science method and a computational social science research design, so that readers learn *how* to retrieve the data and *why* a researcher would want it.
 
-**Conventions used throughout.** Like Part 00, the notebooks authenticate with the [ATProto SDK](https://atproto.blue/) using credentials stored in a local `atproto.json` file, access endpoints through the `Client` object's dot-notation methods (*e.g.*, `client.get_author_feed(...)`), and analyze results with Pandas, NumPy, Matplotlib, and NetworkX. Endpoints are referenced both by their SDK method name and their underlying XRPC lexicon name (*e.g.*, `get_follows` / `app.bsky.graph.getFollows`). Notebooks that need additional libraries list them under "New dependencies."
+The series exists in two parallel implementations that perform the same analyses: **Python Jupyter notebooks** under `Notebooks/Part NN - Title/` and **R Markdown documents** under `RMarkdown/Part NN - Title/`. This outline describes the shared intellectual design; [AGENTS.md](AGENTS.md) documents the per-implementation layout, conventions, and execution instructions.
+
+**Conventions used throughout.** Both implementations read credentials from a local, gitignored `atproto.json` file. The Python notebooks use the [ATProto SDK](https://atproto.blue/)'s dot-notation methods (*e.g.*, `client.get_author_feed(...)`) and fall back to the unauthenticated public AppView when no credentials are present; analysis uses Pandas, NumPy, Matplotlib, and NetworkX. The R documents use [bskyr](https://christophertkenny.com/bskyr/) (which authenticates every call, so unauthenticated knits skip API chunks) with the tidyverse, igraph, tidytext, and topicmodels filling the corresponding roles. Endpoints are referenced both by their SDK method name and their underlying XRPC lexicon name (*e.g.*, `get_follows` / `app.bsky.graph.getFollows`). The "New dependencies" notes below list Python packages; the R equivalents are installed once up front (see the [README](README.md)). The standing case-study accounts are `bsky.app` (the official platform account) and `nytimes.com` (a large institutional account), with collections bounded to documented samples wherever counts are enormous.
 
 ## Sequencing
 
@@ -19,7 +21,7 @@ This document outlines the ten notebooks (Parts 01–10, each in its own directo
 
 **Endpoints.**
 * `get_author_feed` / `app.bsky.feed.getAuthorFeed` — paginating through an account's full posting history with the `cursor` parameter
-* `get_follows`, `get_followers` / `app.bsky.graph.getFollows`, `app.bsky.graph.getFollowers` — exhaustively retrieving large follow lists
+* `get_follows`, `get_followers` / `app.bsky.graph.getFollows`, `app.bsky.graph.getFollowers` — retrieving complete follow lists, and deliberately *bounded* samples of follower lists that run to the millions
 * `get_profiles` / `app.bsky.actor.getProfiles` — batching up to 25 profile lookups per request
 * Inspecting `RateLimit-*` response headers and handling `429` errors
 
@@ -33,14 +35,14 @@ This document outlines the ten notebooks (Parts 01–10, each in its own directo
 
 ## Part 02 — Searching and Snowballing: Building a Post Archive
 
-**Motivation.** Most projects begin with a topic, not an account. This notebook starts from seed keywords and hashtags and "snowballs" outward to build a deduplicated, reusable archive of posts about a topic.
+**Motivation.** Most projects begin with a topic or a community, not an account chosen in advance. This notebook builds a deduplicated, reusable post archive two ways: keyword/hashtag search where it is available, and — because search requires authentication and indexes only what the operator chooses — snowball sampling along the mention and reply ties embedded in posts, a design that needs nothing but public endpoints.
 
 **Endpoints.**
 * `app.bsky.feed.search_posts` / `app.bsky.feed.searchPosts` — keyword and hashtag search with `since`/`until`, `lang`, `author`, and `sort` parameters
 * Post record internals: `facets` (mentions, links, hashtags), `embed` views, `langs`
 * `get_posts` / `app.bsky.feed.getPosts` — re-hydrating archived posts by URI
 
-**Methods.** Seed search → extract co-occurring hashtags, mentioned accounts, and linked threads from facets → expand the query set and repeat; deduplicating by URI/CID; saturation diagnostics (how many new posts does each snowball wave add?); storing the archive on disk for reuse in later notebooks.
+**Methods.** Paginated keyword search with date/language filters; reading post records and their facets; an account-based snowball — collect a seed account's posts, identify the accounts it @-mentions or replies to most, crawl them, and repeat for a second wave under a hard account cap; deduplicating by URI; saturation diagnostics (how many new posts, accounts, and hashtags does each wave add?); storing the archive on disk with full provenance metadata for reuse in later notebooks; re-hydrating archived URIs to measure attrition.
 
 **Research design.** Snowball sampling for topical corpora and its biases; constructing a defensible sampling frame for content analysis; documenting query decisions so the archive is reproducible.
 
@@ -61,7 +63,7 @@ This document outlines the ten notebooks (Parts 01–10, each in its own directo
 
 **Research design.** Ego-network research designs; homophily and triadic closure; the boundary specification problem — who counts as "in" the network when the graph is effectively infinite?
 
-**New dependencies.** `python-louvain` (community detection).
+**New dependencies.** None beyond Part 02 — community detection uses NetworkX's built-in Louvain implementation (`nx.community.louvain_communities`, NetworkX ≥ 3.0); the R edition uses igraph's `cluster_louvain()`.
 
 ---
 
@@ -88,7 +90,7 @@ This document outlines the ten notebooks (Parts 01–10, each in its own directo
 **Motivation.** Posting activity is a behavioral trace over time. When something happens in the world — a platform migration, a news event, a policy change — we can ask whether behavior *changed because of it*, which requires causal thinking, not just plotting.
 
 **Endpoints.**
-* `get_author_feed` / `app.bsky.feed.getAuthorFeed` — full posting histories for a panel of accounts
+* `get_author_feed` / `app.bsky.feed.getAuthorFeed` — complete posting histories for a treated and a comparison account, plus `get_profiles` covariates for a matching pool
 * `app.bsky.feed.search_posts` / `app.bsky.feed.searchPosts` — keyword volumes within `since`/`until` windows around an event
 
 **Methods.** Datetime parsing and timezone handling in Pandas; resampling to hourly/daily/weekly counts; rolling averages; diurnal and weekly rhythms. Then causal designs: interrupted time series around an event; difference-in-differences comparing treated accounts or hashtags to a comparison group; matching accounts on profile covariates (followers, account age, prior activity) to build the comparison group.
@@ -101,15 +103,15 @@ This document outlines the ten notebooks (Parts 01–10, each in its own directo
 
 ## Part 06 — Natural Language Processing of Post Content
 
-**Motivation.** What are people actually saying? This notebook turns the archives built in Parts 02 and 05 into quantitative measures of content.
+**Motivation.** What are people actually saying? This notebook turns collections of posts into quantitative measures of content.
 
-**Endpoints.** Primarily reuses saved archives; `get_posts` / `app.bsky.feed.getPosts` to re-hydrate text by URI when needed.
+**Endpoints.** Builds a fresh panel corpus with `get_author_feed` / `app.bsky.feed.getAuthorFeed` (a seed account plus the accounts it mentions most, reusing Part 02's snowball logic in miniature); `get_posts` / `app.bsky.feed.getPosts` re-hydrates text by URI when working from a saved archive.
 
 **Methods.** Tokenization, stopword removal, and normalization for short social text (handles, hashtags, links); word and n-gram frequencies; sentiment analysis with VADER; topic modeling with LDA; a brief pointer to transformer sentence embeddings as the modern alternative.
 
 **Research design.** Dictionary-based versus unsupervised content analysis; validating automated measures against human judgment; common failure modes (sarcasm, multilinguality, domain drift) and the "validate, validate, validate" principle.
 
-**New dependencies.** `nltk` or `spaCy`, `vaderSentiment`, `scikit-learn` (LDA).
+**New dependencies.** `vaderSentiment` (social-media sentiment lexicon) and `scikit-learn` (document-term matrices and LDA); the R edition uses tidytext's bundled Bing lexicon and the topicmodels package.
 
 ---
 
@@ -118,11 +120,11 @@ This document outlines the ten notebooks (Parts 01–10, each in its own directo
 **Motivation.** A large share of social media communication is visual, yet most tutorials stop at text. Bluesky's image embeds, alt-text culture, and link cards make visual and accessibility questions directly measurable.
 
 **Endpoints.**
-* `embed` views on post records: `app.bsky.embed.images`, `app.bsky.embed.video`, `app.bsky.embed.external` (link cards)
-* Blob CDN URLs and `com.atproto.sync.getBlob` — downloading full-size media
-* `get_profile` / `app.bsky.actor.getProfile` — avatars and banners as a profile-image corpus
+* `embed` views on post records: `app.bsky.embed.images`, `app.bsky.embed.video`, `app.bsky.embed.external` (link cards), `app.bsky.embed.record` and `recordWithMedia` (quotes)
+* `get_author_feed` requested as **raw JSON** rather than typed SDK models — the platform ships new embed types faster than SDKs model them, and strict parsing crashes on them
+* Thumbnail URLs served by the image CDN (`com.atproto.sync.getBlob` is the raw-protocol route to full-size blobs)
 
-**Methods.** Building and managing an image corpus on disk (URLs, hashing, deduplication); EDA of media use — how often do posts include images, video, or link cards, and who provides alt text?; encoding images with a pretrained model (CLIP embeddings) for clustering and zero-shot classification of image content.
+**Methods.** Classifying embeds robustly from raw records; EDA of media use across a panel of accounts — how often do posts include images, video, or link cards, what aspect ratios, and who provides alt text at what length?; mapping link-card domains as an outlink/self-promotion measure; building a small, documented thumbnail corpus with a manifest; encoding images with a pretrained model (CLIP embeddings) for clustering and zero-shot classification of image content.
 
 **Research design.** Visual framing analysis; multimodal content analysis (does the image agree with the text?); alt-text provision as a measurable accessibility and norms question.
 
@@ -140,7 +142,7 @@ This document outlines the ten notebooks (Parts 01–10, each in its own directo
 
 **Research design.** LLM-assisted content analysis and the "LLMs as annotators" debate; codebook development; when LLM labels are (and are not) defensible as research measures; documentation and reproducibility concerns with closed models.
 
-**New dependencies.** `anthropic` (or another LLM provider's SDK).
+**New dependencies.** `anthropic` (or another LLM provider's SDK), optional — the annotation loop is guarded behind an API key and a transparent keyword baseline always runs; the R edition calls the HTTP API directly with httr2.
 
 ---
 
@@ -155,7 +157,7 @@ This document outlines the ten notebooks (Parts 01–10, each in its own directo
 * `app.bsky.graph.get_starter_packs` / `app.bsky.graph.getStarterPacks` — onboarding bundles of accounts and feeds
 * `com.atproto.label.query_labels` / `com.atproto.label.queryLabels` — moderation labels applied by labeler services
 
-**Methods.** Sampling posts from several custom feeds and comparing their composition (authors, topics, engagement, recency) against the default Following timeline; measuring audience overlap between feeds; describing list and starter-pack membership; tabulating label prevalence.
+**Methods.** Sampling posts from several custom feeds and comparing their composition (author concentration, engagement, recency, media share) against a no-algorithm baseline built from a public list feed (the personalized Following timeline is only observable to a logged-in account); measuring audience overlap between feeds with Jaccard similarity; describing list and starter-pack membership; querying labeler services and tabulating label prevalence.
 
 **Research design.** Algorithm audit designs adapted to a platform where algorithms are inspectable; platform governance and "stackable moderation" as a research site; starter packs as a natural experiment in network formation.
 
@@ -170,7 +172,7 @@ This document outlines the ten notebooks (Parts 01–10, each in its own directo
 **Endpoints.**
 * [Jetstream](https://docs.bsky.app/blog/jetstream) — a friendly JSON websocket of network events, filterable by collection (`app.bsky.feed.post`, `app.bsky.feed.like`, `app.bsky.graph.follow`)
 * `com.atproto.sync.subscribeRepos` via the SDK's `FirehoseSubscribeReposClient` — the raw, complete firehose
-* Write endpoints from Part 00: `send_post`, `like`, and replies with `reply_to` references; `get_notifications` / `app.bsky.notification.listNotifications` for detecting mentions
+* Write endpoints from Part 00: `send_post`, `like`, and threaded replies via `ReplyRef`; `get_notifications` / `app.bsky.notification.listNotifications` for detecting mentions (write actions are shown but never executed by the committed notebooks)
 
 **Methods.** Connecting to a websocket stream and filtering events; live counts of posts, likes, and follows per minute; capturing a keyword's real-time volume during an event. Then a minimal bot: poll or stream for a trigger (a hashtag or a mention), construct a reply, and post on a schedule with appropriate rate limiting.
 

@@ -34,7 +34,8 @@ python3 -m pip install -r requirements.txt
 ```r
 install.packages(c("bskyr", "tidyverse", "jsonlite", "igraph",
                    "tidytext", "topicmodels", "rmarkdown",
-                   "websocket"))  # websocket only for Part 10
+                   "digest", "websocket"))  # websocket only for Part 10
+install.packages(c("sandwich", "lmtest"))   # optional: HAC errors in Part 05
 ```
 
 Authentication: save your handle and an [app password](https://bsky.app/settings/app-passwords) as `atproto.json` in the repository root (it is gitignored — never commit credentials):
