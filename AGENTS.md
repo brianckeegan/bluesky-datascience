@@ -76,11 +76,22 @@ require authentication skip themselves gracefully.
 
 ## Notebook conventions
 
-- **Structure:** H1 title; a short motivating introduction; a "Learning
-  objectives" list; numbered sections with explanatory markdown between code
-  cells (match the instructional voice of Part 00); a closing "Ethics and
-  limitations" note; a "References" section citing the related Twitter
-  scholarship listed for that part in OUTLINE.md.
+- **Audience and voice:** a textbook-style narrative aimed at undergraduate
+  students. Narrate extensively: every code cell is preceded by markdown that
+  explains what is about to happen and why, and important results are followed
+  by interpretation in plain language. Define terms on first use, anticipate
+  confusion, and link generously to resources — official API/lexicon docs
+  (https://docs.bsky.app, https://atproto.com, https://atproto.blue), library
+  documentation (pandas, NetworkX, statsmodels, scikit-learn), and accessible
+  readings.
+- **Structure:** H1 title; a motivating introduction; a "Learning objectives"
+  list; numbered sections with explanatory markdown between code cells; a
+  closing "Ethics and limitations" note; an "Exercises" section (4–6 tasks
+  extending the notebook, ordered from small modifications to mini-analyses);
+  a "Research project ideas" section (2–3 research designs a student could
+  pursue with this part's methods); a "References" section citing the related
+  Twitter scholarship listed for that part in OUTLINE.md, plus links to
+  relevant documentation.
 - **API style:** the atproto SDK with dot-notation methods —
   `client.get_author_feed(...)` or `client.app.bsky.feed.get_author_feed({...})` —
   and cursor-based pagination, as in Part 00.
