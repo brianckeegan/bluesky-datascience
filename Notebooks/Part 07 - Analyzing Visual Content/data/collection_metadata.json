@@ -1,0 +1,15 @@
+{
+  "collected_at": "2026-06-10T11:00:18.469329+00:00",
+  "panel": [
+    "bsky.app",
+    "brianckeegan.com",
+    "boulderrl.bsky.social",
+    "propublica.org",
+    "nytimes.com",
+    "knightcolumbia.org"
+  ],
+  "posts_per_account": 135,
+  "feed_filter": "posts_no_replies",
+  "reposts_excluded": true,
+  "endpoint": "app.bsky.feed.getAuthorFeed (public AppView, raw JSON)"
+}
