@@ -132,39 +132,132 @@ c(seed = nrow(seed_posts), panel = nrow(panel_posts))
 
 ### 1.2 Tidying and filtering by language
 
-Text methods below assume English, so we keep posts whose record
-*declares* English in `langs` (a self-report by the posting client — a
-measurement choice worth remembering), drop empty texts, and
-de-duplicate by URI:
+Every method below (English stopwords, an English sentiment lexicon, a
+bag-of-words topic model) assumes English text. Post records carry a
+self-declared `langs` field set by the posting client, which is
+imperfect in two different ways. It can be **wrong**: clients usually
+fill it in from the device's language settings. And it can be **empty**:
+some clients, including the publishing tools many newsrooms use, record
+no language at all. An empty `langs` is *missing data*. It tells us
+nothing about the post's language, so a filter that keeps only posts that
+*declare* English quietly treats "no answer" as "not English".
+
+Our `language_status()` function sorts each post into one of four
+groups instead:
+
+| Group | Meaning |
+|---|---|
+| declared English | `langs` includes an English tag |
+| declared other | `langs` names only other languages |
+| undeclared, looks English | `langs` is empty, but the text passes a simple English test |
+| undeclared, not English or too short | `langs` is empty and the test fails or can't tell |
+
+The simple test counts **function words**, the short grammatical words
+("the", "of", "and", "with") that make up a large share of any English
+sentence but almost never appear in Spanish, French, Portuguese, or
+German. If at least 10% of a post's words are English function words we
+call it English; posts with fewer than five words are too short to judge.
+It is the same crude, transparent rule the Python notebook uses, one you
+can check by reading posts. (The regular expression `[^\W\d_]+`
+used with `str_extract_all()` matches runs of letters in any alphabet.)
+
+```{r language-status}
+ENGLISH_FUNCTION_WORDS <- c(
+  "the", "and", "of", "to", "is", "for", "that", "with", "on", "was",
+  "are", "this", "it", "from", "by", "at", "as", "be", "has", "have", "an",
+  "his", "her", "their", "they", "after", "about", "who", "will", "what",
+  "more", "said", "its", "were", "been", "than", "which", "not", "but",
+  "or", "how", "why", "when", "new")
+
+# Patterns shared with the tokenizer in Section 2
+URL_PATTERN <- "https?://\\S+|www\\.\\S+"
+HANDLE_PATTERN <- "@[A-Za-z0-9.\\-]+"
+# Display URLs like "nytimes.com/2026/11/..." (each dotted part >= 2 chars,
+# so "e.g." and "U.S." survive)
+DISPLAY_URL_PATTERN <- "\\b\\w[\\w\\-]*(?:\\.[\\w\\-]{2,})+(?:/\\S*)?"
+
+strip_links <- function(text) {
+  text |>
+    str_remove_all(URL_PATTERN) |>
+    str_remove_all(HANDLE_PATTERN) |>
+    str_remove_all(DISPLAY_URL_PATTERN)
+}
+
+language_status <- function(langs, text, threshold = 0.10, min_words = 5) {
+  map2_chr(langs, text, \(l, t) {
+    l <- as.character(unlist(l))
+    if (any(startsWith(tolower(l), "en"))) return("declared English")
+    if (length(l) > 0) return("declared other")
+    words <- str_extract_all(strip_links(str_to_lower(t)), "[^\\W\\d_]+")[[1]]
+    if (length(words) >= min_words &&
+        mean(words %in% ENGLISH_FUNCTION_WORDS) >= threshold) {
+      return("undeclared, looks English")
+    }
+    "undeclared, not English or too short"
+  })
+}
+```
+
+Now de-duplicate by URI, classify every post, and look at the result
+*before* filtering. `count()` tallies posts per account and group, and
+`pivot_wider()` spreads the groups into columns:
 
 ```{r corpus-tidy}
-corpus <- bind_rows(seed_posts, panel_posts) |>
+corpus_all <- bind_rows(seed_posts, panel_posts) |>
   distinct(uri, .keep_all = TRUE) |>
-  mutate(
-    created_at = ymd_hms(created_at, quiet = TRUE),
-    english = map_lgl(langs, \(l) "en" %in% l)
-  ) |>
-  filter(english, str_squish(text) != "") |>
-  select(uri, author, created_at, text)
+  mutate(created_at = ymd_hms(created_at, quiet = TRUE),
+         language_status = language_status(langs, text))
+
+corpus_all |>
+  count(author, language_status) |>
+  pivot_wider(names_from = language_status, values_from = n, values_fill = 0)
+```
+
+Read the table row by row. For the newsroom accounts, most posts
+typically land in an *undeclared* column, because their publishing tools
+never fill in `langs`; the individual journalists who post from the
+Bluesky app usually declare English. Had we kept only declared-English
+posts, the corpus would have lost most of exactly the institutional
+accounts the design is about. The general lesson: **self-reported
+metadata is missing in a way that is not random**, so check who is
+missing before you filter on it.
+
+Now apply the rule — keep posts that declare English, or declare nothing
+but pass the test, and that have non-empty text:
+
+```{r corpus-filter}
+corpus <- corpus_all |>
+  filter(language_status %in% c("declared English", "undeclared, looks English"),
+         str_squish(text) != "") |>
+  select(uri, author, created_at, text, language_status)
 
 corpus |> count(author, sort = TRUE)
 ```
 
 ## 2. Preprocessing short social text
 
-`unnest_tokens()` lowercases and splits on word boundaries; we then
-strip URLs and platform syntax and remove stopwords. Custom stopwords
-matter on social text — handles, "rt"-like artifacts, and bare domains
-are frequent but meaningless:
+Before tokenizing, we strip links and handles with the `strip_links()`
+helper from Section 1.2. That includes **display URLs**: Bluesky clients
+show links without the `https://` (for example
+`nytimes.com/2026/11/02/us/...`), and without this step `unnest_tokens()`
+would split each one into junk tokens like `nytimes`, `com`, and `2026`.
+We also turn `#hashtag` into the plain word `hashtag`, because the tag
+is content. `unnest_tokens()` then lowercases and splits on word
+boundaries, and we remove stopwords. Custom stopwords matter on social
+text, where some short artifacts are frequent but meaningless:
 
 ```{r tokens}
-custom_stop <- tibble(word = c("https", "t.co", "bsky.app", "amp",
-                               "gt", "lt", "1", "2", "3"))
+custom_stop <- tibble(word = c("amp", "gt", "lt", "via"))
+
+clean_text <- function(text) {
+  text |>
+    str_to_lower() |>
+    strip_links() |>
+    str_replace_all("#", " ")
+}
 
 tokens <- corpus |>
-  mutate(text_clean = text |>
-           str_remove_all("https?://\\S+") |>
-           str_remove_all("@[\\w.]+")) |>
+  mutate(text_clean = clean_text(text)) |>
   unnest_tokens(word, text_clean) |>
   anti_join(stop_words, by = "word") |>
   anti_join(custom_stop, by = "word") |>
@@ -200,7 +293,7 @@ sorts the bars within each facet:
 unigrams <- tokens |> count(word, sort = TRUE)
 
 bigrams <- corpus |>
-  mutate(text_clean = str_remove_all(text, "https?://\\S+")) |>
+  mutate(text_clean = clean_text(text)) |>
   unnest_tokens(bigram, text_clean, token = "ngrams", n = 2) |>
   separate(bigram, c("w1", "w2"), sep = " ") |>
   filter(!w1 %in% stop_words$word, !w2 %in% stop_words$word) |>
@@ -334,15 +427,21 @@ topics and each topic as a *distribution over words* — and learns both
 from word co-occurrence alone, with no labels. The model wants a
 **document-term matrix** (rows = posts, columns = words, cells =
 counts), which `cast_dtm()` builds from our tidy token counts. We first
-drop words appearing in fewer than five posts — they carry almost no
-co-occurrence information and balloon the vocabulary — and fix the random
-seed, because LDA's fitting is stochastic:
+prune the vocabulary at both ends, as the Python notebook does with
+`min_df = 5` and `max_df = 0.4`: drop words appearing in fewer than five
+posts (they carry almost no co-occurrence information and balloon the
+vocabulary) and words appearing in 40% or more of posts (so common they
+can't tell topics apart). Then we fix the random seed, because LDA's
+fitting is stochastic:
 
 ```{r lda}
+n_posts <- n_distinct(tokens$uri)
+
 dtm <- tokens |>
   count(uri, word) |>
   group_by(word) |>
-  filter(n_distinct(uri) >= 5) |>          # word in >= 5 posts
+  filter(n_distinct(uri) >= 5,               # word in >= 5 posts
+         n_distinct(uri) < 0.4 * n_posts) |> # ...and in < 40% of posts
   ungroup() |>
   cast_dtm(uri, word, n)
 
@@ -456,7 +555,7 @@ write_csv(corpus, "data/corpus.csv")
 write_csv(topic_words, "data/topic_top_words.csv")
 write_json(
   list(collected_on = COLLECTED_ON, seed_account = SEED_ACCOUNT,
-       panel_accounts = panel_dids, language_filter = "en",
+       panel_accounts = panel_dids, language_filter = "declared English, or undeclared with English function-word share >= 0.10",
        n_posts_saved = nrow(corpus), lda_topics = N_TOPICS, lda_seed = 42),
   "data/collection_metadata.json", pretty = TRUE, auto_unbox = TRUE)
 
