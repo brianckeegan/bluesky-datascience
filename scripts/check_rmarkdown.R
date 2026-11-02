@@ -57,8 +57,10 @@ for (f in files) {
   cat(sprintf("[%s] %s: %s, %s\n", if (ok) "ok" else "FAIL", basename(f), parsed, knit))
 }
 
-# Knitting writes data/ next to some documents; R outputs are never committed
-unlink(list.files("RMarkdown", pattern = "^data$", recursive = TRUE,
-                  include.dirs = TRUE, full.names = TRUE), recursive = TRUE)
+# Knitting writes data/ next to some documents; R outputs are never committed.
+# Remove only the checked documents' data/, so parallel checks don't collide.
+# (Part 00 sits at RMarkdown/ itself, whose data/ is never written.)
+part_dirs <- setdiff(unique(dirname(files)), "RMarkdown")
+unlink(file.path(part_dirs, "data"), recursive = TRUE)
 
 if (failures > 0) quit(status = 1)
