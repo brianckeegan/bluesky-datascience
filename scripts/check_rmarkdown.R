@@ -1,17 +1,45 @@
 # Render every R Markdown document and syntax-check every chunk.
 #
-# Without credentials, bskyr can't call the API, so most documents knit
-# "prose-only" (their API chunks are skipped). Part 05 is the exception: it
-# analyzes the shared archive, so its whole analysis runs, including a check
-# that R reproduces the Python notebook's regression coefficients. Part 10's
-# Jetstream chunks also run, because Jetstream needs no credentials.
+# Two modes:
 #
-# Usage (from the repository root):  Rscript scripts/check_rmarkdown.R
+#   Rscript scripts/check_rmarkdown.R
+#     The student path: no credentials, so bskyr can't call the API and most
+#     documents knit "prose-only" (their API chunks are skipped). Part 05 still
+#     runs its whole analysis on the shared archive, including a check that R
+#     reproduces the Python notebook's coefficients; Part 10's Jetstream chunks
+#     run too, because Jetstream needs no credentials.
+#
+#   Rscript scripts/check_rmarkdown.R --mock-api
+#     Runs the API chunks too, without credentials, through the mock API in
+#     RMarkdown/tests/mock_api.R: login returns a fake session, reads go to the
+#     public AppView, and any write request fails the check. This is what tests
+#     the code that calls bskyr (issue #8).
+#
+# Optionally name documents to check (default: all), e.g.
+#   Rscript scripts/check_rmarkdown.R --mock-api "Part 02"
+
+args <- commandArgs(trailingOnly = TRUE)
+mock <- "--mock-api" %in% args
+patterns <- setdiff(args, "--mock-api")
 
 files <- list.files("RMarkdown", pattern = "\\.Rmd$", recursive = TRUE, full.names = TRUE)
-out_dir <- file.path(tempdir(), "rendered")
-dir.create(out_dir, showWarnings = FALSE)
+if (length(patterns)) {
+  files <- files[Reduce(`|`, lapply(patterns, function(p) grepl(p, files, fixed = TRUE)))]
+}
+if (mock) source("RMarkdown/tests/mock_api.R")
 
+# Rendered documents go to a temporary directory, or to RENDER_DIR if set
+out_dir <- Sys.getenv("RENDER_DIR", file.path(tempdir(), "rendered"))
+dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
+
+render_one <- function(f) {
+  rmarkdown::render(f, output_dir = out_dir, intermediates_dir = out_dir,
+                    knit_root_dir = dirname(normalizePath(f)), quiet = TRUE,
+                    envir = new.env(parent = globalenv()))
+}
+
+cat(if (mock) "Mode: mock API (API chunks execute against public data)\n"
+    else "Mode: no credentials (API chunks skipped)\n")
 failures <- 0
 for (f in files) {
   parsed <- tryCatch({
@@ -20,8 +48,7 @@ for (f in files) {
   }, error = function(e) paste("PARSE FAIL:", conditionMessage(e)))
 
   knit <- tryCatch({
-    rmarkdown::render(f, output_dir = out_dir, intermediates_dir = out_dir,
-                      knit_root_dir = dirname(normalizePath(f)), quiet = TRUE)
+    if (mock) with_bsky_mock(render_one(f)) else render_one(f)
     "knit ok"
   }, error = function(e) paste("KNIT FAIL:", conditionMessage(e)))
 
