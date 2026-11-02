@@ -55,13 +55,19 @@ too.
 ## 1. Searching for posts
 
 `bs_search_posts()` wraps `app.bsky.feed.searchPosts`. A quoted phrase
-matches exactly; `since`/`until`, `lang`, and `tag` narrow the window:
+matches exactly; `since`/`until`, `lang`, and `tag` narrow the window.
+
+Search results come back shaped a little differently from author feeds:
+the author isn't spread across `author_*` columns but kept whole in a
+list-column called `author`, one small tibble per post. We reach into it
+with the same `map_chr()` idiom we use on `record`:
 
 ```{r search-basic}
 hits <- bs_search_posts('"snowball sampling"', limit = 5)
 
 hits |>
-  mutate(text = map_chr(record, "text", .default = NA)) |>
+  mutate(author_handle = map_chr(author, "handle"),
+         text = map_chr(record, "text", .default = NA)) |>
   select(author_handle, text)
 ```
 
@@ -84,7 +90,7 @@ results <- bs_search_posts(
   limit = 300
 )
 
-c(posts = nrow(results), accounts = n_distinct(results$author_did))
+c(posts = nrow(results), accounts = n_distinct(map_chr(results$author, "did")))
 ```
 
 ### When you cannot search
@@ -188,25 +194,32 @@ COLLECTED_AT
 ### Wave 0: the seed account
 
 A small fetcher that returns original posts (reposts dropped) with the
-columns the snowball needs:
+columns the snowball needs. Two of those columns come from the helpers
+in `bsky_client.R`, because bskyr's raw column names are easy to get
+wrong in ways that fail *silently*:
+
+* `is_repost()` identifies reposts. We drop them, because a repost's
+  text, mentions, and author belong to someone else. Getting this wrong
+  would let other accounts' posts, and their DIDs, leak into each wave.
+* `reply_parent_did()` gives the DID of the account each post replies to.
+  On Bluesky, replies don't @-mention their parent, so without this the
+  snowball would follow mentions only and miss every conversation.
 
 ```{r fetch-author}
 fetch_author_posts <- function(actor, max_posts = 100) {
   feed <- bs_get_author_feed(actor, limit = max_posts)
-  if (!is.null(feed) && "reason_type" %in% names(feed)) {
-    feed <- filter(feed, is.na(reason_type))
-  }
+  if (is.null(feed) || nrow(feed) == 0) return(tibble())
   feed |>
     mutate(
+      repost     = is_repost(feed),
       text       = map_chr(record, "text", .default = NA),
       created_at = map_chr(record, "created_at", .default = NA),
-      is_reply   = if ("reply_parent_uri" %in% names(feed))
-                     !is.na(reply_parent_uri) else FALSE,
-      reply_parent_did = if ("reply_parent_author_did" %in% names(feed))
-                           reply_parent_author_did else NA_character_,
+      is_reply   = is_reply(feed),
+      reply_parent_did = reply_parent_did(feed),
       mentions   = map(record, extract_mentions),
       hashtags   = map(record, extract_tags)
     ) |>
+    filter(!repost) |>
     select(uri, author_did, author_handle, created_at, text, is_reply,
            reply_parent_did, mentions, hashtags,
            like_count, repost_count, reply_count)

@@ -51,20 +51,19 @@ knitr::opts_chunk$set(eval = bsky_authed)
 ## 1. Collecting a corpus of posts
 
 One account's original, non-reply posts — short, varied, and exactly the
-kind of material a topic codebook is built for:
+kind of material a topic codebook is built for. Two helpers from
+`bsky_client.R` do the filtering: `is_repost()` flags posts the account
+reposted from someone else, and `is_reply()` flags replies — including
+replies whose parent post has since been deleted, which a check on the
+parent alone would miss:
 
 ```{r corpus}
 ACTOR <- "nytimes.com"
 
 feed <- bs_get_author_feed(ACTOR, limit = 200)
-if ("reason_type" %in% names(feed)) {
-  feed <- filter(feed, is.na(reason_type))
-}
-if ("reply_parent_uri" %in% names(feed)) {
-  feed <- filter(feed, is.na(reply_parent_uri))
-}
 
 posts <- feed |>
+  filter(!is_repost(feed), !is_reply(feed)) |>   # helpers from bsky_client.R
   transmute(
     uri,
     created_at = map_chr(record, "created_at", .default = NA),

@@ -61,7 +61,10 @@ the accounts it mentions most, and add their posts to form a small
 reposts, pull `text`, `created_at`, `langs`, and `facets` out of the
 `record` list-column — with `transmute()` (a `mutate()` that keeps only
 the columns it names) producing exactly the tidy frame the rest of the
-pipeline needs:
+pipeline needs. `is_repost()` is one of the small helpers defined in
+`bsky_client.R`: it reads bskyr's `` reason_$type `` column and returns
+`TRUE` for reposts (and `FALSE` for pinned posts, which carry a
+different marker), so the corpus holds only the authors' own words:
 
 ```{r corpus-seed}
 SEED_ACCOUNT <- "nytimes.com"
@@ -69,10 +72,8 @@ COLLECTED_ON <- format(today(), "%Y-%m-%d")
 
 fetch_posts <- function(actor, max_posts) {
   feed <- bs_get_author_feed(actor, limit = max_posts)
-  if ("reason_type" %in% names(feed)) {
-    feed <- filter(feed, is.na(reason_type))
-  }
   feed |>
+    filter(!is_repost(feed)) |>   # helper from bsky_client.R
     transmute(
       uri,
       author = author_handle,

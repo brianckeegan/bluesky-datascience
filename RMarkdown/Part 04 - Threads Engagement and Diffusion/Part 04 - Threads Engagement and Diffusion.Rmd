@@ -62,18 +62,16 @@ with raw lists and `purrr`.
 ## 1. Finding a study post
 
 We need a post with a deep conversation under it. The official
-`bsky.app` account reliably draws large reply threads:
+`bsky.app` account reliably draws large reply threads. We keep only its
+*original* posts, dropping reposts (someone else's post) and replies
+(the account joining someone else's conversation), using the
+`is_repost()` and `is_reply()` helpers from `bsky_client.R`:
 
 ```{r find-post}
 feed <- bs_get_author_feed("bsky.app", limit = 100)
 
-is_reply  <- if ("reply_parent_uri" %in% names(feed))
-               !is.na(feed$reply_parent_uri) else FALSE
-is_repost <- if ("reason_type" %in% names(feed))
-               !is.na(feed$reason_type) else FALSE
-
 originals <- feed |>
-  filter(!is_reply, !is_repost) |>
+  filter(!is_repost(feed), !is_reply(feed)) |>
   mutate(text = map_chr(record, "text", .default = ""))
 
 originals |>
@@ -88,9 +86,10 @@ case_study |> select(uri, reply_count, like_count, repost_count, text)
 ## 2. From thread views to reply trees
 
 `bs_get_post_thread()` returns the post and its replies nested `depth`
-levels down. With `clean = FALSE` the response is a plain list whose
-`$thread$replies` elements each contain their own `$replies` — a
-recursive structure, which calls for a *recursive function*: one that
+levels down. With `clean = FALSE` the response is the API's JSON as a
+plain list: `response[["thread"]]` is the root node, and each node's
+`$replies` elements contain their own `$replies` — a recursive
+structure, which calls for a *recursive function*: one that
 handles a single node (build its row) and then calls itself on each of
 that node's children. Two idioms to note: `%||%` means "use the left
 side unless it is NULL, then use the right side" (our defense against
@@ -119,7 +118,7 @@ thread_to_edges <- function(node, parent_uri = NA_character_) {
 }
 
 response <- bs_get_post_thread(case_study$uri, depth = 6, clean = FALSE)
-tree <- thread_to_edges(response[[1]]$thread)
+tree <- thread_to_edges(response[["thread"]])
 
 c(posts = nrow(tree),
   truncated_branches = sum(tree$truncated))
@@ -148,7 +147,7 @@ fetch_thread_tree <- function(uri, depth = 6, max_requests = 40) {
     requests <- requests + 1
     Sys.sleep(0.1)
     if (is.null(response)) next
-    piece <- thread_to_edges(response[[1]]$thread)
+    piece <- thread_to_edges(response[["thread"]])
     piece <- filter(piece, !uri %in% seen)
     seen <- c(seen, piece$uri)
     pieces <- c(pieces, list(piece))
@@ -238,7 +237,7 @@ layout <- layout_as_tree(Gt, root = case_study$uri, circular = TRUE)
 plot(Gt, layout = layout,
      vertex.size = ifelse(V(Gt)$name == case_study$uri, 6, 1.5),
      vertex.color = ifelse(V(Gt)$name == case_study$uri,
-                           "crimson", "steelblue"),
+                           "#DC143C", "steelblue"),
      vertex.label = NA, edge.arrow.size = 0,
      edge.color = adjustcolor("gray", alpha.f = 0.4),
      main = paste0("Reply tree of the case-study post (",
@@ -338,8 +337,7 @@ complementary CDF with log-log axes:
 ```{r heavy-tails, fig.width=10, fig.height=4.5}
 nyt_feed <- bs_get_author_feed("nytimes.com", limit = 200)
 nyt_originals <- nyt_feed |>
-  filter(if ("reason_type" %in% names(nyt_feed))
-           is.na(reason_type) else TRUE)
+  filter(!is_repost(nyt_feed), !is_reply(nyt_feed))
 
 ccdf <- function(x) {
   x <- sort(x[!is.na(x)])
