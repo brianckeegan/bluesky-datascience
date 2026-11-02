@@ -6,7 +6,8 @@ Used by "Part 03 - Social Network Analysis.ipynb". The workflow is:
 2. ``sample_alters`` — draw a seeded random sample of the ego's alters.
 3. ``build_ego_network`` — crawl each sampled alter's follows and keep only
    the edges that stay inside {ego + sampled alters}, returning a NetworkX
-   ``DiGraph``.
+   ``DiGraph``. Alters whose crawl fails are left out of the graph and listed
+   in ``G.graph["failed_alters"]``.
 4. ``add_profile_attributes`` — decorate every node with profile metadata
    (handle, follower/follows/posts counts) using batched ``get_profiles``
    calls (25 actors per request).
@@ -74,10 +75,19 @@ def build_ego_network(client, ego_did, alters, max_pages_per_alter=2,
     ``max_pages_per_alter * 100`` accounts (newest first), some within-network
     edges of prolific followers will be missed; the notebook discusses this
     limitation.
+
+    If an alter's crawl fails (a deleted, deactivated, or blocking account),
+    we never observed whom it follows. Keeping it as a node would record
+    "follows nobody", an observed zero we did not observe, and bias density,
+    reciprocity, and centrality. So failed alters are left out of the graph
+    entirely: their edges from the ego, and other alters' edges to them, are
+    removed after the crawl. They are listed, with the error, in
+    ``G.graph["failed_alters"]`` so the notebook can report them.
     """
     G = nx.DiGraph()
     G.add_node(ego_did)
     node_set = {ego_did} | {alter["did"] for alter in alters}
+    failed = []
 
     # The ego follows every sampled alter by construction.
     for alter in alters:
@@ -90,9 +100,11 @@ def build_ego_network(client, ego_did, alters, max_pages_per_alter=2,
                 client, alter["did"], max_pages=max_pages_per_alter, sleep=sleep
             )
         except Exception as error:  # deleted, deactivated, or blocked accounts
+            # Some SDK errors have an empty message, so always name the type
+            reason = f"{type(error).__name__}: {error}".rstrip(": ")
+            failed.append({"did": alter["did"], "handle": alter["handle"], "error": reason})
             if verbose:
-                print(f"  ! skipping {alter['handle']}: {error}")
-            G.add_node(alter["did"])
+                print(f"  ! could not crawl {alter['handle']} ({reason}); leaving it out")
             continue
         for followed in alter_follows:
             if followed["did"] in node_set:
@@ -101,6 +113,9 @@ def build_ego_network(client, ego_did, alters, max_pages_per_alter=2,
             print(f"Crawled {i}/{len(alters)} alters: "
                   f"{G.number_of_nodes()} nodes, {G.number_of_edges()} edges")
         time.sleep(sleep)
+
+    G.remove_nodes_from(alter["did"] for alter in failed)
+    G.graph["failed_alters"] = failed
     return G
 
 
@@ -110,7 +125,9 @@ def add_profile_attributes(client, G, sleep=SLEEP):
     Uses ``client.get_profiles`` (``app.bsky.actor.getProfiles``), which
     hydrates up to 25 profiles per request, to set ``handle``,
     ``followers_count``, ``follows_count``, and ``posts_count`` on each node.
-    Returns the number of profiles retrieved.
+    Returns the number of profiles retrieved. A node whose profile could not
+    be retrieved keeps its DID as its handle and gets NaN (missing), not 0,
+    for its counts, so it can't pass for an account with no followers.
     """
     dids = list(G.nodes)
     retrieved = 0
@@ -126,9 +143,9 @@ def add_profile_attributes(client, G, sleep=SLEEP):
             )
         retrieved += len(response.profiles)
         time.sleep(sleep)
-    # Accounts that disappeared between crawl and hydration get placeholders.
+    # Accounts that disappeared between crawl and hydration: missing, not zero
     for did in dids:
         G.nodes[did].setdefault("handle", did)
         for attribute in ("followers_count", "follows_count", "posts_count"):
-            G.nodes[did].setdefault(attribute, 0)
+            G.nodes[did].setdefault(attribute, float("nan"))
     return retrieved

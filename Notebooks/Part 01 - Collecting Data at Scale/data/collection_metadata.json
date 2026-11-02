@@ -3,9 +3,9 @@
     "handle": "nytimes.com",
     "did": "did:plc:eclio37ymobqex2ncko63h4r"
   },
-  "collected_at_utc": "2026-06-10T16:28:39.286488+00:00",
+  "collected_at_utc": "2026-11-02T22:25:16.907836+00:00",
   "authenticated": false,
-  "atproto_sdk_version": "0.0.67",
+  "atproto_sdk_version": "0.0.73",
   "collections": {
     "posts.parquet": {
       "endpoint": "app.bsky.feed.getAuthorFeed",
@@ -14,7 +14,7 @@
         "limit": 100,
         "max_pages": 100
       },
-      "n_records": 8959,
+      "n_records": 9050,
       "notes": "Original posts only; reposts of other accounts excluded."
     },
     "follows.csv": {
@@ -24,7 +24,7 @@
         "limit": 100,
         "max_pages": 40
       },
-      "n_records": 116
+      "n_records": 123
     },
     "followers.csv": {
       "endpoint": "app.bsky.graph.getFollowers",
@@ -33,7 +33,7 @@
         "limit": 100,
         "max_pages": 20
       },
-      "n_records": 1713
+      "n_records": 1849
     }
   }
 }

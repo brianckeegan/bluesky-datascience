@@ -49,6 +49,24 @@ knitr::opts_chunk$set(eval = bsky_authed)
 COLLECTED_AT <- format(now("UTC"), "%Y-%m-%dT%H:%M:%SZ")
 ```
 
+### Collection parameters
+
+Every cap in this part lives in one place, so you can see the whole
+request budget at a glance. Each value mirrors the Python notebook (the
+comment names the Python cell or `cascades.py` default it matches), so
+both implementations collect the same amount of data:
+
+```{r params}
+FEED_ITEMS          <- 100   # Python: get_author_feed(actor='bsky.app', limit=100)
+THREAD_FIRST_DEPTH  <- 2     # Python: the first getPostThread call, depth = 2
+THREAD_DEPTH        <- 6     # Python: fetch_thread_graph(depth = 6)
+THREAD_MAX_REQUESTS <- 40    # Python: fetch_thread_graph(max_requests = 40)
+LIKES_CAP           <- 3500  # Python: fetch_likes(max_pages = 35), 100 per page
+REPOSTS_CAP         <- 500   # Python: fetch_reposters(max_pages = 5), 100 per page
+QUOTES_CAP          <- 100   # Python: fetch_quotes(max_pages = 2), 50 per page
+NYT_FEED_ITEMS      <- 200   # Python: fetch_author_posts(client, 'nytimes.com', max_posts=200)
+```
+
 ### A note on parsing, and a platform in flux
 
 The Python notebook opens with a lesson about *strict* SDK parsing:
@@ -68,7 +86,7 @@ We need a post with a deep conversation under it. The official
 `is_repost()` and `is_reply()` helpers from `bsky_client.R`:
 
 ```{r find-post}
-feed <- bs_get_author_feed("bsky.app", limit = 100)
+feed <- bs_get_author_feed("bsky.app", limit = FEED_ITEMS)
 
 originals <- feed |>
   filter(!is_repost(feed), !is_reply(feed)) |>
@@ -86,7 +104,9 @@ case_study |> select(uri, reply_count, like_count, repost_count, text)
 ## 2. From thread views to reply trees
 
 `bs_get_post_thread()` returns the post and its replies nested `depth`
-levels down. With `clean = FALSE` the response is the API's JSON as a
+levels down. We start, as the Python notebook does, with a shallow
+request (`THREAD_FIRST_DEPTH`, two levels), so that truncation is easy
+to see. With `clean = FALSE` the response is the API's JSON as a
 plain list: `response[["thread"]]` is the root node, and each node's
 `$replies` elements contain their own `$replies` — a recursive
 structure, which calls for a *recursive function*: one that
@@ -117,7 +137,7 @@ thread_to_edges <- function(node, parent_uri = NA_character_) {
   bind_rows(row, children)
 }
 
-response <- bs_get_post_thread(case_study$uri, depth = 6, clean = FALSE)
+response <- bs_get_post_thread(case_study$uri, depth = THREAD_FIRST_DEPTH, clean = FALSE)
 tree <- thread_to_edges(response[["thread"]])
 
 c(posts = nrow(tree),
@@ -125,14 +145,15 @@ c(posts = nrow(tree),
 ```
 
 A single request only reaches `depth` levels, so deep conversations get
-*truncated*: nodes that claim replies we have not seen. The fetcher
+*truncated*: nodes that claim replies we have not seen. (The full fetch
+below asks for `THREAD_DEPTH` levels per request.) The fetcher
 below keeps a **frontier** — a queue of truncated nodes still to expand
 — and works through it with follow-up requests until the frontier is
 empty or the request budget runs out. The `seen` vector prevents
 double-counting posts that appear in overlapping responses:
 
 ```{r fetch-full-tree}
-fetch_thread_tree <- function(uri, depth = 6, max_requests = 40) {
+fetch_thread_tree <- function(uri, depth = THREAD_DEPTH, max_requests = THREAD_MAX_REQUESTS) {
   requests <- 0
   frontier <- uri
   seen <- character(0)
@@ -159,7 +180,7 @@ fetch_thread_tree <- function(uri, depth = 6, max_requests = 40) {
   out
 }
 
-tree <- fetch_thread_tree(case_study$uri, depth = 6, max_requests = 40)
+tree <- fetch_thread_tree(case_study$uri)
 
 c(posts = nrow(tree),
   requests = attr(tree, "requests_made"),
@@ -252,10 +273,18 @@ which lets us reconstruct the post's attention curve. With
 `clean = FALSE`, `bs_get_post_likes()` hands back a list of raw response
 pages; each page has a `$likes` list whose elements we flatten into one
 row apiece, then convert "when was this like indexed" into "hours since
-the post was born":
+the post was born".
+
+Which timestamp should we trust? `createdAt` is written by the liker's
+own client, and client clocks can be minutes or years off, so a few
+likes appear to predate the post they like. We count those, as a data
+quality check, but don't use them. `indexedAt` is stamped by the
+network's server, which makes it the defensible choice for timing; even
+so, a like *indexed* before the post existed is impossible, so we drop
+and report any such rows rather than let them distort the timeline:
 
 ```{r likes}
-likes_raw <- bs_get_post_likes(case_study$uri, limit = 3000, clean = FALSE)
+likes_raw <- bs_get_post_likes(case_study$uri, limit = LIKES_CAP, clean = FALSE)
 
 likes <- map(likes_raw, \(page) {
   map(page$likes, \(l) tibble(
@@ -270,15 +299,23 @@ post_time <- ymd_hms(case_study$record[[1]]$created_at, quiet = TRUE)
 
 likes <- likes |>
   mutate(
+    created_at = ymd_hms(created_at, quiet = TRUE),
     indexed_at = ymd_hms(indexed_at, quiet = TRUE),
     hours_since_post = as.numeric(difftime(indexed_at, post_time,
                                            units = "hours"))
-  ) |>
+  )
+
+clock_skew <- sum(likes$created_at < post_time, na.rm = TRUE)
+impossible <- sum(likes$hours_since_post < 0, na.rm = TRUE)
+
+likes <- likes |>
   filter(hours_since_post >= 0) |>
   arrange(hours_since_post)
 
-c(likes_retrieved = nrow(likes),
-  reported_at_collection = case_study$like_count)
+c(likes_retrieved = nrow(likes) + impossible,
+  reported_at_collection = case_study$like_count,
+  client_clock_predates_post = clock_skew,
+  indexed_before_post_dropped = impossible)
 ```
 
 ### The burst, then the decay
@@ -306,9 +343,15 @@ shape of social media attention.
 
 ### Reposters and quoters
 
+Two lighter-weight channels remain. `bs_get_reposts()` lists who
+amplified the post to their own followers (profiles only, no
+timestamps), and `bs_get_quotes()` lists posts that embed it, each the
+root of a potential new cascade. Both are capped by the parameters at
+the top of the document:
+
 ```{r reposts-quotes}
-reposters <- bs_get_reposts(case_study$uri, limit = 500)
-quotes <- bs_get_quotes(case_study$uri, limit = 200)
+reposters <- bs_get_reposts(case_study$uri, limit = REPOSTS_CAP)
+quotes <- bs_get_quotes(case_study$uri, limit = QUOTES_CAP)
 
 c(reposters = nrow(reposters), quotes = nrow(quotes),
   quote_likes = sum(quotes$like_count, na.rm = TRUE))
@@ -335,7 +378,7 @@ fact. Compare the official platform account with a national newsroom, on a
 complementary CDF with log-log axes:
 
 ```{r heavy-tails, fig.width=10, fig.height=4.5}
-nyt_feed <- bs_get_author_feed("nytimes.com", limit = 200)
+nyt_feed <- bs_get_author_feed("nytimes.com", limit = NYT_FEED_ITEMS)
 nyt_originals <- nyt_feed |>
   filter(!is_repost(nyt_feed), !is_reply(nyt_feed))
 

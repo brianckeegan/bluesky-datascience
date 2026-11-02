@@ -84,11 +84,19 @@ ego_profile |> select(handle, follows_count, followers_count)
 
 Each alter costs at least one request to enumerate *their* follows. We
 sample a fixed number of alters with a fixed seed, trading completeness
-for a documented, reproducible budget:
+for a documented, reproducible budget. The parameters below mirror the
+Python notebook's (`N_ALTERS`, `SEED` and `max_pages_per_alter` in its
+Section 2 and 3 cells). One thing does *not* carry over: R and Python
+have different random number generators, so the same seed (42) draws a
+**different** sample of alters in each language. Each sample is
+reproducible within its own language, and both are equally valid random
+samples, but don't expect the two documents to list the same accounts or
+print identical statistics:
 
 ```{r sample-alters}
-N_ALTERS <- 100
-SEED <- 42
+N_ALTERS <- 100              # Python: N_ALTERS = 100
+SEED <- 42                   # Python: SEED = 42 (same seed, different generator)
+FOLLOWS_PER_ALTER <- 200     # Python: max_pages_per_alter = 2 (2 pages of 100)
 
 ego_follows <- bs_get_follows(ego_did, limit = 4000)
 
@@ -105,31 +113,48 @@ keep only those pointing back *into* our node set (`intersect()`). Edges
 to accounts outside the boundary are discarded — that is what "1.5
 degrees" means. The result of each iteration is a small tibble of
 `from → to` pairs, and `list_rbind()` stacks them into one edge list.
+
 We also wrap each fetch in `tryCatch()` because some accounts will be
-deleted, suspended, or otherwise unfetchable, and one bad alter should
-not kill a 100-account crawl:
+deleted, suspended, or set to block us, and one bad alter should not
+kill a 100-account crawl. But what should a failed crawl *mean*? The
+tempting answer, keeping the account as a node with no outgoing edges,
+would quietly record "this person follows nobody", a measurement we
+never made. Missing data dressed up as an observed zero biases every
+statistic below: it lowers density and reciprocity and pushes the
+account to the bottom of every centrality ranking. So we record each
+failure (with the error message) in `failed_alters`, print it, and
+**leave failed alters out of the network**. Our network is "the ego plus
+the sampled alters we could crawl", and we report how many we lost:
 
 ```{r crawl}
 node_set <- c(ego_did, alters$did)
+failed_alters <- tibble(did = character(), handle = character(), error = character())
 
-alter_edges <- map(alters$did, \(did) {
-  follows <- tryCatch(bs_get_follows(did, limit = 200),
-                      error = function(e) NULL)
+alter_edges <- map2(alters$did, alters$handle, \(did, handle) {
+  follows <- tryCatch(bs_get_follows(did, limit = FOLLOWS_PER_ALTER),
+                      error = function(e) e)
   Sys.sleep(0.1)
-  if (is.null(follows)) return(NULL)
+  if (inherits(follows, "error")) {
+    reason <- paste0(class(follows)[1], ": ", conditionMessage(follows))
+    message("Could not crawl ", handle, " (", reason, "); leaving it out")
+    failed_alters <<- add_row(failed_alters, did = did, handle = handle, error = reason)
+    return(NULL)
+  }
   tibble(from = did, to = intersect(follows$did, node_set))
 }) |> list_rbind()
 
-ego_edges <- tibble(from = ego_did, to = alters$did)
+# Drop failed alters everywhere: as nodes, and as targets of others' edges
+node_set <- setdiff(node_set, failed_alters$did)
+ego_edges <- tibble(from = ego_did, to = setdiff(alters$did, failed_alters$did))
 edges <- bind_rows(ego_edges, alter_edges) |>
-  filter(from != to) |>
+  filter(from != to, to %in% node_set) |>
   distinct()
 
 G <- graph_from_data_frame(edges,
                            vertices = tibble(name = node_set),
                            directed = TRUE)
 
-c(nodes = vcount(G), edges = ecount(G))
+c(nodes = vcount(G), edges = ecount(G), alters_not_crawled = nrow(failed_alters))
 ```
 
 ### Node attributes with batched `bs_get_profile()`
@@ -138,7 +163,10 @@ A graph of bare DIDs is hard to interpret, so hydrate every node with
 profile attributes, 25 per request (Part 01's batching trick). The
 `match()` call lines the profile rows up with igraph's vertex order —
 igraph stores vertices in its own sequence, so we must never assume it
-matches our tibble's row order:
+matches our tibble's row order. A node whose profile can't be retrieved
+(the account vanished between the crawl and this step) gets `NA` from
+`match()`, which is exactly right: an unknown follower count is missing,
+not zero:
 
 ```{r hydrate}
 profiles <- map(split(node_set, ceiling(seq_along(node_set) / 25)),
@@ -157,6 +185,13 @@ V(G)$posts_count     <- profiles$posts_count[idx]
 vertex_attr(G, index = ego_did) |> as_tibble()
 ```
 
+Finally, record when and how the network was collected, a habit from
+Part 01: handles change, follows churn, and accounts get deleted, so a
+snapshot without a timestamp and parameters can't be reproduced. We also
+record which sampled alters we failed to crawl, by DID (the identifier
+that doesn't change), so a reader knows exactly which part of the sample
+is missing:
+
 ```{r crawl-metadata}
 dir.create("data", showWarnings = FALSE)
 write_json(
@@ -164,7 +199,10 @@ write_json(
        collected_at = format(Sys.time(), tz = "UTC",
                              "%Y-%m-%dT%H:%M:%SZ"),
        ego_follows_at_collection = nrow(ego_follows),
-       n_alters_sampled = N_ALTERS, sampling_seed = SEED),
+       n_alters_sampled = nrow(alters), sampling_seed = SEED,
+       follows_per_alter = FOLLOWS_PER_ALTER,
+       # sampled alters whose crawl failed, so they are not in the network
+       failed_alters = select(failed_alters, did, error)),
   "data/collection_metadata.json", pretty = TRUE, auto_unbox = TRUE
 )
 ```
@@ -225,11 +263,16 @@ deg |>
 Different centralities answer different questions: in-degree measures
 local audience, betweenness measures brokerage between otherwise distant
 parts of the network, PageRank measures recursively-weighted endorsement.
+We ask igraph for **normalized** betweenness (`normalized = TRUE`), which
+divides by the number of pairs of other nodes, so the scores fall
+between 0 and 1 and match what NetworkX reports by default in the Python
+notebook. Raw betweenness counts grow with network size, which makes
+them hard to compare across networks:
 
 ```{r centrality}
 centrality <- deg |>
   mutate(
-    betweenness = betweenness(G, directed = TRUE),
+    betweenness = betweenness(G, directed = TRUE, normalized = TRUE),
     pagerank = page_rank(G)$vector
   )
 
