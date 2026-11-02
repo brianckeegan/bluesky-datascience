@@ -1,0 +1,3 @@
+# Extra tools for contributors and CI (tests, output checks), on top of the notebooks' requirements.
+-r requirements.txt
+pytest==8.4.2
