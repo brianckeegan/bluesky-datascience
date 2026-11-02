@@ -1,0 +1,95 @@
+# Weekly check that the tutorials still run against the live Bluesky API.
+#
+# Runs without credentials, on purpose: AGENTS.md requires every Python
+# notebook to complete against the unauthenticated public AppView, so that is
+# the path that must never break. Failures here usually mean the platform, a
+# pinned library, or an external service changed (see issue #7 for the
+# review that motivated this workflow).
+name: Notebooks
+
+on:
+  schedule:
+    - cron: "23 19 * * 1"   # Mondays 19:23 UTC
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "Notebooks/**"
+      - "RMarkdown/**"
+      - "requirements*.txt"
+      - "tests/**"
+      - "scripts/**"
+      - ".github/workflows/notebooks.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements*.txt
+
+      - name: Install pinned dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Bot safety tests
+        run: python -m pytest tests/ -v
+
+      - name: Execute every notebook against the live API
+        run: |
+          mkdir -p "$RUNNER_TEMP/executed"
+          find Notebooks -name "Part *.ipynb" -not -path "*/.ipynb_checkpoints/*" | sort | while read -r nb; do
+            echo "::group::$nb"
+            jupyter nbconvert --to notebook --execute --allow-errors \
+              --ExecutePreprocessor.timeout=1200 \
+              --output-dir "$RUNNER_TEMP/executed" "$nb"
+            echo "::endgroup::"
+          done
+
+      - name: Fail on errors or deprecation warnings in the outputs
+        run: python scripts/check_notebook_outputs.py "$RUNNER_TEMP"/executed/*.ipynb
+
+      - name: Keep the executed notebooks for inspection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: executed-notebooks
+          path: ${{ runner.temp }}/executed/
+
+  r:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "4.3"
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: |
+            any::bskyr
+            any::tidyverse
+            any::jsonlite
+            any::igraph
+            any::tidytext
+            any::topicmodels
+            any::rmarkdown
+            any::digest
+            any::websocket
+            any::sandwich
+            any::lmtest
+            any::broom
+
+      - name: Render every R Markdown document
+        run: Rscript scripts/check_rmarkdown.R

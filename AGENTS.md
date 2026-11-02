@@ -70,15 +70,33 @@ module files; only the credential helper is shared. Knitting an R part with
 credentials writes a `data/` directory next to the document, but unlike the
 Python series those outputs are not committed. `bsky_client.py` and
 `bsky_client.R` are intentionally duplicated into each directory so every part
-can be downloaded and run on its own. If you change one, change every copy.
+can be downloaded and run on its own (Part 00, which sits at the root of
+`Notebooks/`, has its own copy there). If you change one, change every copy.
+
+Supporting the notebooks:
+
+```
+tests/test_bot.py                   # safety tests for Part 10's bot (no network needed)
+scripts/check_notebook_outputs.py   # fails on error outputs or deprecation warnings
+scripts/check_rmarkdown.R           # renders and syntax-checks every Rmd
+.github/workflows/notebooks.yml     # weekly + on-PR run of all of the above
+```
 
 ## Setup
 
-Python:
+Python 3.11, in a virtual environment (never the system Python — a distro's
+own packages, such as Debian's Pillow, can shadow pip's and break imports):
 
 ```bash
-python3 -m pip install -r requirements.txt
+python3 -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -r requirements-dev.txt   # requirements.txt + pytest
 ```
+
+`requirements.txt` pins the exact versions the committed outputs were produced
+with. Upgrade deliberately: change a pin, re-execute the affected notebooks,
+and commit the pins and outputs together. `atproto` is pre-1.0, and its
+maintainers say compatibility between versions isn't guaranteed.
 
 R (4.3+):
 
@@ -107,7 +125,12 @@ Every R document begins by sourcing `bsky_client.R`, which reads the same
 `atproto.json` (or bskyr's `BLUESKY_APP_USER`/`BLUESKY_APP_PASS` environment
 variables) and sets `bsky_authed`; the document then sets
 `knitr::opts_chunk$set(eval = bsky_authed)` so that knitting without
-credentials produces the full prose with API chunks skipped.
+credentials produces the full prose with API chunks skipped. Two parts gate
+differently, because they don't depend on bskyr for their analysis:
+**Part 05** analyzes the shared archive (`Notebooks/Part 05 …/data/actions.csv.gz`)
+and runs fully without credentials, gating only its live-API chunks on
+`bsky_authed`; **Part 10** gates its Jetstream chunks on having the websocket
+package, since Jetstream needs no authentication.
 
 ## API environment facts
 
@@ -168,7 +191,14 @@ These apply to both implementations unless noted.
   samples — never attempt exhaustive collection.
 - **Reproducibility:** record collection dates and parameters next to saved
   archives; downstream analysis cells should be runnable from the saved files
-  in `data/`.
+  in `data/`. When an analysis depends on reaching a fixed date in the past
+  (an event study), analyze a committed archive by default and make live
+  re-collection opt-in, as Part 05 does with `PART05_REFRESH=1`. An author
+  feed is returned newest first, so a page budget that reaches a past date
+  today will stop short of it once the account has kept posting.
+- **Bots:** `run_bot_once` defaults to `dry_run=True` and refuses to post
+  unless `BOT_OPERATOR` names the responsible human. Keep `tests/test_bot.py`
+  passing when changing `bot.py`.
 
 ## Executing notebooks
 
@@ -180,20 +210,32 @@ jupyter nbconvert --to notebook --execute --inplace \
   --ExecutePreprocessor.timeout=1200 "Part NN - Title.ipynb"
 ```
 
-Execution must complete without errors against the unauthenticated public
-AppView (guarded cells printing a "requires authentication" message count as
-success). Notebooks hit the live network, so numbers in outputs change between
-runs — that is expected. (Part 00 documents the login flow and is executed
-with the author's credentials, not in CI.)
+Execution must complete without errors **and without deprecation warnings**
+against the unauthenticated public AppView (guarded cells printing a
+"requires authentication" message count as success). Every notebook,
+including Part 00, must pass this. Check the outputs with:
 
-R Markdown documents are committed as source. To verify them without
-credentials (prose-only knit plus a syntax check of every chunk):
-
-```r
-rmarkdown::render("RMarkdown/Part NN - Title/Part NN - Title.Rmd")
-parse(knitr::purl("RMarkdown/Part NN - Title/Part NN - Title.Rmd",
-                  output = tempfile(), documentation = 0))
+```bash
+python scripts/check_notebook_outputs.py "Notebooks/Part NN - Title/Part NN - Title.ipynb"
 ```
+
+Notebooks hit the live network, so numbers in outputs change between runs —
+that is expected (except in Part 05, which analyzes its committed archive).
+Never hard-code a number from one run into narration: print it from a
+variable, or describe it qualitatively.
+
+R Markdown documents are committed as source. To verify all of them without
+credentials (a knit plus a syntax check of every chunk):
+
+```bash
+Rscript scripts/check_rmarkdown.R
+```
+
+Without credentials most R documents knit prose-only, which **does not test
+their API code** — that needs a credentialed knit before release. The
+`.github/workflows/notebooks.yml` workflow runs the bot tests, every Python
+notebook, the output check, and the R check weekly and on pull requests that
+touch the notebooks.
 
 With credentials available, the same `render()` call executes every chunk
 against the live API.

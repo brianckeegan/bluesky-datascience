@@ -23,11 +23,15 @@ Each Python Part 01–10 directory is self-contained: the notebook (committed wi
 
 ## Getting started
 
-**Python.** Install the dependencies (a package manager like [Anaconda](https://www.anaconda.com/products/individual) is recommended):
+**Python.** Install the pinned dependencies into a virtual environment, so they can't collide with other projects or your system's own packages:
 
 ```bash
-python3 -m pip install -r requirements.txt
+python3 -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
 ```
+
+([Anaconda](https://www.anaconda.com/products/individual) works too: create and activate an environment, then run the same `pip install`.) `requirements.txt` pins the exact versions the committed outputs were produced with; [Part 00](Notebooks/Part%2000%20-%20Introduction.ipynb) walks through setup step by step.
 
 **R** (4.3 or later):
 
@@ -52,7 +56,7 @@ The main libraries used are:
 * R: [R Markdown](https://rmarkdown.rstudio.com/docs/), [bskyr](https://christophertkenny.com/bskyr/), the [tidyverse](https://www.tidyverse.org/), [igraph](https://r.igraph.org/), [tidytext](https://juliasilge.github.io/tidytext/), [topicmodels](https://cran.r-project.org/package=topicmodels)
 
 ## For contributors and coding agents
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for how to report bugs, propose new notebooks, and submit pull requests, and our [Code of Conduct](CODE_OF_CONDUCT.md) for community expectations. [AGENTS.md](AGENTS.md) documents the project layout, notebook conventions, API environment facts, and how to re-execute notebooks.
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for how to report bugs, propose new notebooks, and submit pull requests, and our [Code of Conduct](CODE_OF_CONDUCT.md) for community expectations. [AGENTS.md](AGENTS.md) documents the project layout, notebook conventions, API environment facts, and how to re-execute notebooks. A weekly [Notebooks workflow](.github/workflows/notebooks.yml) re-runs every tutorial against the live API, so breakage from platform or library changes shows up within a week.
 
 ## Future directions
 * OAuth-based authentication

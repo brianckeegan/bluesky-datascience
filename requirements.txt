@@ -1,16 +1,23 @@
-jupyter
-nbconvert
-nbformat
-ipykernel
-pandas
-numpy
-matplotlib
-networkx>=3.0
-atproto
-pyarrow
-statsmodels
-scikit-learn
-vaderSentiment
-Pillow
-websockets
-requests
+# Exact versions the committed notebook outputs were produced with (Python 3.11).
+# Install into a virtual environment, not your system Python:
+#   python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
+#
+# `atproto` is pre-1.0 and its maintainers warn that compatibility between
+# versions is not guaranteed, so upgrade deliberately: change a pin, re-run
+# the notebooks (or the weekly CI workflow), and commit pins and outputs together.
+jupyter==1.1.1
+nbconvert==7.17.2
+nbformat==5.11.1
+ipykernel==7.4.0
+pandas==3.1.0
+numpy==2.4.6
+matplotlib==3.11.2
+networkx==3.6.1
+atproto==0.0.73
+pyarrow==26.0.0
+statsmodels==0.15.0
+scikit-learn==1.9.1
+vaderSentiment==3.3.2
+Pillow==13.0.0
+websockets==17.4
+requests==2.34.2

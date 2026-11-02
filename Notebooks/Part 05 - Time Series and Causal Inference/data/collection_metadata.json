@@ -1,15 +1,31 @@
 {
-  "collected_at": "2026-06-10T16:25:42.284064+00:00",
+  "collected_at": "2026-11-02T19:27:31+00:00",
   "accounts": {
     "treated": "nytimes.com",
     "comparison": "bsky.app"
   },
-  "n_actions": {
-    "nytimes.com": 39961,
-    "bsky.app": 903
-  },
   "event": "2024-11-05",
-  "timezone": "America/New_York",
+  "stop_before": "2023-11-07T00:00:00+00:00",
   "endpoint": "app.bsky.feed.getAuthorFeed",
-  "page_size": 100
+  "page_size": 100,
+  "columns": [
+    "actor",
+    "action",
+    "is_reply",
+    "created_at"
+  ],
+  "collection": {
+    "nytimes.com": {
+      "pages": 486,
+      "stopped_because": "reached_stop_before",
+      "max_pages": 582,
+      "n_actions": 48557
+    },
+    "bsky.app": {
+      "pages": 10,
+      "stopped_because": "reached_stop_before",
+      "max_pages": 32,
+      "n_actions": 995
+    }
+  }
 }

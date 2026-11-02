@@ -70,7 +70,10 @@ Bluesky's side). Please help us tell a real bug from a passing cloud.
 **Before submitting**, please:
 
 - Make sure you are on the latest version of the repository (`git pull`) and have
-  installed the pinned dependencies with `python3 -m pip install -r requirements.txt`.
+  installed the pinned dependencies into a virtual environment
+  (`python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`).
+  Many "it won't import" problems come from installing into a system Python
+  whose own packages shadow the pinned ones.
 - Re-run the failing cell once or twice to rule out a transient network/API
   issue.
 - Determine whether the problem is reproducible and try to isolate it to a
@@ -124,16 +127,23 @@ different scope.
    the [README](README.md) and [`AGENTS.md`](AGENTS.md).
 3. **Make your changes**, following the [Style Guide](#style-guide) below.
 4. **Re-execute** any notebook you touched, end to end, so its committed outputs
-   are current:
+   are current, and check the result. [`AGENTS.md`](AGENTS.md#executing-notebooks)
+   has the exact commands; in short:
    ```bash
    cd "Notebooks/Part NN - Title"
    jupyter nbconvert --to notebook --execute --inplace \
-     --ExecutePreprocessor.timeout=600 "Part NN - Title.ipynb"
+     --ExecutePreprocessor.timeout=1200 "Part NN - Title.ipynb"
+   cd ../.. && python scripts/check_notebook_outputs.py "Notebooks/Part NN - Title/Part NN - Title.ipynb"
    ```
-   Execution must complete without errors against the **unauthenticated** public
-   AppView (guarded cells that print a "requires authentication" message count as
-   success).
-5. **Open a pull request** against `main`, ready for review.
+   Execution must complete without errors or deprecation warnings against the
+   **unauthenticated** public AppView (guarded cells that print a "requires
+   authentication" message count as success).
+5. **Mirror the change in the other language.** If you change an analysis in a
+   Python notebook, make the same change in its R Markdown counterpart, and vice
+   versa. Run `Rscript scripts/check_rmarkdown.R` from the repository root.
+6. **Run the tests** with `python -m pytest tests/` (required if you touch Part 10's bot).
+7. **Open a pull request** against `main`, ready for review. The Notebooks
+   workflow will run all of the above automatically.
 
 ## Style Guide
 
