@@ -19,7 +19,7 @@ Each tutorial after Part 00 pairs a set of Bluesky API endpoints with a data sci
 | 09 | [Algorithmic Curation and Governance](Notebooks/Part%2009%20-%20Algorithmic%20Curation%20and%20Governance/) | [Rmd](RMarkdown/Part%2009%20-%20Algorithmic%20Curation%20and%20Governance/) | custom feeds, lists, starter packs, labelers |
 | 10 | [Real-Time Streams and Bots](Notebooks/Part%2010%20-%20Real-Time%20Streams%20and%20Bots/) | [Rmd](RMarkdown/Part%2010%20-%20Real-Time%20Streams%20and%20Bots/) | Jetstream/firehose, real-time monitoring, bot design |
 
-Each Python Part 01–10 directory is self-contained: the notebook (committed with executed outputs), a shared `bsky_client.py` connection helper, part-specific helper modules, and small saved datasets in `data/`. Each R part directory contains the R Markdown source and a shared `bsky_client.R` credential helper; knit the documents locally to execute them (without credentials they knit prose-only).
+Each Python Part 01–10 directory is self-contained: the notebook (committed with executed outputs), a shared `bsky_client.py` connection helper, part-specific helper modules, and small saved datasets in `data/`. Each R part directory contains the R Markdown source and a shared `bsky_client.R` credential helper; knit the documents locally to execute them (without credentials they knit prose-only). The R documents need igraph 2.0 or later and work with bskyr 0.4.0 (CRAN) and 0.5.0 (GitHub).
 
 ## Getting started
 

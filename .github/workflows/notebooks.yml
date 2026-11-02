@@ -65,7 +65,7 @@ jobs:
 
   r:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
 
@@ -90,6 +90,41 @@ jobs:
             any::sandwich
             any::lmtest
             any::broom
+            any::httr2
+            any::curl
+            any::withr
+            any::testthat
+            any::pak
 
-      - name: Render every R Markdown document
+      # Offline tests of the shared helpers in bsky_client.R, run against a
+      # saved API response, first with CRAN bskyr and then with the
+      # development version from GitHub, so a bskyr change that breaks the
+      # documents shows up here before it reaches CRAN.
+      - name: Helper tests (CRAN bskyr)
+        run: Rscript -e 'testthat::test_dir("RMarkdown/tests/testthat", stop_on_failure = TRUE)'
+
+      - name: Helper tests (development bskyr)
+        run: |
+          mkdir -p "$RUNNER_TEMP/bskyr-dev"
+          Rscript -e 'pak::pkg_install("christopherkenny/bskyr", lib = Sys.getenv("DEV_LIB"))'
+          R_LIBS="$RUNNER_TEMP/bskyr-dev" Rscript -e 'message("bskyr ", packageVersion("bskyr")); testthat::test_dir("RMarkdown/tests/testthat", stop_on_failure = TRUE)'
+        env:
+          DEV_LIB: ${{ runner.temp }}/bskyr-dev
+
+      # The student path: no credentials, so most API chunks are skipped
+      - name: Render every R Markdown document (no credentials)
         run: Rscript scripts/check_rmarkdown.R
+
+      # The API code itself, through the mock in RMarkdown/tests/mock_api.R:
+      # a fake login, reads served by the public AppView, writes refused
+      - name: Render every R Markdown document (mock API)
+        run: Rscript scripts/check_rmarkdown.R --mock-api
+        env:
+          RENDER_DIR: ${{ runner.temp }}/rendered
+
+      - name: Keep the rendered documents for inspection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rendered-rmarkdown
+          path: ${{ runner.temp }}/rendered/

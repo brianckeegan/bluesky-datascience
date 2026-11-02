@@ -140,8 +140,16 @@ different scope.
    authentication" message count as success).
 5. **Mirror the change in the other language.** If you change an analysis in a
    Python notebook, make the same change in its R Markdown counterpart, and vice
-   versa. Run `Rscript scripts/check_rmarkdown.R` from the repository root.
-6. **Run the tests** with `python -m pytest tests/` (required if you touch Part 10's bot).
+   versa. From the repository root, run `Rscript scripts/check_rmarkdown.R`
+   (the knit a student without credentials gets) and
+   `Rscript scripts/check_rmarkdown.R --mock-api` (which executes the API
+   chunks against public data through a mock login, with no credentials
+   needed). In R, use the helpers in `bsky_client.R` (`is_repost()`,
+   `is_reply()`, `bsky_standardize()`, …) rather than bskyr column names you
+   haven't checked.
+6. **Run the tests** with `python -m pytest tests/` (required if you touch Part 10's bot)
+   and `Rscript -e 'testthat::test_dir("RMarkdown/tests/testthat")'` (required if
+   you touch `bsky_client.R`; remember to update every copy of it).
 7. **Open a pull request** against `main`, ready for review. The Notebooks
    workflow will run all of the above automatically.
 
