@@ -10,8 +10,8 @@
   ],
   "max_seed_posts": 600,
   "max_panel_posts_each": 150,
-  "language_filter": "en",
-  "n_posts_saved": 336,
+  "language_filter": "declared English, or undeclared with English function-word share >= 0.10 (textprep.language_status)",
+  "n_posts_saved": 1344,
   "lda_topics": 8,
   "lda_random_state": 42
 }

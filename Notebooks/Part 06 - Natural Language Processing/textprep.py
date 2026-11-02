@@ -65,6 +65,60 @@ def clean(text):
     return " ".join(text.split())
 
 
+# Very common English function words that rarely occur in other European
+# languages. ("a", "in", "no", and "me" are left out because Spanish,
+# German, Italian, or Portuguese use them too.) Used by looks_english().
+ENGLISH_FUNCTION_WORDS = frozenset("""
+    the and of to is for that with on was are this it from by at as be has
+    have an his her their they after about who will what more said its were
+    been than which not but or how why when new
+""".split())
+
+
+def english_function_word_share(text, min_tokens=5):
+    """Share of a post's words that are common English function words.
+
+    Strips URLs, display URLs, and @-handles first, then counts word tokens
+    in any alphabet. Returns ``None`` for posts with fewer than
+    ``min_tokens`` words, which are too short to judge.
+    """
+    text = text.lower()
+    for pattern in (URL_PATTERN, HANDLE_PATTERN, DISPLAY_URL_PATTERN):
+        text = pattern.sub(" ", text)
+    words = re.findall(r"[^\W\d_]+", text)
+    if len(words) < min_tokens:
+        return None
+    return sum(word in ENGLISH_FUNCTION_WORDS for word in words) / len(words)
+
+
+def language_status(langs, text, threshold=0.10):
+    """Classify a post as English or not from its declared ``langs`` and text.
+
+    Returns one of:
+
+    * ``"declared English"``: ``langs`` includes an English tag (``en``,
+      ``en-US``, ...);
+    * ``"declared other"``: ``langs`` names only other languages;
+    * ``"undeclared, looks English"``: ``langs`` is empty, but at least
+      ``threshold`` of the post's words are English function words;
+    * ``"undeclared, not English or too short"``: everything else.
+
+    An empty ``langs`` means the posting client recorded nothing. That is
+    *missing* data, not evidence of a non-English post. English prose is
+    dense with function words ("the", "of", "and"): in English news posts
+    they are typically a quarter or more of all words, while in Spanish,
+    French, Portuguese, or German posts they almost never reach 10%.
+    """
+    if any(lang.lower().startswith("en") for lang in langs):
+        return "declared English"
+    if langs:
+        return "declared other"
+    share = english_function_word_share(text)
+    if share is not None and share >= threshold:
+        return "undeclared, looks English"
+    return "undeclared, not English or too short"
+
+
 def tokenize(text, stopwords=STOPWORDS):
     """Clean a raw post and return its content tokens as a list.
 

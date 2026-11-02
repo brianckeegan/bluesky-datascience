@@ -186,9 +186,16 @@ def download_thumbnails(posts, out_dir, max_images=12, max_per_post=2, max_px=25
     cannot dominate a small corpus, and sleeps ``sleep`` seconds between
     downloads to be polite to the CDN. Returns a manifest: one dict per saved
     image with the post URI, alt text, dimensions, and file path.
+
+    Deletes any ``.jpg`` files already in ``out_dir`` first, so the folder
+    always matches the manifest this call returns: images left over from an
+    earlier run would otherwise sneak into any analysis that reads the
+    folder.
     """
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+    for stale in out_dir.glob("*.jpg"):
+        stale.unlink()
     manifest, seen_hashes = [], set()
     for post in posts:
         saved_from_post = 0

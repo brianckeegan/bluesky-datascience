@@ -3,8 +3,9 @@
 This module contains three groups of tools:
 
 1. ``CODEBOOK`` and ``build_prompt`` — the labeling instructions we give to
-   human coders and to a large language model, and the prompt template that
-   wraps them around a post.
+   human coders and to a large language model (loaded from
+   ``data/codebook.json``, shared with the R version), and the prompt
+   template that wraps them around a post.
 2. ``annotate_posts_llm`` — a batched annotation loop that sends posts to
    Anthropic's Claude API and parses strict-JSON labels back. It degrades
    gracefully (prints instructions and returns ``None``) when the
@@ -18,63 +19,41 @@ This module contains three groups of tools:
 import json
 import re
 import time
+from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # 1. The codebook
 # ---------------------------------------------------------------------------
+#
+# The codebook text and the keyword rules live in data/codebook.json, which
+# the R Markdown version of this part reads too. Keeping one file means the
+# two implementations apply exactly the same instrument and get the same
+# validation numbers.
 
-LABELS = ["politics", "science_tech", "other"]
+CODEBOOK_PATH = Path(__file__).with_name("data") / "codebook.json"
 
-DEFAULT_MODEL = "claude-sonnet-4-6"
+with open(CODEBOOK_PATH, encoding="utf-8") as _f:
+    _CODEBOOK_DATA = json.load(_f)
 
-CODEBOOK = """\
-TASK: Assign each Bluesky post exactly one topic label.
+CODEBOOK_VERSION = _CODEBOOK_DATA["version"]
+LABELS = _CODEBOOK_DATA["labels"]
+DEFAULT_LABEL = _CODEBOOK_DATA["default_label"]
+CODEBOOK = "\n".join(_CODEBOOK_DATA["codebook"]) + "\n"
+KEYWORD_RULES = _CODEBOOK_DATA["keyword_rules"]
 
-LABELS
+# The model the notebook would use: the current small, inexpensive Claude
+# model, which is well suited to short classification tasks.
+DEFAULT_MODEL = "claude-haiku-5-5"
 
-politics — The post is primarily about government, elections, political
-  parties, politicians, courts, legislation, public policy (national, state,
-  or local — including housing and urban policy), war and geopolitics, or
-  criticism of political news media and pundits.
-
-science_tech — The post is primarily about science, research, academia,
-  higher education, teaching, grants, scholarly publishing, data science,
-  AI/LLMs, software, or the technology industry, where the practice or
-  culture of science/technology (not a political actor) is the main subject.
-
-other — Everything else: personal life, jokes and memes without a clearly
-  political or scientific/technical referent, pop culture, music, food,
-  sports, local community chatter, and posts whose topic cannot be
-  determined from the text alone.
-
-DECISION RULES
-
-1. Code the post's PRIMARY topic — what the post is mostly about, not every
-   topic it touches.
-2. If the post criticizes or comments on political actors or government
-   policy, code politics even when the domain affected is science or the
-   university (e.g., political defunding of research agencies → politics).
-3. If the post is about the practice or culture of research, academia, AI,
-   or technology without a political actor as the main target, code
-   science_tech (e.g., complaints about peer review, jokes about LLM
-   prompting → science_tech).
-4. Self-promotion of published work (columns, talks, papers) is coded by the
-   topic of the work itself.
-5. Jokes, memes, and one-liners are coded by their referent; if the referent
-   is not clearly political or scientific/technical, code other.
-6. If the topic is genuinely undecidable from the text alone (e.g., a quip
-   reacting to an image we cannot see), code other.
-
-EDGE-CASE GUIDANCE
-
-- Population/eugenics discourse framed as a political-ideological project →
-  politics.
-- Platform economics and AI-industry finances (bubbles, valuations) →
-  science_tech, unless a politician or policy is the main target.
-- Campus free-speech fights involving governments or pundits → politics
-  (rule 2); routine academic-life posts (grading, conferences) →
-  science_tech.
-"""
+# Published prices in US dollars per million tokens (input, output), as of
+# October 2026. Prices change: verify at https://www.anthropic.com/pricing
+# before use. (Haiku's price is for prompts under 100K tokens, which every
+# annotation prompt here is.)
+MODEL_PRICES = {
+    "claude-haiku-5-5": (0.10, 0.50),
+    "claude-sonnet-5-5": (2.00, 10.00),
+    "claude-opus-5-5": (4.00, 20.00),
+}
 
 
 # ---------------------------------------------------------------------------
@@ -170,13 +149,20 @@ def annotate_posts_llm(texts, codebook=CODEBOOK, model=DEFAULT_MODEL,
         try:
             response = client.messages.create(
                 model=model,
-                max_tokens=256,
+                # Current models think before answering; low effort keeps that
+                # short for a simple classification, and 1,024 tokens leaves
+                # room for the thinking plus the one-line JSON answer.
+                max_tokens=1024,
+                output_config={"effort": "low"},
                 messages=[{"role": "user", "content": build_prompt(codebook, text)}],
             )
-            raw = next(
-                (block.text for block in response.content if block.type == "text"), ""
-            )
-            parsed = parse_label_response(raw)
+            if response.stop_reason == "refusal":
+                parsed = {"label": None, "confidence": None, "error": "refused"}
+            else:
+                raw = next(
+                    (block.text for block in response.content if block.type == "text"), ""
+                )
+                parsed = parse_label_response(raw)
             parsed.update({
                 "text": text,
                 "model": model,
@@ -193,23 +179,17 @@ def annotate_posts_llm(texts, codebook=CODEBOOK, model=DEFAULT_MODEL,
     return results
 
 
-# Published prices per million tokens (June 2026): input, output.
-MODEL_PRICES_PER_MTOK = {
-    "claude-sonnet-4-6": (3.00, 15.00),
-    "claude-haiku-4-5": (1.00, 5.00),
-    "claude-opus-4-8": (5.00, 25.00),
-}
-
-
 def estimate_annotation_cost(texts, codebook=CODEBOOK, model=DEFAULT_MODEL,
-                             output_tokens_per_post=30):
+                             output_tokens_per_post=150):
     """Back-of-envelope cost estimate for annotating ``texts`` with ``model``.
 
     Uses the rough heuristic of ~4 characters per token (the official
-    ``count_tokens`` endpoint gives exact numbers when you have a key).
+    ``count_tokens`` endpoint gives exact numbers when you have a key). The
+    output allowance covers the one-line JSON answer plus the model's brief
+    thinking at low effort, which is billed as output tokens.
     Returns a dict of token and dollar estimates.
     """
-    input_price, output_price = MODEL_PRICES_PER_MTOK[model]
+    input_price, output_price = MODEL_PRICES[model]
     overhead_tokens = (len(codebook) + 600) / 4  # codebook + prompt scaffolding
     input_tokens = sum(overhead_tokens + len(t) / 4 for t in texts)
     output_tokens = output_tokens_per_post * len(texts)
@@ -228,34 +208,13 @@ def estimate_annotation_cost(texts, codebook=CODEBOOK, model=DEFAULT_MODEL,
 # 3. Keyword-rule baseline (always runs — no API needed)
 # ---------------------------------------------------------------------------
 
-# Transparent keyword rules. Every keyword is matched as a whole word
-# (case-insensitive); the category with the most hits wins, ties and
-# zero-hit posts fall through to "other".
-KEYWORD_RULES = {
-    "politics": [
-        "trump", "biden", "democrat", "democrats", "democratic", "republican",
-        "republicans", "gop", "congress", "congressional", "senate",
-        "senators", "scotus", "court", "courts", "election", "elections",
-        "vote", "votes", "voters", "voting", "ballot", "ballots", "policy",
-        "politics", "political", "politicians", "president", "governor",
-        "amendment", "constitution", "legislation", "legislative", "war",
-        "iran", "deport", "deporting", "fascist", "white house", "doj",
-        "dnc", "epstein", "gerontocracy", "neoliberal", "progressive",
-        "conservative", "left-wing", "right-wing", "far-right", "eugenics",
-        "eugenicist", "supremacy", "white supremacist", "free speech",
-        "regime", "nominees",
-    ],
-    "science_tech": [
-        "ai", "llm", "llms", "research", "researchers", "science",
-        "scientific", "scientist", "scientists", "university",
-        "universities", "professor", "professoriate", "academic",
-        "academia", "grant", "grants", "data", "wikipedia", "claude",
-        "anthropic", "model", "models", "citation", "citations", "scholar",
-        "scholars", "scholarship", "journal", "peer review", "tech",
-        "techbros", "tech bros", "startup", "software", "code", "coding",
-        "matplotlib", "agent", "agents", "mcp", "api", "grades", "teaching",
-        "classroom", "conference", "conferences", "protocol", "openalex",
-    ],
+# KEYWORD_RULES (loaded from data/codebook.json above) are transparent keyword
+# lists. Every keyword is matched as a whole word (case-insensitive); the
+# category with the most hits wins, and ties and zero-hit posts fall through
+# to DEFAULT_LABEL ("other").
+_KEYWORD_PATTERNS = {
+    category: [re.compile(rf"\b{re.escape(kw)}\b") for kw in keywords]
+    for category, keywords in KEYWORD_RULES.items()
 }
 
 
@@ -269,12 +228,25 @@ def keyword_label(text):
     """
     lowered = text.lower()
     scores = {
-        category: sum(
-            len(re.findall(rf"\b{re.escape(kw)}\b", lowered)) for kw in keywords
-        )
-        for category, keywords in KEYWORD_RULES.items()
+        category: sum(len(pattern.findall(lowered)) for pattern in patterns)
+        for category, patterns in _KEYWORD_PATTERNS.items()
     }
     best = max(scores, key=scores.get)
     if scores[best] == 0 or list(scores.values()).count(scores[best]) > 1:
-        return "other"
+        return DEFAULT_LABEL
     return best
+
+
+def keyword_hits(text):
+    """Return the keywords that matched ``text``, per category.
+
+    The error analysis uses this to show *why* the baseline chose a label:
+    no matches at all (it fell through to ``DEFAULT_LABEL``), a tie, or a
+    keyword from the wrong category.
+    """
+    lowered = text.lower()
+    return {
+        category: [kw for kw, pattern in zip(KEYWORD_RULES[category], patterns)
+                   for _ in pattern.findall(lowered)]
+        for category, patterns in _KEYWORD_PATTERNS.items()
+    }

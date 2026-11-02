@@ -52,7 +52,8 @@ knitr::opts_chunk$set(eval = bsky_authed)
 
 A post's `record$embed` is a *union type*: exactly one of
 `app.bsky.embed.images`, `...video`, `...external` (link cards),
-`...record` (quote posts), or `...recordWithMedia`. The Python notebook
+`...record` (quote posts), `...recordWithMedia`, or the newer
+`...gallery` (a multi-photo carousel). The Python notebook
 opens with a war story: its strictly-typed SDK *crashed* on an embed
 type the platform had just shipped, and the fix was to fall back to raw
 JSON. R's list-of-lists representation has that robustness built in —
@@ -68,7 +69,9 @@ map_chr(items, \(item) item$post$embed$`$type` %||% "(no embed)") |>
 ```
 
 A classifier that collapses view types into analytic classes — and
-shunts anything it has never seen into `"other"` instead of crashing:
+shunts anything it has never seen into `"other"` instead of crashing. A
+gallery is a set of photos shown as a carousel, so for analysis it
+counts as `"images"`:
 
 ```{r classify}
 classify_embed <- function(post) {
@@ -76,6 +79,7 @@ classify_embed <- function(post) {
   type <- sub("#view$", "", type)
   switch(type,
     "app.bsky.embed.images" = "images",
+    "app.bsky.embed.gallery" = "images",   # multi-photo carousel
     "app.bsky.embed.video" = "video",
     "app.bsky.embed.external" = "external",
     "app.bsky.embed.record" = "record",
@@ -92,7 +96,18 @@ and a policy institute. The collector below fetches each account's feed as raw p
 (`clean = FALSE` returns a list of response pages, each with a `$feed`
 list of items), flattens the pages together, uses `purrr::keep()` to
 retain only original posts, and extracts the `post` object from each
-item:
+item.
+
+"Original" means two things here, matching the Python notebook. We skip
+**reposts** (a feed item whose `reason` says it was reposted), because a
+repost shows someone else's media choices. And we skip **replies**,
+because we want each account's primary, public-facing output rather than
+its conversations. The Python notebook gets the second for free by
+asking the API for `filter = "posts_no_replies"`; bskyr's
+`bs_get_author_feed()` has no `filter` argument, so we drop replies
+ourselves, by checking whether the post's record points to a parent.
+That costs a little: the API still sends the replies, so each account
+yields somewhat fewer than `POSTS_PER_ACCOUNT` original posts:
 
 ```{r panel}
 PANEL <- c("bsky.app", "npr.org", "boulderrl.bsky.social",
@@ -103,8 +118,11 @@ COLLECTED_AT <- format(now("UTC"), "%Y-%m-%dT%H:%M:%SZ")
 collect_raw_posts <- function(actor, max_posts) {
   pages <- bs_get_author_feed(actor, limit = max_posts, clean = FALSE)
   items <- list_flatten(map(pages, "feed"))
-  # skip reposts: the feed item carries a 'reason' explaining its presence
-  originals <- keep(items, \(item) is.null(item$reason))
+  originals <- keep(items, \(item) {
+    repost <- endsWith(item$reason$`$type` %||% "", "#reasonRepost")
+    reply <- !is.null(item$post$record$reply)   # the record names a parent post
+    !repost && !reply
+  })
   map(originals, "post")
 }
 
@@ -118,10 +136,12 @@ map_int(all_posts, length)
 ```
 
 Now three helpers that walk a raw post. `iter_images()` returns one row
-per attached image, with its alt text and declared dimensions; the
-`%||%` chains handle the fact that the image list lives in different
-places for plain image posts (`embed$images`) and posts that pair media
-with a quote (`embed$media$images`). `external_info()` pulls the link
+per attached image, with its alt text and declared dimensions. It has to
+look in three places, because the image list lives in different spots
+for plain image posts (`embed$images`, with a `thumb` URL per image),
+galleries (`embed$items`, with a `thumbnail` URL per image), and posts
+that pair media with a quote (`embed$media`, which holds one of the
+other two). `external_info()` pulls the link
 card and reduces its URL to a bare domain with a regular expression.
 `post_row()` assembles everything into the one-row-per-post summary our
 analysis runs on:
@@ -129,10 +149,19 @@ analysis runs on:
 ```{r media-helpers}
 iter_images <- function(post) {
   view <- post$embed
-  imgs <- view$images %||% view$media$images %||% list()
+  if (startsWith(view$`$type` %||% "", "app.bsky.embed.recordWithMedia")) {
+    view <- view$media
+  }
+  imgs <- view$images %||% view$items %||% list()   # images or gallery
+  # a post with no images still returns a (zero-row) tibble with the columns,
+  # so code downstream can filter and count without special cases
+  if (length(imgs) == 0) {
+    return(tibble(alt = character(), thumb = character(),
+                  width = integer(), height = integer()))
+  }
   map(imgs, \(img) tibble(
     alt = img$alt %||% "",
-    thumb = img$thumb %||% NA_character_,
+    thumb = img$thumb %||% img$thumbnail %||% NA_character_,
     width = img$aspectRatio$width %||% NA_integer_,
     height = img$aspectRatio$height %||% NA_integer_
   )) |> list_rbind()
@@ -228,18 +257,32 @@ tibble(
 )
 ```
 
+Per account, one detail matters: an account that posted *no* images in
+our sample has no alt-text rate at all. Zero described images out of
+zero is undefined, not 0%, so we name those accounts rather than plotting
+them as zeros or letting them silently drop off the chart:
+
 ```{r alt-by-account, fig.width=8, fig.height=4}
-images_df |>
+alt_by_account <- images_df |>
   group_by(author) |>
   summarise(images = n(),
-            alt_rate = mean(str_squish(alt) != "")) |>
+            alt_rate = mean(str_squish(alt) != ""))
+
+no_images <- setdiff(PANEL, alt_by_account$author)
+if (length(no_images) > 0) {
+  cat("No images in the sample, so no alt-text rate:",
+      paste(no_images, collapse = ", "), "\n")
+}
+
+alt_by_account |>
   ggplot(aes(alt_rate, fct_reorder(author, alt_rate))) +
   geom_col(fill = "seagreen") +
-  geom_text(aes(label = scales::percent(alt_rate, 1)), hjust = -0.1) +
+  geom_text(aes(label = paste0(scales::percent(alt_rate, 1), " (n=", images, ")")),
+            hjust = -0.1) +
   geom_vline(xintercept = 0.001, color = "#DC143C", linetype = "dashed") +
   scale_x_continuous(limits = c(0, 1.15)) +
   labs(x = "Share of posted images with alt text", y = NULL,
-       title = "Alt-text provision rate by account",
+       title = "Alt-text provision rate by account (accounts that posted images)",
        subtitle = "Dashed red line: Twitter 2019 baseline (0.1%)") +
   theme_minimal()
 ```
@@ -276,60 +319,140 @@ external_posts |>
   slice_head(n = 10)
 ```
 
+A sharper question is how much of each account's link sharing is
+**self-linking**: cards that point back to the account's own website.
+The mapping from handle to website isn't always one-to-one. The Boulder
+Reporting Lab's handle is `boulderrl.bsky.social` but its site is
+`boulderreportinglab.org`, and several newsrooms post through **link
+shorteners**, short domains that redirect to their articles: NPR uses
+`n.pr`, the New York Times `nyti.ms`, and ProPublica `propub.li`. A
+shortened link to an NPR story is still NPR linking to itself, so each
+shortener counts as one of its outlet's own domains. `is_own_domain()`
+accepts a domain if it equals one of the account's domains or is a
+subdomain of one (so `projects.propublica.org` counts, but a stranger's
+`notnpr.org` does not):
+
 ```{r self-links}
 OWN_DOMAINS <- list(
   "bsky.app" = c("bsky.app", "bsky.social"),
-  "npr.org" = "npr.org",
+  "npr.org" = c("npr.org", "n.pr"),
   "boulderrl.bsky.social" = "boulderreportinglab.org",
-  "propublica.org" = "propublica.org",
+  "propublica.org" = c("propublica.org", "propub.li"),
   "nytimes.com" = c("nytimes.com", "nyti.ms"),
   "knightcolumbia.org" = "knightcolumbia.org"
 )
 
+is_own_domain <- function(domain, own) {
+  any(domain == own | endsWith(domain, paste0(".", own)))
+}
+
+external_posts <- external_posts |>
+  mutate(own_domain = map2_lgl(external_domain, author,
+                               \(d, a) is_own_domain(d, OWN_DOMAINS[[a]])))
+
+# For each account, the most common destination we did NOT count as its
+# own: a shortener or subdomain here means OWN_DOMAINS needs fixing
+top_other <- external_posts |>
+  filter(!own_domain) |>
+  count(author, external_domain, sort = TRUE) |>
+  group_by(author) |>
+  slice_head(n = 1) |>
+  select(author, top_other_domain = external_domain)
+
 external_posts |>
   group_by(author) |>
-  summarise(own_domain_share = mean(map2_lgl(
-    external_domain, author,
-    \(domain, a) any(endsWith(domain, OWN_DOMAINS[[a]]))
-  )))
+  summarise(link_cards = n(), own_domain_share = mean(own_domain)) |>
+  left_join(top_other, by = "author")
 ```
+
+Matching on the bare website domain alone would score NPR, whose cards
+almost all point to `n.pr`, as never linking to itself, and the
+conclusion would be exactly backwards. The `top_other_domain` column is
+the check that catches this kind of mistake. When it shows a shortener
+or subdomain, fix `OWN_DOMAINS`; when it shows other outlets or
+platforms, the account really is pointing outward. One case needs more
+care: `trib.al` and similar shorteners belong to social-media scheduling
+services that many outlets share, so they can't be assigned to any one
+account. The only way to know where such a link goes is to follow its
+redirect (for example with `httr2::req_perform()` on the URL and reading
+the final `resp_url()`) and record the final domain. For the news
+organizations, own-domain shares are typically near 1: Bluesky works as
+a *distribution channel* for their own publishing.
 
 ## 6. Building a small image corpus
 
-Visual content analysis needs the images themselves. Download a *small*,
-documented sample of thumbnails (never originals at scale), with a
-manifest tying every file to its post, author, and alt text. `walk2()`
-is `map2()`'s sibling for side effects — it loops over URL/destination
-pairs calling `download.file()`, sleeping half a second between
-downloads out of politeness to the CDN:
+Visual content analysis needs the images themselves. We build a *small*,
+documented corpus following the same habits as the Python notebook:
+
+1. **Thumbnails, not full-size blobs.** The `thumb` URL serves a small,
+   CDN-resized preview, which is enough for most computational analyses.
+2. **Content-hash filenames.** Each file is named by a hash of its bytes
+   (the first 16 characters of its SHA-256 digest, computed with the
+   [digest](https://cran.r-project.org/package=digest) package). Identical
+   bytes always get the same name, so the same image posted twice is
+   saved once, and re-running never duplicates files.
+3. **A manifest.** Every saved file gets a row recording its post, author,
+   and alt text. The manifest, not the folder, defines the corpus, so we
+   empty the folder first: images left over from an earlier run would
+   otherwise sneak into any analysis that reads it.
+4. **A diverse, capped sample.** At most 12 images and 2 per post, taken
+   round-robin across accounts with alt-texted posts first, so one
+   prolific image-poster can't dominate.
+5. **Politeness.** Half a second between downloads.
+
+One difference from Python: the Python notebook also shrinks every
+thumbnail to at most 256 pixels on a side before saving. Base R can't
+resize images, and this series avoids adding an image-processing
+package for one step, so here the CDN's thumbnail is saved as-is (still
+small, typically tens of kilobytes).
 
 ```{r download}
+MAX_IMAGES <- 12
+MAX_PER_POST <- 2
 dir.create("data/images", recursive = TRUE, showWarnings = FALSE)
+unlink(list.files("data/images", pattern = "\\.jpg$", full.names = TRUE))
 
-manifest <- imap(all_posts, \(posts, actor) {
+# Candidate images: up to MAX_PER_POST per post, alt-texted posts first
+candidates <- imap(all_posts, \(posts, actor) {
   map(posts, \(post) {
-    imgs <- iter_images(post)
+    imgs <- iter_images(post) |> filter(!is.na(thumb))
     if (nrow(imgs) == 0) return(NULL)
-    mutate(imgs[1, ], author = actor, uri = post$uri)
+    imgs |>
+      slice_head(n = MAX_PER_POST) |>
+      mutate(author = actor, uri = post$uri,
+             post_has_alt = any(str_squish(alt) != ""))
   }) |> list_rbind()
 }) |>
   list_rbind() |>
-  filter(!is.na(thumb)) |>
+  arrange(author, desc(post_has_alt)) |>
   group_by(author) |>
-  slice_head(n = 2) |>
+  mutate(turn = dense_rank(match(uri, unique(uri)))) |>  # 1st post, 2nd post, ...
   ungroup() |>
-  mutate(file = file.path("data/images",
-                          paste0("img_", row_number(), ".jpg")))
+  arrange(turn, match(author, PANEL))                    # round-robin
 
-walk2(manifest$thumb, manifest$file, \(url, dest) {
-  try(download.file(url, dest, mode = "wb", quiet = TRUE), silent = TRUE)
+# Download until the corpus is full, naming each file by its content hash
+manifest <- list()
+for (i in seq_len(nrow(candidates))) {
+  if (length(manifest) >= MAX_IMAGES) break
+  tmp <- tempfile(fileext = ".jpg")
+  ok <- tryCatch(download.file(candidates$thumb[i], tmp, mode = "wb", quiet = TRUE) == 0,
+                 error = \(e) FALSE)
   Sys.sleep(0.5)
-})
+  if (!ok) next
+  hash <- substr(digest::digest(file = tmp, algo = "sha256"), 1, 16)
+  dest <- file.path("data/images", paste0(hash, ".jpg"))
+  if (file.exists(dest)) next                            # same image already saved
+  file.copy(tmp, dest)
+  manifest[[length(manifest) + 1]] <- candidates[i, ] |>
+    select(author, uri, alt, width, height) |>
+    mutate(file = dest)
+}
+manifest <- list_rbind(manifest)
 
-write_csv(select(manifest, -thumb), "data/images_manifest.csv")
+write_csv(manifest, "data/images_manifest.csv")
 
-c(images_saved = sum(file.exists(manifest$file)),
-  total_kb = round(sum(file.size(manifest$file), na.rm = TRUE) / 1024))
+c(images_saved = nrow(manifest),
+  total_kb = round(sum(file.size(manifest$file)) / 1024))
 ```
 
 ## 7. From pixels to measurements: CLIP embeddings
@@ -360,6 +483,7 @@ write_csv(df, "data/media_summary.csv")
 write_json(
   list(collected_at = COLLECTED_AT, panel = PANEL,
        posts_per_account = POSTS_PER_ACCOUNT, reposts_excluded = TRUE,
+       replies_excluded = TRUE,
        endpoint = "app.bsky.feed.getAuthorFeed (raw lists)"),
   "data/collection_metadata.json", pretty = TRUE, auto_unbox = TRUE)
 

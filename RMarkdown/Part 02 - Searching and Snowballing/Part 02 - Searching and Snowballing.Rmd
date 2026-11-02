@@ -180,12 +180,16 @@ Snowball sampling starts from a *seed*, observes whom the seed engages,
 collects those accounts, and repeats. Set the design parameters first —
 every cap is a promise to the API and to your own time:
 
+Each value mirrors the constant of the same name in the Python
+notebook's Section 4, so the two implementations run the same design:
+
 ```{r params}
 SEED_ACTOR         <- "nytimes.com"
 WAVE0_MAX_POSTS    <- 200  # posts to collect from the seed
 WAVE1_ACCOUNTS     <- 8    # most-engaged accounts to crawl in wave 1
 POSTS_PER_ACCOUNT  <- 100  # posts per snowballed account
 MAX_TOTAL_ACCOUNTS <- 15   # hard cap across all waves
+MAX_PAGES          <- 10   # feed pages per account (Python: fetch_author_posts max_pages=10)
 
 COLLECTED_AT <- format(now("UTC"), "%Y-%m-%dT%H:%M:%SZ")
 COLLECTED_AT
@@ -193,10 +197,20 @@ COLLECTED_AT
 
 ### Wave 0: the seed account
 
-A small fetcher that returns original posts (reposts dropped) with the
-columns the snowball needs. Two of those columns come from the helpers
-in `bsky_client.R`, because bskyr's raw column names are easy to get
-wrong in ways that fail *silently*:
+A small fetcher that returns up to `max_posts` original posts (reposts
+dropped) with the columns the snowball needs. It pages through the feed
+100 items at a time, the same way the Python helper does, because
+asking bskyr for `limit = max_posts` items would count reposts toward
+the limit: an account that reposts heavily would come back with far
+fewer original posts than we asked for. bskyr attaches the cursors it
+received to the tibble it returns, as a list in `attr(feed, "cursor")`;
+the last one tells the server where to resume, so we pass it back to
+fetch the next page, stopping when we have enough originals, the cursor
+runs out, or `MAX_PAGES` requests have been made.
+
+Two of the columns come from the helpers in `bsky_client.R`, because
+bskyr's raw column names are easy to get wrong in ways that fail
+*silently*:
 
 * `is_repost()` identifies reposts. We drop them, because a repost's
   text, mentions, and author belong to someone else. Getting this wrong
@@ -206,9 +220,7 @@ wrong in ways that fail *silently*:
   snowball would follow mentions only and miss every conversation.
 
 ```{r fetch-author}
-fetch_author_posts <- function(actor, max_posts = 100) {
-  feed <- bs_get_author_feed(actor, limit = max_posts)
-  if (is.null(feed) || nrow(feed) == 0) return(tibble())
+originals_from_page <- function(feed) {
   feed |>
     mutate(
       repost     = is_repost(feed),
@@ -225,6 +237,20 @@ fetch_author_posts <- function(actor, max_posts = 100) {
            like_count, repost_count, reply_count)
 }
 
+fetch_author_posts <- function(actor, max_posts = 100, max_pages = MAX_PAGES) {
+  pages <- list()
+  cursor <- NULL
+  for (page in seq_len(max_pages)) {
+    feed <- bs_get_author_feed(actor, cursor = cursor, limit = 100)
+    if (is.null(feed) || nrow(feed) == 0) break
+    pages[[page]] <- originals_from_page(feed)
+    cursor <- tail(unlist(attr(feed, "cursor")), 1)   # NULL once the feed runs out
+    if (length(cursor) == 0 || sum(map_int(pages, nrow)) >= max_posts) break
+    Sys.sleep(0.1)
+  }
+  list_rbind(pages) |> slice_head(n = max_posts)
+}
+
 wave0 <- fetch_author_posts(SEED_ACTOR, WAVE0_MAX_POSTS)
 seed_did <- wave0$author_did[[1]]
 
@@ -234,16 +260,27 @@ range(wave0$created_at)
 
 ### Whom does the seed engage?
 
-Whom did those 200 posts engage? We pool every mentioned DID and every
-reply-parent DID, tally them with base R's `table()`, and sort so the
-most-engaged accounts come first. The top `WAVE1_ACCOUNTS` of them form
-the next wave's crawl list — note that we exclude the seed itself, since
-we already have its posts:
+Whom did those posts engage? For each post we collect the accounts it
+engages, its mentions plus the author of the post it replies to, and
+then count, for each account, **how many posts** engaged it. Two details
+match the Python helper `count_engaged_accounts()`. A post that mentions
+someone three times still counts once for them (`unique()`), so the
+tally measures how often an account is engaged, not how chatty one post
+was. And we remove the post's own author (`setdiff()`), so an account
+threading replies to itself doesn't count as engaging itself. `pmap()`
+walks the three columns in parallel, one post at a time; `table()`
+tallies the result, and we sort so the most-engaged accounts come first.
+The top `WAVE1_ACCOUNTS` of them form the next wave's crawl list — note
+that we exclude the seed itself, since we already have its posts:
 
 ```{r engaged}
 count_engaged <- function(posts, exclude = character(0)) {
-  c(unlist(posts$mentions), discard(posts$reply_parent_did, is.na)) |>
-    discard(\(did) did %in% exclude) |>
+  engaged <- pmap(list(posts$mentions, posts$reply_parent_did, posts$author_did),
+                  \(mentions, parent, author) {
+    setdiff(unique(c(unlist(mentions), parent[!is.na(parent)])),
+            c(author, exclude))
+  })
+  as.character(unlist(engaged)) |>
     table() |>
     sort(decreasing = TRUE)
 }
@@ -258,11 +295,19 @@ bs_get_profile(wave1_dids) |>
 
 ### Wave 1: crawl the frontier
 
+Now collect posts from each account on the crawl list. `crawl_accounts()`
+calls our fetcher once per account, pausing between accounts, and wraps
+each call in `tryCatch()`: an account that was deleted or suspended
+since the seed mentioned it is skipped with a message naming it, rather
+than stopping the whole crawl or vanishing without a trace:
+
 ```{r wave1}
 crawl_accounts <- function(dids, posts_each) {
   map(dids, \(did) {
-    posts <- tryCatch(fetch_author_posts(did, posts_each),
-                      error = function(e) NULL)
+    posts <- tryCatch(fetch_author_posts(did, posts_each), error = function(e) {
+      message("Skipping ", did, ": ", conditionMessage(e))
+      NULL
+    })
     Sys.sleep(0.1)
     posts
   }) |> list_rbind()

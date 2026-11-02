@@ -363,24 +363,73 @@ posts |>
   )
 ```
 
-And the relationship between whom the account follows and who follows
-it. `intersect()` finds the DIDs present in both lists — accounts with a
-*mutual* (reciprocated) tie, a concept Part 03 returns to as
-reciprocity. One honesty note: our followers table is a 2,000-account
-sample of more than a million, so `share_followed` describes that recent
-sample, not the full follower population:
+Finally, a simple network question as a teaser for Part 03: how
+**reciprocal** is this account's neighborhood? Of the accounts the Times
+follows, how many follow it back? Both tables key on DIDs, so the
+tempting first attempt is `intersect()`: any DID in both the follows
+list and the followers list is a *mutual* follow. Let's try it, and also
+compute how much of the full follower list our sample covers:
 
 ```{r mutuals}
 mutuals <- intersect(follows$did, followers$did)
 
 tibble(
   follows = nrow(follows),
-  followers = nrow(followers),
-  mutuals = length(mutuals),
-  share_follows_back = length(mutuals) / nrow(follows),
-  share_followed     = length(mutuals) / nrow(followers)
+  followers_sampled = nrow(followers),
+  followers_total = profile$followers_count,
+  share_of_followers_sampled = nrow(followers) / profile$followers_count,
+  mutuals_by_intersection = length(mutuals)
+) |>
+  glimpse()   # one line per column, so nothing is cut off
+```
+
+Look at `share_of_followers_sampled` before you look at the mutuals
+count. Our follower sample is the **most recent** slice of a list with
+over a million entries, a small fraction of a percent of it. An account
+the Times followed back in 2023 almost certainly followed the Times long
+before the accounts in our slice did, so it sits deep in the part of the
+list we never collected. The intersection can only find mutuals among
+the newest followers, so its count is mostly a statement about our
+sampling design, not about reciprocity. A general trap: **a set
+operation between a census and a convenience sample measures the
+sample, not the population.**
+
+The fix is to ask the question directly. The
+[`app.bsky.graph.getRelationships`](https://docs.bsky.app/docs/api/app-bsky-graph-get-relationships)
+endpoint takes one `actor` and a list of `others`, and for each pair
+reports whether the actor follows them (`following`) and whether they
+follow the actor (`followed_by`), as the AT-URIs of the follow records
+or `NA`. bskyr wraps it as `bs_get_relationships()`, which sends the
+`others` in batches of 30 (the endpoint's maximum per request), so for a
+follows list of this size it makes only a handful of requests:
+
+```{r relationships}
+relationships <- call_with_backoff(bs_get_relationships, profile$did, follows$did)
+
+# Accounts that no longer exist come back without the followed_by field
+checked <- if ("followed_by" %in% names(relationships)) relationships else
+  mutate(relationships, followed_by = NA_character_)
+
+tibble(
+  follows_checked = nrow(checked),
+  follow_back = sum(!is.na(checked$followed_by)),
+  share_follow_back = mean(!is.na(checked$followed_by)),
+  found_by_intersection = length(mutuals)
 )
 ```
+
+Compare `follow_back` with `found_by_intersection`. The direct check
+measures reciprocity for the Times's follows exactly, with no sampling,
+while the intersection could only see the few mutuals who happened to
+follow recently. The general lesson for the rest of the series: when a
+question is about *pairs* of accounts, look for an endpoint that answers
+it about those pairs, instead of reconstructing it from two lists you
+could only partly collect. Kwak et al. (2010) asked whether Twitter was
+"a social network or a news media" largely on reciprocity rates like
+these; a newsroom that follows a small set of accounts, mostly its own
+journalists, and is followed by over a million readers sits near the
+"news media" end by construction. Part 03 scales the question up to
+whole neighborhoods.
 
 ## Ethics and limitations
 
@@ -417,8 +466,9 @@ after collection.
   follower counts for a panel of public accounts and model how posting
   consistency relates to audience growth.
 * **Reciprocity norms.** For accounts of different sizes, measure the
-  share of follows that are mutual; test whether reciprocity declines
-  with audience size, as it did on Twitter.
+  share of follows that are mutual with `bs_get_relationships()` (not by
+  intersecting two capped lists); test whether reciprocity declines with
+  audience size, as it did on Twitter.
 
 ## References
 
@@ -427,6 +477,7 @@ after collection.
 * boyd, d., & Crawford, K. (2012). Critical questions for big data. *Information, Communication & Society*, 15(5), 662–679.
 * Fiesler, C., & Proferes, N. (2018). "Participant" perceptions of Twitter research ethics. *Social Media + Society*, 4(1).
 * Freelon, D. (2018). Computational research in the post-API age. *Political Communication*, 35(4), 665–668.
+* Kwak, H., Lee, C., Park, H., & Moon, S. (2010). What is Twitter, a social network or a news media? *Proceedings of WWW '10*, 591–600.
 * Zimmer, M. (2010). "But the data is already public": On the ethics of research in Facebook. *Ethics and Information Technology*, 12(4), 313–325.
 
 ### Documentation
