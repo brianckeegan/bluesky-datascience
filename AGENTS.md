@@ -114,8 +114,9 @@ the 0.5.0 development version on GitHub are both tested):
 
 ```r
 install.packages(c("bskyr", "tidyverse", "jsonlite", "igraph",
-                   "tidytext", "topicmodels", "rmarkdown",
-                   "digest", "websocket"))  # websocket only for Part 10
+                   "tidytext", "topicmodels", "reshape2", "rmarkdown",
+                   "digest", "websocket"))  # reshape2: tidying LDA in Part 06;
+                                            # websocket only for Part 10
 install.packages(c("sandwich", "lmtest"))   # optional: HAC errors in Part 05
 install.packages(c("testthat", "withr"))    # for the R tests and mock-API check
 ```

@@ -84,6 +84,7 @@ jobs:
             any::igraph
             any::tidytext
             any::topicmodels
+            any::reshape2
             any::rmarkdown
             any::digest
             any::websocket
