@@ -132,12 +132,28 @@ the same loop into every paginated function: ask for `limit > 100` and it
 issues ceiling(limit/100) requests behind the scenes, following cursors
 until the limit — or the end of the data — is reached.
 
-```{r collect-all}
-posts_raw <- bs_get_author_feed(HANDLE, limit = 10000)
-follows   <- bs_get_follows(HANDLE, limit = 500)
-followers <- bs_get_followers(HANDLE, limit = 2000)
+One choice deserves explaining. Normally bskyr *cleans* each response
+into a tidy tibble, one row per post. That is convenient, but it costs
+time per post: roughly 20–90 milliseconds, depending on your bskyr
+version, so 10,000 posts would take between 3 and 15 minutes to clean.
+For a collection this size we ask for the **raw pages** instead
+(`clean = FALSE`) and pull out only the fields we need ourselves in
+Section 5. That's faster, and it's data minimization too. Smaller
+collections can use the tidy version, as Part 00 did.
 
-c(posts = nrow(posts_raw), follows = nrow(follows), followers = nrow(followers))
+One more thing to know: bskyr fetches the pages back to back, without
+the polite pause our Python loop adds. At about 100 requests that's
+fine; for much larger crawls, loop over cursors yourself and add
+`Sys.sleep(0.1)` between pages.
+
+```{r collect-all}
+posts_pages <- bs_get_author_feed(HANDLE, limit = 10000, clean = FALSE)
+follows     <- bs_get_follows(HANDLE, limit = 500)
+followers   <- bs_get_followers(HANDLE, limit = 2000)
+
+items <- list_flatten(map(posts_pages, "feed"))   # every page's items, in order
+
+c(feed_items = length(items), follows = nrow(follows), followers = nrow(followers))
 ```
 
 Note what the caps did. The follows list (a couple hundred accounts)
@@ -212,40 +228,59 @@ batch |> select(handle, followers_count, posts_count) |> head(3)
 
 ## 5. Flattening nested models into tidy data frames
 
-A feed item nests several objects: the post, its author, the record the
-author wrote, and an optional `reason` marking reposts. bskyr has already
-widened most of this into columns; what remains is to pull the fields we
-want out of the `record` list-column (the `map_chr()` idiom from Part 00)
-and drop reposts of other people's words.
+Each raw feed item is a nested list, shaped exactly like the API's JSON:
 
-Two defensive moves in this chunk deserve explanation, because you will
-reuse them constantly. First, the `reason_type` and `reply_parent_uri`
-columns *only exist if at least one post on the page was a repost or a
-reply* — so we check with `%in% names(...)` before filtering on them.
-Second, every extraction supplies a `.default` so that one malformed
-record produces an `NA` instead of an error:
+* `item$post` is the post as the AppView presents it: `uri`, `cid`,
+  `author`, and the engagement counters (`likeCount`, `repostCount`, ...);
+* `item$post$record` is what the author's app wrote: `text`,
+  `createdAt`, `langs`, and a `reply` field if the post is a reply;
+* `item$reason`, if present, says *why* the item is in the feed.
+
+We flatten that into one row per post, one column per field. `map_chr()`
+walks the list of items and pulls out one value from each.
+
+Two defensive moves here deserve explanation, because you will reuse
+them constantly:
+
+* **Missing fields get a default.** `%||%` means "use the left side
+  unless it is `NULL`, then the right". A post without a field yields
+  `NA` instead of an error.
+* **Check what a field says, not just whether it exists.** A repost has
+  a `reason` of type `#reasonRepost`. A *pinned* post also has a
+  `reason` (type `#reasonPin`), so testing only "does it have a reason?"
+  would wrongly throw away the account's pinned post. Bugs like that fail
+  silently: the code runs, and the data is quietly wrong.
 
 ```{r flatten}
-has_reason <- "reason_type" %in% names(posts_raw)
+reason_type <- map_chr(items, \(i) i$reason$`$type` %||% NA_character_)
 
-posts <- posts_raw |>
-  filter(if (has_reason) is.na(reason_type) else TRUE) |>
-  mutate(
-    text       = map_chr(record, "text", .default = NA),
-    created_at = ymd_hms(map_chr(record, "created_at", .default = NA),
+posts <- tibble(
+  uri          = map_chr(items, \(i) i$post$uri),
+  cid          = map_chr(items, \(i) i$post$cid),
+  created_at   = ymd_hms(map_chr(items, \(i) i$post$record$createdAt %||% NA_character_),
                          quiet = TRUE),
-    langs      = map_chr(record, \(r) paste(unlist(r$langs), collapse = ",")),
-    is_reply   = if ("reply_parent_uri" %in% names(posts_raw))
-                   !is.na(reply_parent_uri) else FALSE,
-    has_embed  = !map_lgl(embed, is.null)
-  ) |>
-  select(uri, cid, created_at, text, is_reply,
-         like_count, repost_count, reply_count, quote_count,
-         langs, has_embed) |>
+  text         = map_chr(items, \(i) i$post$record$text %||% NA_character_),
+  is_reply     = map_lgl(items, \(i) !is.null(i$post$record$reply)),
+  like_count   = map_int(items, \(i) i$post$likeCount %||% NA_integer_),
+  repost_count = map_int(items, \(i) i$post$repostCount %||% NA_integer_),
+  reply_count  = map_int(items, \(i) i$post$replyCount %||% NA_integer_),
+  quote_count  = map_int(items, \(i) i$post$quoteCount %||% NA_integer_),
+  langs        = map_chr(items, \(i) paste(unlist(i$post$record$langs), collapse = ",")),
+  has_embed    = map_lgl(items, \(i) !is.null(i$post$embed))
+) |>
+  filter(is.na(reason_type) | !endsWith(reason_type, "#reasonRepost")) |>  # drop reposts
   arrange(created_at)
 
+c(feed_items = length(items), reposts_dropped = length(items) - nrow(posts))
 glimpse(posts)
 ```
+
+When you work with bskyr's *tidy* tibbles instead, the same information
+lives in columns whose names are easy to get wrong. For example, the
+repost marker is called `` reason_$type ``, not `reason_type`. The
+series' helper file `bsky_client.R` provides `is_repost()` and
+`is_reply()`, which later parts use and which are tested against the raw
+API data.
 
 One row per post, one column per feature, timestamps parsed — the *tidy
 data* shape every later part consumes.

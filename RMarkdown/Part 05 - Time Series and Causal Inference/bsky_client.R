@@ -14,6 +14,9 @@
 # After sourcing this file you have:
 #   bsky_authed — TRUE if we authenticated, FALSE otherwise
 #   bsky_auth   — the bskyr auth object (or NULL)
+# and a few helpers for reading bskyr's feed tibbles (see the bottom of the
+# file): is_repost(), is_reply(), reply_parent_did(), post_text(),
+# post_created_at(), and bsky_standardize().
 #
 # Every R Markdown document in this series sets
 #   knitr::opts_chunk$set(eval = bsky_authed)
@@ -73,3 +76,92 @@ bsky_connect <- function() {
 
 bsky_auth <- bsky_connect()
 bsky_authed <- !is.null(bsky_auth)
+
+# ---------------------------------------------------------------------------
+# Helpers for bskyr's feed tibbles
+#
+# bskyr flattens each feed item into columns, but the columns describing
+# reposts and replies are easy to get wrong, and getting them wrong fails
+# silently: a filter on a column that doesn't exist removes nothing. These
+# helpers were checked against the raw API JSON, and they raise an error if
+# bskyr's columns ever change shape, rather than quietly returning FALSE.
+# Tested in RMarkdown/tests/testthat/test-helpers.R.
+# ---------------------------------------------------------------------------
+
+`%or%` <- function(x, y) if (is.null(x)) y else x
+
+# TRUE for feed items that are reposts of someone else's post. bskyr names the
+# column `reason_$type` (the API's `$type` field). Pinned posts also carry a
+# `reason` (#reasonPin) and are not reposts.
+is_repost <- function(feed) {
+  if (!"reason_$type" %in% names(feed)) {
+    stray <- grep("^reason_", names(feed), value = TRUE)
+    if (length(stray)) {
+      stop("bskyr returned repost columns this helper doesn't recognize: ",
+           paste(stray, collapse = ", "), call. = FALSE)
+    }
+    return(rep(FALSE, nrow(feed)))   # no item on these pages had a reason
+  }
+  type <- feed[["reason_$type"]]
+  !is.na(type) & endsWith(type, "#reasonRepost")
+}
+
+# TRUE for posts that reply to another post. bskyr keeps the parent post in the
+# `reply_parent` list-column, except when the parent has been deleted: then it
+# records only `reply_parent_uri` (with `reply_parent_not_found = TRUE`).
+is_reply <- function(feed) {
+  n <- nrow(feed)
+  has_parent <- if ("reply_parent" %in% names(feed)) {
+    !vapply(feed$reply_parent, is.null, logical(1))
+  } else rep(FALSE, n)
+  parent_gone <- if ("reply_parent_uri" %in% names(feed)) {
+    !is.na(feed$reply_parent_uri)
+  } else rep(FALSE, n)
+  if (!any(c("reply_parent", "reply_parent_uri") %in% names(feed))) {
+    stray <- setdiff(grep("^reply_", names(feed), value = TRUE), "reply_count")
+    if (length(stray)) {
+      stop("bskyr returned reply columns this helper doesn't recognize: ",
+           paste(stray, collapse = ", "), call. = FALSE)
+    }
+  }
+  has_parent | parent_gone
+}
+
+# The DID of the account each post replies to (NA for non-replies). When the
+# parent was deleted, the DID is read from the parent's AT-URI
+# (at://<did>/app.bsky.feed.post/<rkey>).
+reply_parent_did <- function(feed) {
+  out <- rep(NA_character_, nrow(feed))
+  if ("reply_parent" %in% names(feed)) {
+    out <- vapply(feed$reply_parent,
+                  function(p) as.character(p$author$did %or% NA_character_),
+                  character(1))
+  }
+  if ("reply_parent_uri" %in% names(feed)) {
+    gone <- is.na(out) & !is.na(feed$reply_parent_uri)
+    out[gone] <- sub("^at://([^/]+)/.*$", "\\1", feed$reply_parent_uri[gone])
+  }
+  out
+}
+
+# The text and creation time the author's app wrote, from the `record`
+# list-column. (`indexed_at` is when Bluesky's servers processed the post.)
+post_text <- function(feed) {
+  vapply(feed$record, function(r) as.character(r[["text"]] %or% NA_character_), character(1))
+}
+post_created_at <- function(feed) {
+  vapply(feed$record, function(r) as.character(r[["created_at"]] %or% NA_character_), character(1))
+}
+
+# bskyr 0.4.x turned only the *first* camelCase boundary into an underscore
+# (`listItemCount` became `list_itemcount`); bskyr 0.5.0 fixes this
+# (`list_item_count`). The documents use the corrected names; this renames
+# the old ones so the code works with either version.
+bsky_standardize <- function(df) {
+  renames <- c(list_itemcount = "list_item_count",
+               joined_alltimecount = "joined_all_time_count",
+               joined_weekcount = "joined_week_count")
+  hit <- intersect(names(renames), names(df))
+  names(df)[match(hit, names(df))] <- unname(renames[hit])
+  df
+}

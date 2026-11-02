@@ -217,8 +217,10 @@ culture is dramatically different, and we can measure it:
 ```{r alt-rates}
 image_posts <- df |> filter(n_images > 0)
 
+# (the first column is n_image_posts, not image_posts: tibble() builds
+# columns in order, so a column named image_posts would hide the data frame)
 tibble(
-  image_posts = nrow(image_posts),
+  n_image_posts = nrow(image_posts),
   all_images_described = mean(image_posts$n_images_with_alt ==
                               image_posts$n_images),
   any_image_described = mean(image_posts$n_images_with_alt > 0),

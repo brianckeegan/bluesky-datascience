@@ -132,7 +132,8 @@ Audits need a reference point. A *list feed* — the reverse-chronological
 posts of a fixed roster — has no ranking algorithm at all:
 
 ```{r baseline}
-bsky_lists <- bs_get_actor_lists("bsky.app", limit = 50)
+bsky_lists <- bs_get_actor_lists("bsky.app", limit = 50) |>
+  bsky_standardize()   # same column names under bskyr 0.4.x and 0.5.0
 
 baseline_list <- bsky_lists |>
   filter(str_detect(purpose, "curatelist")) |>
@@ -155,7 +156,8 @@ if (nrow(baseline_list) == 1) {
     mutate(feed = "Baseline (list feed)", retrieved_at = now("UTC"))
 }
 
-posts_df <- bind_rows(compact(samples), baseline_posts) |>
+# list_rbind() stacks a list of tibbles; compact() drops feeds that failed
+posts_df <- list_rbind(compact(c(samples, list(baseline_posts)))) |>
   mutate(created_at = ymd_hms(created_at, quiet = TRUE),
          age_hours = as.numeric(difftime(retrieved_at, created_at,
                                          units = "hours")))
@@ -237,8 +239,12 @@ and a sampling design.
 Do different feeds show the same *accounts*? **Jaccard similarity** —
 the size of the intersection of two author sets divided by the size of
 their union — runs from 0 (no shared authors) to 1 (identical author
-sets). `crossing()` builds every pair of feeds, and `pivot_wider()`
-arranges the result as a matrix:
+sets). tidyr's `crossing()` builds every pair of feeds, and
+`pivot_wider()` arranges the result as a matrix. We write
+`tidyr::crossing()` with the package name because igraph, which Parts 03
+and 04 load, has a different function also called `crossing()`; if
+igraph is still attached in your R session, the plain name would call
+the wrong one:
 
 ```{r jaccard}
 author_sets <- posts_df |>
@@ -247,7 +253,7 @@ author_sets <- posts_df |>
 
 jaccard <- function(a, b) length(intersect(a, b)) / length(union(a, b))
 
-crossing(f1 = author_sets$feed, f2 = author_sets$feed) |>
+tidyr::crossing(f1 = author_sets$feed, f2 = author_sets$feed) |>
   mutate(jaccard = map2_dbl(
     f1, f2,
     \(x, y) jaccard(author_sets$authors[[match(x, author_sets$feed)]],
@@ -267,7 +273,7 @@ feed, or (for modlists) as a mute/block set:
 ```{r lists}
 bsky_lists |>
   transmute(name, purpose = str_extract(purpose, "[^#]+$"),
-            members = list_item_count,
+            members = as.integer(list_item_count),
             description = str_trunc(replace_na(description, ""), 80))
 
 if (nrow(baseline_list) == 1) {
@@ -279,13 +285,21 @@ if (nrow(baseline_list) == 1) {
 ## 6. Starter packs: curating the network itself
 
 Starter packs bundle accounts (and feeds) so newcomers can follow an
-entire community at once — curation of the *graph*, not of content:
+entire community at once — curation of the *graph*, not of content.
+`bs_get_actor_starter_packs()` lists an account's packs with counts of
+how many users joined through each, this week and all time. (This
+summary view doesn't say how many accounts a pack contains; for that you
+would fetch the pack itself, as Exercise 4 asks.) `bsky_standardize()`
+from `bsky_client.R` gives the count columns the same names whichever
+bskyr version you have installed:
 
 ```{r starter-packs}
-packs <- bs_get_actor_starter_packs("bsky.app", limit = 50)
+packs <- bs_get_actor_starter_packs("bsky.app", limit = 50) |>
+  bsky_standardize()
 
 packs |>
-  select(record_name, list_item_count, joined_all_time_count) |>
+  select(record_name, joined_week_count, joined_all_time_count) |>
+  mutate(across(starts_with("joined"), as.integer)) |>   # counts can arrive as text
   arrange(desc(joined_all_time_count))
 ```
 
@@ -303,41 +317,137 @@ labels (like `spam` or `graphic-media`) that clients can subscribe to
 and act on. The labels themselves are queryable from each labeler.
 bskyr has no wrapper for this endpoint, which is a teachable moment in
 itself: any XRPC endpoint is just an HTTP URL, so we build the request
-directly with httr2 against Bluesky's own moderation service:
+directly with [httr2](https://httr2.r-lib.org) against Bluesky's own
+moderation service at `https://mod.bsky.app` (see the
+[`queryLabels` reference](https://endpoints.bsky.app/#bluesky-app/tag/comatprotolabel/GET/xrpc/com.atproto.label.queryLabels)).
+
+Our `query_labels()` sends the patterns in batches of 25 per request,
+pauses between requests, caps the number of requests, and collects the
+labels from every batch into one tibble. One design
+choice deserves attention before we use it: if the labeler **refuses** a
+request, the function stops with an error that carries the labeler's own
+explanation, instead of quietly returning an empty table. A refused
+request and a request that found nothing both "return no labels", but
+only one of them is a finding. `httr2::req_error(body = ...)` is what
+pulls the server's message into the error:
 
 ```{r labels}
-query_labels <- function(patterns, labeler = "https://mod.bsky.app") {
-  resp <- httr2::request(paste0(labeler,
-                                "/xrpc/com.atproto.label.queryLabels")) |>
-    httr2::req_url_query(uriPatterns = patterns, .multi = "explode") |>
-    httr2::req_perform() |>
-    httr2::resp_body_json()
-  map(resp$labels, \(l) tibble(
-    uri = l$uri, val = l$val, neg = isTRUE(l$neg)
-  )) |> list_rbind()
+query_labels <- function(patterns, labeler = "https://mod.bsky.app",
+                         batch_size = 25, max_requests = 20) {
+  batches <- split(patterns, ceiling(seq_along(patterns) / batch_size))
+  if (length(batches) > max_requests) {
+    message("Querying only the first ", max_requests, " of ",
+            length(batches), " batches")
+    batches <- head(batches, max_requests)
+  }
+  labels <- list()
+  for (i in seq_along(batches)) {
+    resp <- httr2::request(paste0(labeler, "/xrpc/com.atproto.label.queryLabels")) |>
+      httr2::req_url_query(uriPatterns = batches[[i]], limit = 250, .multi = "explode") |>
+      httr2::req_error(body = \(r) c(
+        tryCatch(httr2::resp_body_json(r)$message, error = \(e) NULL),
+        sprintf("(%s refused label query batch %d of %d)", labeler, i, length(batches))
+      )) |>
+      httr2::req_perform() |>
+      httr2::resp_body_json()
+    labels <- c(labels, resp$labels)
+    Sys.sleep(0.2)
+  }
+  tibble(uri = map_chr(labels, "uri"),
+         val = map_chr(labels, "val"),
+         neg = map_lgl(labels, \(l) isTRUE(l$neg)))
 }
 
-post_labels <- query_labels(head(unique(posts_df$uri), 300))
+post_uris <- head(unique(posts_df$uri), 300)
+post_labels <- query_labels(post_uris)
 nrow(post_labels)
 ```
 
-Zero labels on feed-sampled posts is itself a finding: by the time a
-post reaches a curated feed it has survived several moderation filters.
-Sampling authors' whole *histories* tells a different story:
+Labels are usually sparse on curated-feed posts, because curation and
+moderation interact: most labeled content never *reaches* a feed, and
+what the AppView has taken down we never see at all. A label does not
+delete anything, either — when labeled posts do appear, they sit in the
+feed with their label attached, and each user's client decides whether
+to hide, blur, or show them.
+
+To confirm the labeler is far from idle, we'd like to widen the query to
+the *accounts* that wrote these posts. The `queryLabels` lexicon allows
+wildcard patterns like `at://did:plc:.../*`, meaning "any record in this
+account's history", and an earlier version of this document used
+exactly that. Let's see what the moderation service says to one today.
+`tryCatch()` catches the error so that we can print it rather than stop
+the document:
+
+```{r wildcard-demo}
+example_did <- posts_df$author_did[1]
+
+tryCatch({
+  wildcard <- query_labels(paste0("at://", example_did, "/*"))
+  cat("Wildcard queries work again:", nrow(wildcard), "labels in one account history.\n")
+}, error = \(e) cat(conditionMessage(e), "\n"))
+```
+
+In 2026 Bluesky's moderation service stopped accepting wildcard queries,
+answering every one with *"Support for wildcard label queries is
+temporarily disabled"*. (If the chunk above reports that they work
+again, the service has re-enabled them; the rest of this section works
+either way.) This is the "platform in flux" lesson in its purest form:
+nothing in our code changed, and the API reference still describes
+wildcards, but a measurement that worked one month stopped working the
+next. The earlier version of this document didn't check, and reported
+**"No labels found in this sample"** — a confident empirical claim
+produced by a refused request. That is why `query_labels()` now stops
+with the server's message instead.
+
+So we ask the questions that *can* still be asked, with two kinds of
+pattern the service accepts:
+
+* **(a) Labels on the accounts themselves.** A bare DID as the pattern
+  returns labels applied to the account, as opposed to any one of its
+  posts.
+* **(b) Labels on their recent posts.** For 20 of the sampled authors we
+  fetch their latest 30 feed items with `bs_get_author_feed()`, keep the
+  original posts (the `is_repost()` and `is_reply()` helpers from
+  `bsky_client.R`), and query those exact URIs. This covers only a
+  recent window rather than a whole history, so its counts are lower
+  bounds on what a full history would show.
 
 ```{r history-labels}
 set.seed(42)
 sampled_dids <- sample(unique(posts_df$author_did),
                        min(50, n_distinct(posts_df$author_did)))
 
-history_labels <- query_labels(paste0("at://", sampled_dids, "/*"))
+# (a) one bare DID per pattern
+account_labels <- query_labels(sampled_dids) |> filter(!neg)  # drop retracted labels
 
-if (nrow(history_labels) > 0) {
-  history_labels |> filter(!neg) |> count(val, sort = TRUE)
-} else {
-  "No labels found in this sample."
-}
+# (b) exact URIs of recent original posts by 20 of those authors
+recent_uris <- map(head(sampled_dids, 20), \(did) {
+  feed <- tryCatch(bs_get_author_feed(did, limit = 30),
+                   error = \(e) NULL)   # a deleted or suspended account has no feed
+  Sys.sleep(0.1)
+  if (is.null(feed) || nrow(feed) == 0) return(character())
+  feed$uri[!is_repost(feed) & !is_reply(feed)]
+}) |> list_c()
+recent_labels <- query_labels(recent_uris, max_requests = 40) |> filter(!neg)
+
+cat("(a) Labels on the", length(sampled_dids), "sampled accounts:", nrow(account_labels), "\n")
+account_labels |> count(val, sort = TRUE)
+cat("(b) Labels on", length(recent_uris), "recent posts by 20 authors:", nrow(recent_labels), "\n")
+recent_labels |> count(val, sort = TRUE)
 ```
+
+Read the two counts side by side with the feed-post count from earlier.
+Account-level labels and labels on authors' *other* recent posts
+typically turn up where the feed samples showed few or none: the
+moderation layer is busy — mostly with content-classification labels
+such as `sexual`, `porn`, and `graphic-media` that drive the warnings
+users configure — it just operates on a different slice of the network
+than the curated feeds surface. The pattern used here (exact URIs for
+your sample; account DIDs and recent-post URIs for context) is a
+reusable template for studying *label prevalence*. Remember, though,
+that a label is a moderation *action*: a row saying an account was
+labeled `rude` is an allegation attached to an identity, so report
+prevalence in aggregate.
 
 ## 8. Reproducibility: working from the saved archive
 
@@ -369,7 +479,11 @@ posts, so archive retrieval times and treat comparisons as
 time-specific. Posts surfaced by feeds were written by people who never
 chose to be in your sample — the usual minimization rules apply. Label
 data is moderation data: publishing which accounts carry which labels
-can amplify harm, so aggregate. And remember the deepest limitation:
+can amplify harm, so aggregate. Survivorship matters too: the AppView
+filters taken-down content before we ever see it, which is part of why
+labels are sparse on feed posts. The platform is also in flux — feed
+rosters, labeler policies, and even which queries a labeler accepts
+change, as the wildcard episode showed. And remember the deepest limitation:
 without logged-in vantage points, personalized curation is invisible.
 
 ## Exercises
@@ -382,8 +496,9 @@ without logged-in vantage points, personalized curation is invisible.
    concentration measure.
 4. Unpack the most-joined starter pack's list members and check how many
    also appear in the feed samples.
-5. Query labels for the *authors* (not posts) in the baseline list feed
-   and compare label prevalence with the discovery feeds' authors.
+5. Compare label prevalence across feeds: group `posts_df` by feed,
+   query each feed's post URIs (and its authors' recent posts) separately,
+   and report labels per 100 posts per feed.
 
 ## Research project ideas
 
@@ -406,6 +521,7 @@ without logged-in vantage points, personalized curation is invisible.
 ### Documentation
 
 * Feed generators: <https://docs.bsky.app/docs/starter-templates/custom-feeds>
-* `com.atproto.label.queryLabels`: <https://docs.bsky.app/docs/api/com-atproto-label-query-labels>
+* `com.atproto.label.queryLabels`: <https://endpoints.bsky.app/#bluesky-app/tag/comatprotolabel/GET/xrpc/com.atproto.label.queryLabels>
+* Moderation and labelers: <https://docs.bsky.app/docs/advanced-guides/moderation>
 * Stackable moderation: <https://bsky.social/about/blog/03-12-2024-stackable-moderation>
 * bskyr: <https://christophertkenny.com/bskyr/>

@@ -234,20 +234,47 @@ def author_jaccard(df, group_col="feed"):
     return matrix
 
 
+class LabelQueryError(RuntimeError):
+    """A labeler refused or failed a label query.
+
+    Raised instead of returning an empty list, so that "the request failed"
+    can never be mistaken for the finding "nothing was labeled". The message
+    includes the labeler's own explanation when it gives one.
+    """
+
+
+def _error_message(response):
+    """The XRPC error message in a failed response, if it has one."""
+    try:
+        body = response.json()
+        return body.get("message") or body.get("error") or response.reason
+    except ValueError:
+        return response.reason
+
+
 def query_labels(uri_patterns, labeler_url=BSKY_MOD_SERVICE, batch_size=25, delay=0.2, max_requests=30):
     """Query a labeler service for labels on a list of URI patterns.
 
     Sends ``com.atproto.label.queryLabels`` requests in batches of
-    ``batch_size`` patterns (exact ``at://`` URIs, DIDs, or wildcard patterns
-    like ``at://did:plc:.../*``), capped at ``max_requests`` requests.
+    ``batch_size`` patterns, capped at ``max_requests`` requests. Each
+    pattern is an exact ``at://`` record URI (labels on that post) or a bare
+    DID (labels on the account itself). Wildcard patterns such as
+    ``at://did:plc:.../*`` (labels anywhere in an account's history) are
+    part of the lexicon, but Bluesky's moderation service stopped accepting
+    them in 2026 ("Support for wildcard label queries is temporarily
+    disabled").
 
-    Returns a list of label dicts. If the labeler is unreachable or errors
-    mid-way, prints a warning and returns whatever was collected so far —
-    moderation infrastructure is run by third parties and is allowed to be
-    down without breaking the rest of the analysis.
+    Returns a list of label dicts. If the labeler refuses or fails a request,
+    raises ``LabelQueryError`` with the labeler's message: moderation
+    infrastructure is run by third parties and changes without notice, and a
+    failed query must never look like "zero labels". Network failures raise
+    the usual ``requests`` exceptions.
     """
     labels = []
     batches = [uri_patterns[i : i + batch_size] for i in range(0, len(uri_patterns), batch_size)]
+    if len(batches) > max_requests:
+        print(f"Querying only the first {max_requests} of {len(batches)} batches "
+              f"({max_requests * batch_size} of {len(uri_patterns)} patterns).")
     for i, batch in enumerate(batches[:max_requests]):
         try:
             page = xrpc_get(
@@ -255,12 +282,26 @@ def query_labels(uri_patterns, labeler_url=BSKY_MOD_SERVICE, batch_size=25, dela
                 {"uriPatterns": batch, "limit": 250},
                 base_url=labeler_url,
             )
-        except requests.RequestException as error:
-            print(f"Labeler unreachable on batch {i + 1}/{len(batches)} ({error}); returning partial results.")
-            break
+        except requests.HTTPError as error:
+            raise LabelQueryError(
+                f"{labeler_url} refused label query batch {i + 1}/{len(batches)} "
+                f"(HTTP {error.response.status_code}): {_error_message(error.response)}"
+            ) from error
         labels.extend(page.get("labels", []))
         time.sleep(delay)
     return labels
+
+
+def recent_post_uris(actor, limit=30):
+    """AT-URIs of an account's most recent original posts (reposts skipped).
+
+    One ``app.bsky.feed.getAuthorFeed`` request on the public AppView. Used
+    to query labels on an account's recent posts by exact URI, now that
+    wildcard history queries are refused.
+    """
+    page = xrpc_get("app.bsky.feed.getAuthorFeed",
+                    {"actor": actor, "limit": limit, "filter": "posts_no_replies"})
+    return [item["post"]["uri"] for item in page.get("feed", []) if not item.get("reason")]
 
 
 def labels_to_dataframe(labels):
