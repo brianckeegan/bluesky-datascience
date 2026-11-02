@@ -201,7 +201,7 @@ images_df |>
   ggplot(aes(aspect)) +
   geom_histogram(bins = 30, fill = "steelblue", color = "white") +
   geom_vline(xintercept = c(9 / 16, 1, 16 / 9),
-             color = "crimson", linetype = "dashed") +
+             color = "#DC143C", linetype = "dashed") +
   labs(x = "Aspect ratio (width / height)", y = "Images",
        title = "Aspect ratios of panel images",
        subtitle = "Dashed: 9:16 portrait, 1:1 square, 16:9 landscape") +
@@ -234,7 +234,7 @@ images_df |>
   ggplot(aes(alt_rate, fct_reorder(author, alt_rate))) +
   geom_col(fill = "seagreen") +
   geom_text(aes(label = scales::percent(alt_rate, 1)), hjust = -0.1) +
-  geom_vline(xintercept = 0.001, color = "crimson", linetype = "dashed") +
+  geom_vline(xintercept = 0.001, color = "#DC143C", linetype = "dashed") +
   scale_x_continuous(limits = c(0, 1.15)) +
   labs(x = "Share of posted images with alt text", y = NULL,
        title = "Alt-text provision rate by account",

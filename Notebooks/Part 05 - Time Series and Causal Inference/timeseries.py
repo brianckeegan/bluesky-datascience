@@ -1,11 +1,13 @@
 """Helper functions for Part 05 - Time Series and Causal Inference.
 
 These helpers wrap the repetitive parts of the tutorial — paginating an
-account's full posting history, tidying it into a time-indexed DataFrame,
-and fitting the interrupted time series (ITS) and difference-in-differences
-(DiD) regressions — so the notebook can focus on the research design.
+account's posting history, saving and reloading it as an archive, tidying it
+into a time-indexed DataFrame, and fitting the interrupted time series (ITS)
+and difference-in-differences (DiD) regressions — so the notebook can focus
+on the research design.
 """
 
+import json
 import time
 
 import numpy as np
@@ -63,12 +65,24 @@ def _fetch_page(client, actor, cursor, page_size):
         return raw.json()
 
 
-def fetch_history(client, actor, page_size=100, sleep=0.1, max_pages=120):
-    """Paginate through an account's entire author feed.
+def fetch_history(client, actor, page_size=100, sleep=0.1, max_pages=120,
+                  stop_before=None):
+    """Paginate backward through an account's author feed.
 
     Walks ``get_author_feed`` (``app.bsky.feed.getAuthorFeed``) with the
-    ``cursor`` parameter until the feed is exhausted or ``max_pages`` is
-    reached, sleeping ``sleep`` seconds between requests to be polite.
+    ``cursor`` parameter, sleeping ``sleep`` seconds between requests to be
+    polite. Stops at the first of:
+
+    * the feed is exhausted (no more cursor),
+    * ``max_pages`` requests have been made (a hard budget), or
+    * ``stop_before`` (a timestamp) is reached: once a page contains an
+      action older than ``stop_before`` we have reached back far enough.
+
+    An author feed is returned **newest first**, so reaching a fixed date in
+    the past costs more requests every day the account keeps posting. A
+    fixed ``max_pages`` that comfortably reached November 2024 in mid-2026
+    no longer did by late 2026 — which is why the notebook analyzes a saved
+    archive by default, and why ``stop_before`` exists.
 
     Each feed item is flattened into a small dictionary. We keep only the
     fields the analysis needs (data minimization): the post URI, whether the
@@ -78,11 +92,18 @@ def fetch_history(client, actor, page_size=100, sleep=0.1, max_pages=120):
     repost's ``indexed_at``, because the *act of reposting* is the behavior
     we want to place in time (the underlying post may be much older).
 
-    Returns a list of dictionaries, newest actions first.
+    Returns ``(records, info)``: a list of dictionaries (newest actions
+    first) and a dict describing why collection stopped (``pages``,
+    ``stopped_because``), which belongs in the archive's metadata.
     """
+    if stop_before is not None:
+        stop_before = pd.Timestamp(stop_before)
+        if stop_before.tz is None:
+            stop_before = stop_before.tz_localize("UTC")
     records = []
     cursor = None
     pages = 0
+    stopped_because = "max_pages"
     while pages < max_pages:
         page = _fetch_page(client, actor, cursor, page_size)
         for item in page.get("feed", []):
@@ -110,9 +131,17 @@ def fetch_history(client, actor, page_size=100, sleep=0.1, max_pages=120):
         pages += 1
         cursor = page.get("cursor")
         if cursor is None:
+            stopped_because = "feed_exhausted"
             break
+        if stop_before is not None and records:
+            oldest = pd.to_datetime(
+                records[-1]["created_at"], utc=True, format="ISO8601"
+            )
+            if oldest < stop_before:
+                stopped_because = "reached_stop_before"
+                break
         time.sleep(sleep)
-    return records
+    return records, {"pages": pages, "stopped_because": stopped_because}
 
 
 def history_to_frame(records, tz="UTC"):
@@ -120,7 +149,7 @@ def history_to_frame(records, tz="UTC"):
 
     Parses the ISO-8601 ``created_at`` strings into a timezone-aware
     ``DatetimeIndex`` (Bluesky timestamps are UTC), optionally converts to a
-    local timezone like ``America/Denver``, and sorts oldest-to-newest.
+    local timezone like ``America/New_York``, and sorts oldest-to-newest.
     """
     df = pd.DataFrame(records)
     df["created_at"] = pd.to_datetime(df["created_at"], utc=True, format="ISO8601")
@@ -129,9 +158,67 @@ def history_to_frame(records, tz="UTC"):
     return df.set_index("created_at").sort_index()
 
 
+ARCHIVE_COLUMNS = ["actor", "action", "is_reply", "created_at"]
+
+
+def save_archive(records, path, metadata_path, metadata):
+    """Save a minimal, shareable archive of one or more accounts' histories.
+
+    Keeps only ``ARCHIVE_COLUMNS`` — no URIs, no text, no engagement counts:
+    enough to rebuild every time series in the notebook and nothing more
+    (data minimization). Timestamps are stored as UTC ISO-8601 strings to the
+    second, and the file is gzip-compressed CSV so that both this notebook
+    and its R Markdown counterpart can read the same archive without extra
+    dependencies.
+
+    ``metadata`` (a dict) is written alongside as JSON; it should record when
+    and how the archive was collected.
+    """
+    df = pd.DataFrame(records)[ARCHIVE_COLUMNS].copy()
+    df["created_at"] = (
+        pd.to_datetime(df["created_at"], utc=True, format="ISO8601")
+        .dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+    )
+    df = df.sort_values(["actor", "created_at"]).reset_index(drop=True)
+    df.to_csv(path, index=False, compression="gzip")
+    with open(metadata_path, "w") as f:
+        json.dump(metadata, f, indent=2)
+    return df
+
+
+def load_archive(path, tz="UTC"):
+    """Load an archive written by ``save_archive`` as a time-indexed frame."""
+    df = pd.read_csv(path)
+    return history_to_frame(df.to_dict("records"), tz=tz)
+
+
+def check_pre_period(weekly, event, min_weeks=12):
+    """Stop with a clear message if a series lacks enough pre-event weeks.
+
+    ITS and DiD estimate change *relative to the pre-event period*. Without
+    one, the ``post`` indicator is all ones, the regression is rank-deficient,
+    and every downstream cell fails with an unhelpful error. Checking up
+    front turns that into a message a student can act on.
+
+    Returns the number of pre-event weeks.
+    """
+    event = pd.Timestamp(event)
+    if event.tz is None and weekly.index.tz is not None:
+        event = event.tz_localize(weekly.index.tz)
+    n_pre = int((weekly.index < event).sum())
+    if n_pre < min_weeks:
+        raise ValueError(
+            f"Only {n_pre} pre-event weeks in the series (need at least "
+            f"{min_weeks}); the earliest week is {weekly.index.min():%Y-%m-%d}. "
+            "The history does not reach far enough back before the event. "
+            "Use the saved archive (REFRESH = False) or raise max_pages."
+        )
+    return n_pre
+
+
 def daily_counts(frame, label=None):
     """Resample a time-indexed activity frame to daily action counts."""
-    series = frame.resample("D")["uri"].count()
+    series = frame.resample("D").size()
     series.name = label or "actions"
     return series
 
@@ -142,7 +229,7 @@ def weekly_counts(frame, label=None):
     Drops the final (incomplete) week so the most recent observation is not
     artificially low just because the collection happened mid-week.
     """
-    series = frame.resample("W")["uri"].count().iloc[:-1]
+    series = frame.resample("W").size().iloc[:-1]
     series.name = label or "actions"
     return series
 
