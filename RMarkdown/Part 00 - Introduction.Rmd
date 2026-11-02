@@ -30,6 +30,20 @@ endpoints through the `atproto` SDK; here we use bskyr, which wraps the
 same endpoints in R functions that return
 [tibbles](https://tibble.tidyverse.org/) ready for tidyverse analysis.
 
+### Learning objectives
+
+By the end of this document you will be able to:
+
+1. Explain what Bluesky and the AT Protocol are, and why bskyr needs an
+   account even to read public data.
+2. Create an **app password** and store your credentials safely.
+3. Retrieve profiles, author feeds, follows, and followers, and read what
+   they return: **handles**, **DIDs**, posts, and records.
+4. Explain how a **cursor** pages through long lists, and let bskyr follow
+   cursors for you.
+5. Describe how to write to the network (posts, likes, images with alt
+   text), and why these tutorials never do it automatically.
+
 ### Code
 
 Install the packages once:
@@ -52,9 +66,14 @@ library(jsonlite)
 
 ### Setup
 
-bskyr authenticates with your handle and an **app password** — create one
-at [bsky.app/settings/app-passwords](https://bsky.app/settings/app-passwords),
-never your main account password. There are two ways to supply credentials:
+bskyr authenticates with your handle and an **app password**: a separate,
+randomly generated password that works only for apps like this one. In the
+Bluesky app, go to **Settings → Privacy and security → App passwords**
+(or [bsky.app/settings/app-passwords](https://bsky.app/settings/app-passwords)),
+add one, and copy it — it's shown only once. An app password can't change
+your account's email, password, or security settings, and you can revoke
+it at any time. Never put your main account password in code. There are
+two ways to supply credentials:
 
 1. Set `BLUESKY_APP_USER` and `BLUESKY_APP_PASS` in your `~/.Renviron`
    (bskyr's native mechanism, via `bs_set_user()` and `bs_set_pass()`).
@@ -83,8 +102,16 @@ minutes, so repeated calls don't re-authenticate).
 ## Profile
 
 `bs_get_profile()` wraps the API endpoint `app.bsky.actor.getProfiles`
-and returns one row per requested account. Let's look at our own profile
-first. Two pieces of R syntax to get comfortable with right away: the
+and returns one row per requested account.
+
+Two identifiers appear in every profile, and the difference matters for
+research. The **handle** (`nytimes.com`) is the human-readable name;
+handles are domain names, and an account can change its handle at any
+time. The **DID** (Decentralized Identifier, `did:plc:...`) is the
+account's permanent, machine-readable ID, which never changes. When you
+store data about accounts, key it on DIDs.
+
+Let's look at our own profile first. Two pieces of R syntax to get comfortable with right away: the
 pipe `|>` sends the result of one step into the next (read it as
 "then"), and `glimpse()` prints a wide tibble sideways so every column
 fits on screen:
@@ -136,10 +163,18 @@ profile_feed <- bs_get_author_feed("nytimes.com", limit = 100)
 nrow(profile_feed)
 
 profile_feed |>
-  mutate(text = map_chr(record, "text", .default = NA)) |>
-  select(created_at = indexed_at, text, like_count, repost_count) |>
+  mutate(created_at = map_chr(record, "created_at", .default = NA),
+         text = map_chr(record, "text", .default = NA)) |>
+  select(created_at, text, like_count, repost_count) |>
   head(5)
 ```
+
+Note where `created_at` comes from: the **record**, which holds what the
+author's app wrote, including when the post was written. The tibble also
+has an `indexed_at` column, which is when Bluesky's servers *processed*
+the post. The two usually agree to within seconds, but they mean
+different things, so use the record's timestamp when you mean "when was
+this posted".
 
 This `mutate()` + `map_chr()` pattern appears in every part of the
 series — it is the single most useful idiom for working with bskyr's
@@ -151,13 +186,16 @@ The home timeline — the reverse-chronological feed of accounts *you*
 follow — is defined relative to the logged-in account, which is why this
 endpoint always requires authentication:
 
+`bs_get_timeline()` returns a differently shaped tibble from the other
+functions: the author is a packed column (`post_author`, whose `handle`
+we reach with `$`), and the record is the list-column `post_record`. To
+avoid printing other people's posts, we list only the first few authors:
+
 ```{r timeline}
 timeline <- bs_get_timeline(limit = 25)
 
-timeline |>
-  mutate(text = map_chr(record, "text", .default = NA)) |>
-  select(author_handle, text) |>
-  head(5)
+nrow(timeline)
+head(timeline$post_author$handle, 5)
 ```
 
 ## Relationships
@@ -197,12 +235,20 @@ Part 01 unpacks exactly what is happening under the hood here.
 ### Followers
 
 `bs_get_followers()` is the mirror image: accounts that follow the actor.
+Followers are mostly private individuals who never chose to be in your
+dataset, so rather than printing anyone's profile, we look at what *kind*
+of information each row contains:
 
 ```{r followers}
 followers <- bs_get_followers("nytimes.com", limit = 100)
 
-followers |> select(handle, display_name) |> head(5)
+nrow(followers)
+names(followers)
 ```
+
+Showing the structure instead of a stranger's profile is a habit worth
+keeping. You can design an analysis without looking at any individual's
+data, and when you do need records, store and report them in aggregate.
 
 ## Posting content
 
@@ -219,14 +265,13 @@ bs_post(text = "I am posting this from an R Markdown notebook!")
 
 ### Liking a post
 
-`bs_like()` needs the post's `uri` (its AT-protocol address) and `cid`
-(its content hash) — both are columns in any feed tibble:
+`bs_like()` points at a post by its `uri` (its permanent AT Protocol
+address: the author's DID, the record type, and a record key) and its
+`cid` (a hash of the post's exact content). Both are columns in any feed
+tibble:
 
 ```{r like, eval=FALSE}
-bs_like(
-  uri = "at://did:plc:lse7quaysss2d3xxm76mouhd/app.bsky.feed.post/3lareilifis2h",
-  cid = "bafyreifacygwvqtrqc7dts2fk67iyv2sa2u3irqdlry7trusq424zmqu7a"
-)
+bs_like(uri = profile_feed$uri[[1]], cid = profile_feed$cid[[1]])
 ```
 
 ### Writing a post with an image
@@ -237,16 +282,76 @@ shows is both an accessibility practice and a research object:
 ```{r post-image, eval=FALSE}
 bs_post(
   text = "Now we are sending images from a notebook!",
-  images = "small_class.jpg",
-  images_alt = "Selfie with class"
+  images = "my_image.jpg",
+  images_alt = "A short description of what the image shows"
 )
 ```
 
+Part 10 builds a bot that posts automatically, along with the disclosure
+and rate limits that a bot needs.
+
+## Ethics and limitations
+
+**Public is not the same as consented.** Everything this document reads
+is public, but that doesn't mean the people behind it expect to appear
+in a dataset. Research on Twitter found that users are often surprised,
+and sometimes upset, to learn their posts are used in research (Fiesler &
+Proferes 2018). This series studies institutional accounts by default,
+prefers aggregates to individual records, and treats ethics as a design
+decision made *before* collecting — a theme Part 01 develops in depth.
+
+**Protect your credentials.** An app password can post as you. Keep it in
+`atproto.json` or `~/.Renviron` (never in a document), don't share it,
+and revoke it if it leaks.
+
+**Limitations.** Everything here is a live snapshot: counts and feeds
+change by the minute, posts get deleted, and handles change (DIDs don't).
+And Bluesky's users are not "the public": the platform skews toward early
+adopters and people who left Twitter.
+
+## Exercises
+
+1. **Another account.** Retrieve the profile of a news organization,
+   university, or government agency you're interested in, and compare its
+   follower and follow counts with `nytimes.com`'s.
+2. **Handles versus DIDs.** Look up `bsky.app` by its DID
+   (`bs_get_profile(bsky_app$did)`). Do you get the same profile? Why is
+   this useful for research that runs over months?
+3. **Reposts in a feed.** How many of the 100 rows in `profile_feed` are
+   reposts of someone else's post? (Compare `author_handle` with
+   `"nytimes.com"`.)
+4. **Budgets versus promises.** Ask `bs_get_follows()` for `limit = 50`,
+   `100`, and `1000` for `nytimes.com`. How many rows come back each time,
+   and why?
+5. **Explore the fields.** Pick a column of `bs_get_profile("nytimes.com")`
+   you don't recognize, look it up in the
+   [API reference](https://endpoints.bsky.app/#bluesky-app/tag/appbskyactor/GET/xrpc/app.bsky.actor.getProfile),
+   and write one sentence on how a researcher might use it.
+
+## Research project ideas
+
+* **Institutional adoption of Bluesky.** Collect the profiles and recent
+  posting of a defined population of institutional accounts (for example,
+  every newspaper on a public list) and compare how sectors use the
+  platform.
+* **Audience versus attention.** For a few dozen public institutional
+  accounts, plot median likes per post against follower count on log
+  scales, and ask whether bigger audiences buy proportionally more
+  engagement.
+
 ## References
 
-* bskyr documentation: <https://christophertkenny.com/bskyr/>
+### Scholarship
+
+* boyd, d., & Crawford, K. (2012). Critical questions for big data. *Information, Communication & Society*, 15(5), 662–679.
+* Fiesler, C., & Proferes, N. (2018). "Participant" perceptions of Twitter research ethics. *Social Media + Society*, 4(1).
+* Freelon, D. (2018). Computational research in the post-API age. *Political Communication*, 35(4), 665–668.
 * Kenny, C. T. (2023). bskyr: Interact with 'Bluesky' Social. R package. <https://CRAN.R-project.org/package=bskyr>
-* Bluesky HTTP API reference: <https://docs.bsky.app>
-* AT Protocol: <https://atproto.com>
-* R Markdown documentation: <https://rmarkdown.rstudio.com/docs/>
 * Wickham, H., Çetinkaya-Rundel, M., & Grolemund, G. (2023). *R for Data Science* (2nd ed.). <https://r4ds.hadley.nz/>
+
+### Documentation
+
+* bskyr documentation: <https://christophertkenny.com/bskyr/>
+* Bluesky HTTP API reference: <https://endpoints.bsky.app/>
+* AT Protocol documentation: <https://atproto.com/docs>
+* R Markdown documentation: <https://rmarkdown.rstudio.com/docs/>
