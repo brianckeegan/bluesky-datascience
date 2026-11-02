@@ -239,8 +239,12 @@ and a sampling design.
 Do different feeds show the same *accounts*? **Jaccard similarity** —
 the size of the intersection of two author sets divided by the size of
 their union — runs from 0 (no shared authors) to 1 (identical author
-sets). `crossing()` builds every pair of feeds, and `pivot_wider()`
-arranges the result as a matrix:
+sets). tidyr's `crossing()` builds every pair of feeds, and
+`pivot_wider()` arranges the result as a matrix. We write
+`tidyr::crossing()` with the package name because igraph, which Parts 03
+and 04 load, has a different function also called `crossing()`; if
+igraph is still attached in your R session, the plain name would call
+the wrong one:
 
 ```{r jaccard}
 author_sets <- posts_df |>
@@ -249,7 +253,7 @@ author_sets <- posts_df |>
 
 jaccard <- function(a, b) length(intersect(a, b)) / length(union(a, b))
 
-crossing(f1 = author_sets$feed, f2 = author_sets$feed) |>
+tidyr::crossing(f1 = author_sets$feed, f2 = author_sets$feed) |>
   mutate(jaccard = map2_dbl(
     f1, f2,
     \(x, y) jaccard(author_sets$authors[[match(x, author_sets$feed)]],
