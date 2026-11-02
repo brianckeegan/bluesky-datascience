@@ -91,7 +91,13 @@ nrow(seed_posts)
 Next, the one-wave snowball. The nested `map()` calls walk the facet
 structure exactly as in Part 02 (facets → features → mention DIDs);
 `table()` tallies how often each account is mentioned; and we keep the
-six most-mentioned accounts that actually have posts:
+six most-mentioned accounts that actually have posts. Two defensive
+habits from Part 02 appear here. We fetch each account by its DID rather
+than its handle, because a handle can stop working (when its domain
+lapses, Bluesky shows it as `handle.invalid`) while the DID stays
+valid. And `tryCatch()` skips any account the API refuses, such as one
+deleted since it was mentioned, with a message rather than stopping the
+whole collection:
 
 ```{r corpus-panel}
 mention_dids <- seed_posts$facets |>
@@ -105,15 +111,18 @@ mention_dids <- seed_posts$facets |>
   unlist() |>
   discard(is.na)
 
-top_mentioned <- names(sort(table(mention_dids), decreasing = TRUE))[1:8]
+top_mentioned <- head(names(sort(table(mention_dids), decreasing = TRUE)), 8)
 profiles <- bs_get_profile(top_mentioned)
-panel_handles <- profiles |>
+panel_dids <- profiles |>
   filter(posts_count > 0) |>
   slice_head(n = 6) |>
-  pull(handle)
+  pull(did)
 
-panel_posts <- map(panel_handles, \(h) {
-  out <- fetch_posts(h, 150)
+panel_posts <- map(panel_dids, \(did) {
+  out <- tryCatch(fetch_posts(did, 150), error = \(e) {
+    message("Skipping ", did, ": ", conditionMessage(e))
+    NULL
+  })
   Sys.sleep(0.1)
   out
 }) |> list_rbind()
@@ -447,7 +456,7 @@ write_csv(corpus, "data/corpus.csv")
 write_csv(topic_words, "data/topic_top_words.csv")
 write_json(
   list(collected_on = COLLECTED_ON, seed_account = SEED_ACCOUNT,
-       panel_accounts = panel_handles, language_filter = "en",
+       panel_accounts = panel_dids, language_filter = "en",
        n_posts_saved = nrow(corpus), lda_topics = N_TOPICS, lda_seed = 42),
   "data/collection_metadata.json", pretty = TRUE, auto_unbox = TRUE)
 
