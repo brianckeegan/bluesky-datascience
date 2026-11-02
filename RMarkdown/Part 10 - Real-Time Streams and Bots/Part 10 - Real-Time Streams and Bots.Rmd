@@ -57,8 +57,10 @@ knitr::opts_chunk$set(eval = has_websocket)
 
 ## 1. The Jetstream: the network's pulse as friendly JSON
 
-The raw firehose (`com.atproto.sync.subscribeRepos`) speaks CBOR and CAR
-archives; **Jetstream** is a public service that re-serves it as plain
+The raw firehose (`com.atproto.sync.subscribeRepos`) speaks **CBOR** (a
+compact binary encoding of JSON-like data) wrapping **CAR** files
+(Content Addressable aRchives, bundles of the records in each commit);
+**Jetstream** is a public service that re-serves it as plain
 JSON over a websocket, with server-side filters so you receive only the
 record types you ask for:
 
@@ -144,13 +146,20 @@ c(events = length(events),
 
 Flatten each event to five fields. Note what we keep: **hashed** DIDs
 and *no post text* — Section 5 explains why. The hash (SHA-256 via the
-digest package, truncated) is one-way: it lets us count how many events
-came from the same actor without being able to say *which* actor, which
-is exactly the property data minimization wants:
+digest package, truncated to 12 characters as in the Python version)
+maps the same DID to the same code every time, so we can still count how
+many events came from the same actor without storing the DID itself.
+
+Be precise about what that buys. Hashing is **pseudonymization, not
+anonymization**: DIDs are public, so anyone who suspects a particular
+account can hash its DID and look for a match. Treat hashed identifiers as
+sensitive whenever the behavior they index is sensitive, and for real
+collections mix in a secret *salt* (a private random string prepended
+before hashing) so outsiders can't run that check:
 
 ```{r flatten}
-hash_did <- function(did) {
-  map_chr(did, \(d) substr(digest::digest(d, algo = "sha256"), 1, 16))
+hash_did <- function(did, length = 12) {
+  map_chr(did, \(d) substr(digest::digest(d, algo = "sha256", serialize = FALSE), 1, length))
 }
 
 events_df <- map(events, \(e) tibble(
@@ -251,9 +260,9 @@ the difference between a design and a wish.
 ## 5. Data minimization in practice
 
 A naive stream collector is a surveillance machine: full text, all
-identities, at network scale. We keep aggregate per-second counts and an
-anonymized post sample — enough to reproduce every figure above, nothing
-that profiles an individual:
+identities, at network scale. We keep aggregate per-second counts and a
+pseudonymized, content-free post sample — enough to reproduce every
+figure above, nothing that profiles an individual:
 
 ```{r minimize}
 dir.create("data", showWarnings = FALSE)
@@ -283,15 +292,40 @@ filter, and budget for reconnection logic in anything long-running.
 ## 7. Building a bot: closing the loop
 
 A bot is a loop: read notifications, decide, (maybe) write. The decision
-logic should be pure — testable with no network at all:
+logic should be pure — testable with no network at all.
+
+Two safeguards live in this logic. The trigger is the whole *word*
+"ping": the regular expression `\\bping\\b` uses word boundaries (`\\b`
+matches the edge of a word), so "shipping" or "helping" doesn't set it
+off and the bot never replies to people who didn't address it. And every
+reply ends with a **disclosure naming the human who runs the bot**, taken
+from the `BOT_OPERATOR` environment variable. Until you set it to your
+own handle (`Sys.setenv(BOT_OPERATOR = "@you.bsky.social")`, or a line in
+`~/.Renviron`), it shows a placeholder:
 
 ```{r bot-logic, eval=TRUE}
-build_reply <- function(text) {
-  if (str_detect(str_to_lower(text), "\\bping\\b")) "pong 🏓" else NA_character_
+OPERATOR_PLACEHOLDER <- "@your-handle.bsky.social"
+
+bot_operator <- function() Sys.getenv("BOT_OPERATOR", OPERATOR_PLACEHOLDER)
+operator_is_set <- function() {
+  op <- bot_operator()
+  startsWith(op, "@") && op != OPERATOR_PLACEHOLDER
+}
+disclosure <- function() {
+  paste0("\n\n[I am an automated account: bot run by ", bot_operator(), "]")
 }
 
-c(build_reply("hey @examplebot.bsky.social ping"),
-  build_reply("lovely weather today"))   # NA: silence is a feature
+build_reply <- function(text) {
+  if (str_detect(text %||% "", regex("\\bping\\b", ignore_case = TRUE))) {
+    paste0("pong! (", format(now("UTC"), "%Y-%m-%d %H:%M:%S UTC"), ")", disclosure())
+  } else {
+    NA_character_   # silence is a feature
+  }
+}
+
+cat(build_reply("hey @examplebot.bsky.social ping"), "\n---\n")
+c(build_reply("lovely weather today"),   # NA: not a command
+  build_reply("shipping update"))        # NA: "ping" must be a whole word
 ```
 
 ### Reading the bot's inbox
@@ -308,18 +342,35 @@ mentions <- filter(notifications, reason == "mention")
 
 ### One full cycle, as a dry run
 
-The cycle enforces every safety invariant: a cap on replies per run, a
-pause between sends, persistent deduplication so restarts never
-double-reply, and a `dry_run` flag that defaults to TRUE. **This chunk
-is never executed when knitting** (`eval=FALSE`) — write actions are
-deliberate acts:
+The cycle enforces every safety invariant, matching the Python version:
+
+* a cap on replies per run, and a pause between sends;
+* persistent deduplication, saved **right after each successful send**,
+  so a failure partway through a cycle never causes a double reply;
+* a `dry_run` flag that defaults to TRUE, and a rehearsal that **changes
+  nothing on disk**, so it can't mark a mention as answered and make the
+  real run skip it;
+* a live run that **refuses to post** until `BOT_OPERATOR` names the
+  human responsible.
+
+**This chunk is never executed when knitting** (`eval=FALSE`) — write
+actions are deliberate acts:
 
 ```{r bot-cycle, eval=FALSE}
-MAX_REPLIES_PER_RUN <- 3
+MAX_REPLIES_PER_RUN <- 5
 SECONDS_BETWEEN_REPLIES <- 5
 ANSWERED_FILE <- "data/answered_notifications.json"
 
+save_answered <- function(answered) {
+  dir.create(dirname(ANSWERED_FILE), showWarnings = FALSE)
+  write_json(as.list(sort(unique(answered))), ANSWERED_FILE)
+}
+
 run_bot_once <- function(dry_run = TRUE) {
+  if (!dry_run && !operator_is_set()) {
+    stop("Refusing to post: set BOT_OPERATOR to the handle of the human ",
+         "responsible for this bot, e.g. Sys.setenv(BOT_OPERATOR = \"@you.bsky.social\")")
+  }
   answered <- if (file.exists(ANSWERED_FILE))
     unlist(read_json(ANSWERED_FILE)) else character(0)
 
@@ -337,11 +388,12 @@ run_bot_once <- function(dry_run = TRUE) {
     } else {
       bs_post(text = mentions$reply[[i]],
               reply = bs_uri_to_url(mentions$uri[[i]]))
+      answered <- c(answered, mentions$uri[[i]])
+      save_answered(answered)          # record each send at once
       Sys.sleep(SECONDS_BETWEEN_REPLIES)
     }
-    answered <- c(answered, mentions$uri[[i]])
   }
-  write_json(as.list(answered), ANSWERED_FILE)
+  invisible(nrow(mentions))
 }
 
 run_bot_once(dry_run = TRUE)
