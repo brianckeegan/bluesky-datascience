@@ -179,9 +179,18 @@ These apply to both implementations unless noted.
   that explains what is about to happen and why, and important results are
   followed by interpretation in plain language. Define terms on first use,
   anticipate confusion, and link generously to resources — official API/lexicon
-  docs (https://endpoints.bsky.app, https://atproto.com, https://atproto.blue),
-  library documentation (pandas, NetworkX, statsmodels, scikit-learn;
-  tidyverse, igraph, tidytext), and accessible readings.
+  docs, library documentation (pandas, NetworkX, statsmodels, scikit-learn;
+  tidyverse, igraph, tidytext), and accessible readings. Link the specific page,
+  not a homepage, on a call's first use in a document:
+  - endpoints: `https://endpoints.bsky.app/#bluesky-app/tag/<namespace without
+    dots>/GET/xrpc/<NSID>`, e.g. `…/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getAuthorFeed`
+    (the hyphenated form doesn't work; `com.atproto.sync.subscribeRepos` isn't in
+    this reference, so link https://atproto.com/specs/event-stream);
+  - concepts: https://atproto.com/specs/… (DID, NSID, Lexicon, XRPC, AT-URI);
+  - Python calls: the atproto.blue page for the namespace or model;
+  - R calls: `https://christophertkenny.com/bskyr/reference/<function>.html`.
+
+  Don't link docs.bsky.app: it is retired, and its guides live on bsky.network.
 - **Structure:** H1 title; a motivating introduction; a "Learning objectives"
   list; numbered sections with explanatory markdown between code cells; a
   closing "Ethics and limitations" note; an "Exercises" section (4–6 tasks
@@ -240,6 +249,17 @@ including Part 00, must pass this. Check the outputs with:
 ```bash
 python scripts/check_notebook_outputs.py "Notebooks/Part NN - Title/Part NN - Title.ipynb"
 ```
+
+Two prose checks run on every pull request, without network access:
+
+```bash
+python scripts/check_stale_prose.py      # prose about the retired case-study account, or "in our run, 25..."
+python scripts/rewrite_doc_links.py --check   # links to the retired docs.bsky.app
+```
+
+`python scripts/check_links.py` checks every external link (errors, moves to
+another site, endpoint deep links naming an NSID the API doesn't have); it
+needs the network, so CI runs it weekly rather than on each pull request.
 
 Notebooks hit the live network, so numbers in outputs change between runs —
 that is expected (except in Part 05, which analyzes its committed archive).
