@@ -12,28 +12,109 @@ knitr::opts_chunk$set(message = FALSE, warning = FALSE)
 
 This document is the R counterpart of the Python notebook
 [Part 09 - Algorithmic Curation and Governance](../../Notebooks/Part%2009%20-%20Algorithmic%20Curation%20and%20Governance/Part%2009%20-%20Algorithmic%20Curation%20and%20Governance.ipynb).
-On most platforms "the algorithm" is a sealed box that researchers audit
-from outside, if at all. Bluesky decomposes curation into inspectable
-parts — **feed generators**, **lists**, **starter packs**, and
-**labelers** — all addressable through public endpoints. This part runs
-a small *algorithm audit*: sampling posts from several custom feeds and
-comparing what each one chooses to show.
+
+## Background
+
+> **tl;dr**: On most platforms "the algorithm" is a black box you can
+> only audit from the outside — or from the inside, if the platform lets
+> you in. On Bluesky, feed algorithms, moderation labels, lists, and
+> starter packs are *public infrastructure*: anyone can publish them and
+> anyone can query them. This document treats them as objects of study,
+> running a small algorithm audit that compares the composition of
+> several custom feeds against a no-algorithm baseline, and then mapping
+> the rest of Bluesky's governance stack.
+
+### What is an algorithm audit?
+
+An **algorithm audit** is a research design that treats an algorithmic
+system the way investigators treat an opaque institution: probe it
+systematically, record what it does, and compare its behavior against a
+baseline or a standard. The name is borrowed from housing-discrimination
+*audit studies*, in which matched pairs of testers applied for the same
+apartment to detect differential treatment.
+[Sandvig et al. (2014)](https://websites.umich.edu/~csandvig/research/Auditing%20Algorithms%20--%20Sandvig%20--%20ICA%202014%20Data%20and%20Discrimination%20Preconference.pdf)
+imported the idea into platform research and catalogued the main designs
+(code audits, scraping audits, sock-puppet audits, crowdsourced audits);
+[Metaxa et al. (2021)](https://doi.org/10.1561/1100000083) is a
+book-length, accessible survey of the method. Keep that taxonomy in mind
+— by the end of this document you will have run a *scraping audit*, and
+you will understand precisely why the other designs still matter.
+
+### Auditing the algorithm, then and now
+
+For fifteen years, the question "what does the algorithm amplify?" could
+only be answered two ways on Twitter. You could be *inside* the company:
+[Huszár et al. (2022)](https://doi.org/10.1073/pnas.2025334119) measured
+the algorithmic amplification of political content by running a massive
+experiment on Twitter's own servers, comparing users held on
+reverse-chronological timelines against users given the algorithmic
+ranking — a study design literally impossible without internal access.
+Or you could probe from *outside*:
+[Bandy & Diakopoulos (2021)](https://doi.org/10.1145/3449152) built
+sock-puppet accounts that followed identical sets of news sources and
+recorded what the curated timeline showed them, inferring the
+algorithm's behavior from its outputs. Both designs treat the ranking
+system as a sealed box.
+
+Bluesky's architecture changes the terms of this problem. The
+[AT Protocol](https://atproto.com) — the open protocol Bluesky runs on —
+*unbundles* curation and moderation from the platform:
+
+* **Feed generators** are services, published as public records, that
+  return a ranked list of posts — a *custom feed* is just a feed
+  generator someone has published
+  ([docs](https://bsky.network/docs/starter-templates/custom-feeds)).
+  Anyone can publish one; anyone can request any feed's current contents
+  through `app.bsky.feed.getFeed`. The Discover feed that millions of
+  users see is queryable by the same endpoint as a hobbyist's feed.
+* **Labelers** are independent moderation services that emit *labels*
+  (like `porn`, `graphic-media`, or `!hide`) on accounts and posts
+  ([docs](https://bsky.network/docs/advanced-guides/moderation)). Clients
+  subscribe to labelers and decide what to do with their labels —
+  Bluesky calls this
+  [*stackable moderation*](https://bsky.social/about/blog/03-12-2024-stackable-moderation).
+  Labels are queryable through `com.atproto.label.queryLabels`.
+* **Lists** are public rosters of accounts used for curation (list
+  feeds) and moderation (shared mute/block lists).
+* **Starter packs** are onboarding bundles — a list of accounts plus
+  optional feeds — that shape which network a newcomer lands in.
+
+None of this makes audits trivial: as we will see, the *personalized*
+layer is still invisible without logging in as a user. But the skeleton
+of the curation system — what each feed serves, what each labeler flags,
+who is on which list — is open to any researcher with an HTTP client.
 
 ### Learning objectives
 
-* Enumerate feed generators and understand them as public records.
-* Sample posts from custom feeds and build a comparable archive.
-* Quantify feed composition: recency, engagement, concentration, media.
-* Inspect lists, starter packs, and moderation labels.
-* Frame audits of curation systems without platform cooperation.
+After working through this document you will be able to:
+
+1. Discover and describe published feed generators with
+   `app.bsky.feed.getActorFeeds` and `app.bsky.feed.getFeedGenerators`.
+2. Collect samples of posts from custom feeds via `app.bsky.feed.getFeed`,
+   working with raw responses when typed cleaning lags behind the
+   protocol.
+3. Run an audit-style comparison of feed composition: author
+   concentration (top-10 share, HHI, Gini), recency, engagement,
+   language mix, and media share.
+4. Measure audience overlap between feeds with Jaccard similarity.
+5. Describe lists, starter packs, and labelers as governance
+   infrastructure, and query moderation labels from a labeler service.
+6. Discuss what algorithm audits can and cannot establish on a platform
+   where algorithms are inspectable but personalization is private.
 
 ## Setup
+
+We use the same toolkit as the earlier parts, plus
+[patchwork](https://patchwork.data-imaginist.com) for combining four
+charts into one figure and [httr2](https://httr2.r-lib.org) for the two
+endpoints bskyr doesn't wrap:
 
 ```{r libraries}
 library(bskyr)
 library(tidyverse)
 library(jsonlite)
 library(lubridate)
+library(patchwork)
 ```
 
 As in every part of this series, the shared helper `bsky_client.R` looks
@@ -42,6 +123,9 @@ variables), authenticates if it finds them, and sets `bsky_authed`. The
 `knitr::opts_chunk$set(eval = bsky_authed)` line then makes that flag the
 default for the whole document: with credentials every chunk runs;
 without them the document still knits, but the API chunks are skipped.
+(Every endpoint in this part is public, and the Python version runs it
+all without logging in. bskyr, though, authenticates every call, so in R
+you need an account even for public reads.)
 
 ```{r connect}
 source("bsky_client.R")
@@ -49,25 +133,62 @@ knitr::opts_chunk$set(eval = bsky_authed)
 
 BSKY_APP_DID <- "did:plc:z72i7hdynmk6r22z27h6tvur"  # bsky.app
 BSKY_MOD_DID <- "did:plc:ar7c4by46qjdydhdevvrndac"  # moderation.bsky.app
+PUBLIC_APPVIEW <- "https://public.api.bsky.app"
 ```
 
 ## 1. Feed generators are public records
 
-A custom feed is itself a record in its creator's repository — with a
-name, a description, and a like count of subscribers. Everything
-`bsky.app` publishes, via [`bs_get_feeds()`](https://christophertkenny.com/bskyr/reference/bs_get_feeds.html) (each bskyr function
-links to its reference page on first use):
+Two pieces of AT Protocol vocabulary before we begin. A **DID**
+(*decentralized identifier*, [spec](https://atproto.com/specs/did)) is an
+account's permanent, machine-readable identity — a string like
+`did:plc:z72i7hdynmk6r22z27h6tvur` that never changes even when the
+human-readable handle (`bsky.app`) does. An **AT-URI**
+([spec](https://atproto.com/specs/at-uri-scheme)) is the protocol's
+addressing scheme for records: `at://<DID>/<record type>/<record key>`
+names one specific record in one specific account's public repository,
+the way a URL names a web page.
+
+On Bluesky, a feed algorithm is announced to the world as an
+`app.bsky.feed.generator` record in its publisher's repository. Each
+feed therefore has a stable AT-URI of the form
+`at://<publisher DID>/app.bsky.feed.generator/<name>`, plus public
+metadata: a display name, a description, and a count of users who have
+liked (roughly, saved) the feed. If you have ever wondered what "the
+algorithm" *is*, on this platform the answer is concrete: a record you
+can look up, pointing at a service you can query.
+
+[`app.bsky.feed.getActorFeeds`](https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getActorFeeds)
+lists every feed generator a given account publishes; bskyr wraps it as
+[`bs_get_feeds()`](https://christophertkenny.com/bskyr/reference/bs_get_feeds.html)
+(each bskyr function links to its reference page on first use). Let's
+start with the official `bsky.app` account, which publishes the feeds
+most users encounter first — including **Discover**, the platform's
+flagship algorithmic feed:
 
 ```{r actor-feeds}
 bsky_feeds <- bs_get_feeds("bsky.app", limit = 50)
 
 bsky_feeds |>
   select(display_name, like_count, description) |>
+  mutate(like_count = as.integer(like_count)) |>
   arrange(desc(like_count))
 ```
 
-[`bs_get_feed_generators()`](https://christophertkenny.com/bskyr/reference/bs_get_feed_generators.html) resolves any batch of feed URIs to their metadata, so
-audits can name exactly which version of which algorithm they sampled:
+Note how each row is an *algorithm with a public address*. Some of these
+(Discover, Popular With Friends, Mutuals, Best of Follows) describe
+themselves in terms of "your" network — they are personalized, a
+distinction that will matter shortly.
+
+The official account is only one publisher among thousands. Anyone can
+run a feed generator, and some third-party feeds rival the official ones
+in popularity.
+[`bs_get_feed_generators()`](https://christophertkenny.com/bskyr/reference/bs_get_feed_generators.html)
+(`app.bsky.feed.getFeedGenerators`) resolves any batch of feed URIs to
+their metadata, so we can look up two well-known community feeds — the
+**Science** feed (a curated feed of verified scientists, run by
+`bossett.social`) and the **News** feed (headlines from verified news
+organizations, run by `aendra.com`) — alongside two official ones.
+Naming exactly which algorithm you sampled is part of the audit record:
 
 ```{r generators}
 CANDIDATE_FEEDS <- c(
@@ -85,35 +206,139 @@ generators |>
   select(display_name, creator_handle, like_count)
 ```
 
+The AppView also offers a discovery endpoint,
+[`app.bsky.feed.getSuggestedFeeds`](https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getSuggestedFeeds)
+([`bs_get_feed_suggestions()`](https://christophertkenny.com/bskyr/reference/bs_get_feed_suggestions.html)),
+which returns the feeds Bluesky would suggest to a user browsing the feed
+marketplace. It is a useful way to build a sampling frame of *prominent*
+feeds for a larger audit:
+
+```{r suggested-feeds}
+suggested <- tryCatch(bs_get_feed_suggestions(limit = 10),
+                      error = \(e) {
+                        message("getSuggestedFeeds unavailable: ", conditionMessage(e))
+                        NULL
+                      })
+
+if (!is.null(suggested)) {
+  suggested |>
+    transmute(display_name, creator_handle, like_count = as.integer(like_count))
+}
+```
+
+One feed we *cannot* observe from nowhere is the **Following** timeline
+— the reverse-chronological feed of accounts a user follows. There is no
+"anyone's" timeline:
+[`app.bsky.feed.getTimeline`](https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getTimeline)
+([`bs_get_timeline()`](https://christophertkenny.com/bskyr/reference/bs_get_timeline.html))
+is defined relative to the logged-in account, so what it returns is *your*
+Following feed, not a property of the network. This is the first
+boundary of auditing from outside; we will build a reverse-chronological
+baseline from a public list feed instead (Section 2):
+
+```{r timeline}
+timeline <- bs_get_timeline(limit = 5)
+cat("Your own Following timeline returned", nrow(timeline),
+    "posts: a view only your account can see.\n")
+```
+
 ## 2. Sampling posts from custom feeds
 
-[`bs_get_feed()`](https://christophertkenny.com/bskyr/reference/bs_get_feed.html) returns what a feed generator is serving right now. Like
-Part 07, we take the raw response (`clean = FALSE`) so that whatever
-embed types the feeds surface cannot break us, and flatten just the
-fields the audit needs. Note the bookkeeping that makes an audit an
-audit: every sample records *when it was retrieved*, because a feed is a
-moving target and "the Discover feed" without a timestamp is not a
-defined object:
+[`app.bsky.feed.getFeed`](https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getFeed)
+([`bs_get_feed()`](https://christophertkenny.com/bskyr/reference/bs_get_feed.html))
+returns the current contents of any published feed — the same endpoint
+the official app calls when you open a feed. Before collecting in bulk,
+two practical lessons learned the hard way.
+
+**Lesson 1: personalized feeds have no "view from nowhere".** Feeds like
+*Popular With Friends* rank posts relative to a specific viewer. With no
+viewer, the feed generator simply errors out — there is no answer to
+"popular with *whose* friends?". When you run this document logged in,
+the feed is ranked relative to *your* account instead, which is a
+different object from what anyone else sees. Watch what happens:
+
+```{r personalized-feed}
+with_friends <- paste0("at://", BSKY_APP_DID, "/app.bsky.feed.generator/with-friends")
+
+tryCatch({
+  personal <- bs_get_feed(with_friends, limit = 5)
+  cat("Popular With Friends returned", nrow(personal), "posts, ranked relative",
+      "to *your* account:\nno one else would see this list.\n")
+}, error = \(e) {
+  cat("The 'Popular With Friends' feed generator refused the request:",
+      conditionMessage(e), "\n")
+  cat("Personalized feeds are only observable from the standpoint of a particular",
+      "user -\nexactly the layer Huszar et al. (2022) needed internal access to study.\n")
+})
+```
+
+**Lesson 2: lexicons evolve faster than software.** A **lexicon** is AT
+Protocol's schema language ([guide](https://atproto.com/guides/lexicon)):
+every record type (`app.bsky.feed.post`), embed type
+(`app.bsky.embed.images`), and API method (`app.bsky.feed.getFeed`) is
+defined by a published lexicon schema, named by a reverse-domain
+identifier. The network can mint new lexicon types at any time — and
+software that has not heard of them yet must cope. (While developing the
+Python version, a then-new `app.bsky.embed.gallery` type crashed the
+SDK's parser.) So, as in Part 07, we take the raw response
+(`clean = FALSE`) and flatten just the fields the audit needs ourselves.
+`classify_embed()` mirrors the Python helper: it names the embed type and
+decides whether the post carries images or video, including posts that
+pair media with a quote (`recordWithMedia`) and multi-image `gallery`
+posts.
+
+Note the bookkeeping that makes an audit an audit: every sample records
+*when it was retrieved*, because a feed is a moving target and "the
+Discover feed" without a timestamp is not a defined object. And note the
+`tryCatch()` around each feed: these are live third-party services that
+can error or vanish, and a resilient audit pipeline skips a dead feed
+rather than crashing. Let's pull roughly **150 posts from each of our
+four candidate feeds**:
 
 ```{r fetch-feeds}
+classify_embed <- function(embed) {
+  if (is.null(embed)) return(list(type = NA_character_, media = FALSE))
+  type <- str_remove_all(embed$`$type` %||% "", "app\\.bsky\\.embed\\.|#view")
+  media <- if (type == "recordWithMedia") {
+    str_detect(embed$media$`$type` %||% "", "images|video")
+  } else {
+    type %in% c("images", "video", "gallery")
+  }
+  list(type = type, media = media)
+}
+
+flatten_post <- function(item) {
+  post <- item$post
+  record <- post$record %||% list()
+  embed <- classify_embed(post$embed)
+  tibble(
+    uri = post$uri,
+    author_did = post$author$did,
+    author_handle = post$author$handle %||% NA_character_,
+    created_at = record$createdAt %||% NA_character_,
+    like_count = post$likeCount %||% 0L,
+    repost_count = post$repostCount %||% 0L,
+    reply_count = post$replyCount %||% 0L,
+    quote_count = post$quoteCount %||% 0L,
+    lang = unlist(record$langs)[1] %||% NA_character_,
+    embed_type = embed$type,
+    has_media = embed$media,
+    text_chars = nchar(record$text %||% ""),
+    via_repost = !is.null(item$reason)
+  )
+}
+
+flatten_pages <- function(pages) {
+  map(list_flatten(map(pages, "feed")), flatten_post) |> list_rbind()
+}
+
 feed_posts <- function(uri, target = 150) {
   pages <- tryCatch(bs_get_feed(uri, limit = target, clean = FALSE),
-                    error = function(e) NULL)
-  if (is.null(pages)) return(NULL)
-  items <- list_flatten(map(pages, "feed"))
-  map(items, \(item) {
-    post <- item$post
-    embed_type <- post$embed$`$type` %||% ""
-    tibble(
-      uri = post$uri,
-      author_did = post$author$did,
-      author_handle = post$author$handle,
-      created_at = post$record$createdAt %||% NA_character_,
-      like_count = post$likeCount %||% 0L,
-      repost_count = post$repostCount %||% 0L,
-      has_media = str_detect(embed_type, "images|video")
-    )
-  }) |> list_rbind()
+                    error = function(e) {
+                      message("skipped ", uri, ": ", conditionMessage(e))
+                      NULL
+                    })
+  if (is.null(pages)) NULL else flatten_pages(pages)
 }
 
 samples <- imap(CANDIDATE_FEEDS, \(uri, name) {
@@ -129,10 +354,21 @@ map_int(compact(samples), nrow)
 
 ### A no-algorithm baseline
 
-Audits need a reference point. A *list feed* — the reverse-chronological
-posts of a fixed roster — has no ranking algorithm at all. We find
-`bsky.app`'s curation list with [`bs_get_actor_lists()`](https://christophertkenny.com/bskyr/reference/bs_get_actor_lists.html) and read its
-feed with [`bs_get_list_feed()`](https://christophertkenny.com/bskyr/reference/bs_get_list_feed.html):
+Huszár et al. (2022) could compare algorithmic timelines against users
+held on reverse-chronological ones. Our public analogue is a **list
+feed**:
+[`app.bsky.feed.getListFeed`](https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getListFeed)
+([`bs_get_list_feed()`](https://christophertkenny.com/bskyr/reference/bs_get_list_feed.html))
+returns the posts of a list's members in pure reverse-chronological
+order — no ranking model at all. We find the official `bsky.app`
+account's curation list with
+[`bs_get_actor_lists()`](https://christophertkenny.com/bskyr/reference/bs_get_actor_lists.html)
+(we examine lists properly in Section 5) and use it as a fixed roster,
+giving us a "what does no algorithm look like?" comparison sample.
+
+This baseline is not a perfect stand-in for a Following timeline — its
+roster is small and curated by Bluesky — but it isolates the property we
+care about: *chronology versus ranking*.
 
 ```{r baseline}
 bsky_lists <- bs_get_actor_lists("bsky.app", limit = 50) |>
@@ -144,29 +380,48 @@ baseline_list <- bsky_lists |>
 
 baseline_posts <- NULL
 if (nrow(baseline_list) == 1) {
-  pages <- bs_get_list_feed(baseline_list$uri, limit = 150, clean = FALSE)
-  items <- list_flatten(map(pages, "feed"))
-  baseline_posts <- map(items, \(item) {
-    post <- item$post
-    embed_type <- post$embed$`$type` %||% ""
-    tibble(uri = post$uri, author_did = post$author$did,
-           author_handle = post$author$handle,
-           created_at = post$record$createdAt %||% NA_character_,
-           like_count = post$likeCount %||% 0L,
-           repost_count = post$repostCount %||% 0L,
-           has_media = str_detect(embed_type, "images|video"))
-  }) |> list_rbind() |>
-    mutate(feed = "Baseline (list feed)", retrieved_at = now("UTC"))
+  cat("Baseline roster:", baseline_list$name, "(",
+      as.integer(baseline_list$list_item_count), "members )\n")
+  retrieved_at <- now("UTC")
+  baseline_posts <- bs_get_list_feed(baseline_list$uri, limit = 150, clean = FALSE) |>
+    flatten_pages() |>
+    mutate(feed = "Baseline (list feed)", retrieved_at = retrieved_at)
 }
+```
 
+### Flattening into a tidy archive
+
+`flatten_post()` turned each nested feed item into one row of
+*audit-relevant* fields: who posted, when, engagement counts, declared
+language, and embed/media type. We now stack the samples, drop duplicate
+posts within a feed, and compute each post's **age at retrieval**.
+Client-supplied `createdAt` timestamps are occasionally bogus
+(future-dated), so negative ages become missing rather than distorting
+the recency measures.
+
+Notice what we deliberately do **not** keep: the post text (only its
+length). A composition audit asks *who and what kind*, not *what was
+said*, and the data-minimization principle from Part 01 says you should
+not collect fields your research question does not require — every
+column you store is a column you are responsible for.
+
+```{r tidy-archive}
 # list_rbind() stacks a list of tibbles; compact() drops feeds that failed
 posts_df <- list_rbind(compact(c(samples, list(baseline_posts)))) |>
+  distinct(feed, uri, .keep_all = TRUE) |>
   mutate(created_at = ymd_hms(created_at, quiet = TRUE),
-         age_hours = as.numeric(difftime(retrieved_at, created_at,
-                                         units = "hours")))
+         age_hours = as.numeric(difftime(retrieved_at, created_at, units = "hours")),
+         age_hours = if_else(age_hours >= 0, age_hours, NA_real_))
 
+cat(nrow(posts_df), "posts across", n_distinct(posts_df$feed), "feeds\n")
 count(posts_df, feed)
 ```
+
+We save the archive immediately, before any analysis. Saving first is
+audit hygiene: the feeds will have moved on by tomorrow, but this
+snapshot, stamped with its retrieval times, is now frozen evidence that
+any collaborator can reanalyze (Section 8). RDS keeps R's column types
+(including the timestamps) exactly; the CSV is for everyone else:
 
 ```{r save-archive}
 dir.create("data", showWarnings = FALSE)
@@ -176,18 +431,45 @@ write_csv(posts_df, "data/feed_posts.csv")
 
 ## 3. Auditing feed composition
 
-For each feed: how fresh are its posts, how engaged, how concentrated on
-few authors, how visual? Concentration gets two measures. The
-*top-10-author share* is intuitive: what fraction of the feed comes from
-its ten most frequent authors? The **Herfindahl–Hirschman index** (HHI),
-borrowed from antitrust economics, is the sum of squared author shares:
-it approaches 1 when one author dominates and 1/n when posts are spread
-evenly over n authors:
+Now the centerpiece: what does each algorithm actually *serve*?
+Following the logic of Bandy & Diakopoulos (2021) — characterize the
+curated output and compare it against a chronological counterfactual —
+we compute a panel of composition metrics per feed:
+
+* **Author concentration.** Does the feed amplify a few voices or many?
+  We use three complementary measures of the distribution of posts over
+  authors: the share contributed by the **top 10 authors**, the
+  **Herfindahl–Hirschman index** (the economists' market-concentration
+  measure: the sum of squared author shares, $\mathrm{HHI} = \sum_i s_i^2$,
+  where $1/n$ means perfectly even and 1 means a single author), and the
+  **Gini coefficient** (0 = every author contributes equally, → 1 =
+  maximal inequality).
+* **Recency.** The median and 90th-percentile *age* of posts at the
+  moment we retrieved them. A trending algorithm should serve hours-old
+  posts; a sparse chronological roster may surface much older ones.
+* **Engagement.** Median and 90th-percentile like counts. Ranked feeds
+  that select on popularity should show dramatically higher engagement
+  than a feed that selects on time alone — selection, not causation!
+* **Language mix and media share.** What fraction of posts declare
+  English, how many languages appear, and how often posts carry images
+  or video.
 
 ```{r composition}
-hhi <- function(authors) {
-  shares <- table(authors) / length(authors)
+gini <- function(counts) {
+  values <- sort(as.numeric(counts))
+  n <- length(values)
+  if (n == 0 || sum(values) == 0) return(NA_real_)
+  cumulative <- cumsum(values)
+  (n + 1 - 2 * sum(cumulative / cumulative[n])) / n
+}
+
+hhi <- function(counts) {
+  shares <- as.numeric(counts) / sum(counts)
   sum(shares^2)
+}
+
+top_k_share <- function(counts, k = 10) {
+  sum(head(sort(as.numeric(counts), decreasing = TRUE), k)) / sum(counts)
 }
 
 comparison <- posts_df |>
@@ -195,86 +477,141 @@ comparison <- posts_df |>
   summarise(
     posts = n(),
     unique_authors = n_distinct(author_did),
-    top10_author_share = {
-      top <- head(sort(table(author_did), decreasing = TRUE), 10)
-      sum(top) / n()
-    },
-    hhi = hhi(author_did),
+    top10_author_share = top_k_share(table(author_did)),
+    author_hhi = hhi(table(author_did)),
+    author_gini = gini(table(author_did)),
     median_age_hours = median(age_hours, na.rm = TRUE),
-    median_likes = median(like_count, na.rm = TRUE),
-    media_share = mean(has_media)
+    p90_age_hours = quantile(age_hours, 0.9, na.rm = TRUE, names = FALSE),
+    median_likes = median(like_count),
+    p90_likes = quantile(like_count, 0.9, names = FALSE),
+    share_english = mean(lang %in% "en"),
+    n_languages = n_distinct(lang, na.rm = TRUE),
+    media_share = mean(has_media),
+    median_text_chars = median(text_chars)
   )
 
 write_csv(comparison, "data/feed_comparison.csv")
-comparison
+comparison |> mutate(across(where(is.double), \(x) round(x, 3)))
 ```
 
+Tables reward close reading, but the contrasts jump out in small-multiple
+charts. The top row shows **empirical cumulative distribution functions
+(ECDFs)**: for each value $x$ on the horizontal axis, the curve's height
+is the share of the feed's posts at or below $x$ — so read a point on
+the recency curve as "this fraction of the feed is younger than $x$
+hours." ECDFs beat histograms for comparing skewed distributions because
+every post is shown and no binning choices intervene. Both use log
+scales (Part 04 taught us engagement is heavy-tailed), and the bottom
+row uses simple bars for concentration and media share. patchwork's `+`
+and `/` operators arrange the four ggplots into one figure, and
+`plot_layout(guides = "collect")` gives them a single shared legend:
+
 ```{r composition-plots, fig.width=11, fig.height=8}
-posts_df |>
+feed_levels <- comparison$feed
+
+recency <- posts_df |>
   filter(age_hours > 0) |>
   ggplot(aes(age_hours, color = feed)) +
   stat_ecdf() +
-  scale_x_log10() +
-  labs(x = "Post age at retrieval (hours)",
-       y = "Cumulative share of posts",
-       title = "Recency profile of each feed") +
-  theme_minimal()
+  scale_x_log10(labels = scales::label_number(drop0trailing = TRUE)) +
+  labs(x = "Post age at retrieval (hours)", y = "Cumulative share of posts",
+       title = "Recency profile", color = "Feed")
 
-posts_df |>
-  ggplot(aes(like_count + 1, color = feed)) +
+engagement <- ggplot(posts_df, aes(like_count + 1, color = feed)) +
   stat_ecdf() +
-  scale_x_log10() +
+  scale_x_log10(labels = scales::label_comma()) +
   labs(x = "Likes at retrieval (+1)", y = "Cumulative share of posts",
-       title = "Engagement profile of each feed") +
+       title = "Engagement profile", color = "Feed")
+
+concentration <- ggplot(comparison, aes(top10_author_share,
+                                        fct_rev(factor(feed, feed_levels)), fill = feed)) +
+  geom_col(show.legend = FALSE) +
+  scale_x_continuous(limits = c(0, 1)) +
+  labs(x = "Share of posts from top 10 authors", y = NULL,
+       title = "Author concentration")
+
+media <- ggplot(comparison, aes(media_share,
+                                fct_rev(factor(feed, feed_levels)), fill = feed)) +
+  geom_col(show.legend = FALSE) +
+  scale_x_continuous(limits = c(0, 1)) +
+  labs(x = "Share of posts with images or video", y = NULL,
+       title = "Media share")
+
+(recency + engagement) / (concentration + media) +
+  plot_layout(guides = "collect") +
+  plot_annotation(title = "Composition of Bluesky feeds") &
   theme_minimal()
 ```
 
-### What the differences reveal
-
-Before interpreting, one small table puts each feed's median likes next
-to the baseline's (with +1 smoothing, so a baseline median of 0 can't
-divide by zero):
+Before interpreting, let's pull the four contrasts we care most about
+into one small table: each feed's median likes (and how many times the
+baseline's that is, with +1 smoothing so a baseline median of 0 can't
+divide by zero), its median post age, its top-10 author share, and how
+many distinct authors it drew on:
 
 ```{r contrasts}
 baseline_likes <- comparison$median_likes[comparison$feed == "Baseline (list feed)"]
 
 comparison |>
-  transmute(feed, median_likes, median_age_hours, top10_author_share,
-            unique_authors,
+  transmute(feed, median_likes, median_age_hours = round(median_age_hours, 2),
+            top10_author_share = round(top10_author_share, 2), unique_authors,
             likes_vs_baseline = if (length(baseline_likes) == 1)
-              (median_likes + 1) / (baseline_likes + 1) else NA_real_)
+              round((median_likes + 1) / (baseline_likes + 1), 2) else NA_real_)
 ```
 
-The magnitudes are live and will differ from run to run; the logic
-behind each contrast is what's stable:
+### What the differences reveal
+
+Your numbers will differ from ours — these are live feeds — so read the
+magnitudes from the table above rather than from this text. What *is*
+stable is the logic behind each contrast, and each one tells you
+something about how the feed curates:
 
 * **Engagement depends on what a feed selects on.** Discover and What's
   Hot Classic rank posts by popularity signals, so their posts' like
-  counts sit above the baseline's — usually far above, in Discover's
-  case. The feed conditions on engagement; it didn't cause it. The
-  allowlist feeds (Science, News) instead admit posts from a vetted
-  roster, so their median likes can sit near, or even below, the
-  baseline's: an "algorithmic" feed isn't necessarily an
-  engagement-ranked one.
+  counts sit above the chronological baseline's — usually far above, in
+  Discover's case. Nothing about the algorithm *caused* that engagement;
+  the feed conditions on it. This is the selection effect that makes
+  naive "posts on the algorithmic feed get more likes!" claims circular.
+  The allowlist feeds (Science, News) work differently: they admit posts
+  from a vetted roster of accounts rather than ranking the whole network
+  by popularity, so their median likes can sit near, or even below, the
+  baseline's. An "algorithmic" feed is not necessarily an
+  engagement-ranked one; check what a feed selects on before comparing
+  engagement across feeds.
 * **Recency is a design choice.** Some feeds serve posts only minutes
-  old, others posts a few hours old;
-  the list baseline simply mirrors its roster's posting rhythm, which for
-  a quiet roster reaches days into the past.
-* **Concentration reflects the eligible population.** The allowlist
-  feeds draw on a vetted roster, so a few prolific accounts can supply a
-  large share of their posts; the baseline, with only a handful of
-  members, is concentrated by construction.
-
-None of this required platform cooperation — only public endpoints and
-a sampling design.
+  old; others serve posts a few hours old, as a trending feed does while
+  it waits for engagement to accumulate; all of them filter out
+  staleness with a sharp upper bound (compare the `p90_age_hours`
+  column). The chronological baseline's age profile, by contrast, is
+  just the posting rhythm of its roster: if the roster is quiet, the
+  feed reaches days into the past.
+* **Concentration reflects the eligible population.** Allowlist feeds
+  draw from a vetted roster, so a handful of prolific accounts can
+  supply a large share of their posts. A network-wide feed samples from
+  millions of eligible authors, so a single snapshot tends to spread
+  across more of them. The baseline is the extreme case: its roster is
+  the handful of members printed in Section 2, so its concentration is
+  high by construction. Concentration metrics are only comparable across
+  feeds with similar eligible populations — a classic denominator
+  subtlety.
+* **Language and media mixes expose filters and incentives.** A feed's
+  English share and media share tell you whether it filters by language
+  or rewards visual content. One measurement caveat: `lang` is
+  *self-declared* by posting clients, and institutional accounts — like
+  the news organizations here — often omit it, so a low `share_english`
+  can mean undeclared rather than non-English. Differences in exposure
+  like these are what Bandy & Diakopoulos (2021) showed can meaningfully
+  reshape the news users encounter.
 
 ## 4. Audience overlap between feeds
 
-Do different feeds show the same *accounts*? **Jaccard similarity** —
-the size of the intersection of two author sets divided by the size of
-their union — runs from 0 (no shared authors) to 1 (identical author
-sets). tidyr's `crossing()` builds every pair of feeds, and
-`pivot_wider()` arranges the result as a matrix. We write
+Do these feeds amplify the *same people*? For each pair of feeds we
+compute the **Jaccard similarity** of their author sets:
+
+$$J(A, B) = \frac{|A \cap B|}{|A \cup B|}$$
+
+which is 0 when two feeds share no authors and 1 when they amplify
+identical sets. tidyr's `crossing()` builds every pair of feeds. We write
 `tidyr::crossing()` with the package name because igraph, which Parts 03
 and 04 load, has a different function also called `crossing()`; if
 igraph is still attached in your R session, the plain name would call
@@ -287,87 +624,251 @@ author_sets <- posts_df |>
 
 jaccard <- function(a, b) length(intersect(a, b)) / length(union(a, b))
 
-tidyr::crossing(f1 = author_sets$feed, f2 = author_sets$feed) |>
+overlap <- tidyr::crossing(f1 = author_sets$feed, f2 = author_sets$feed) |>
   mutate(jaccard = map2_dbl(
     f1, f2,
     \(x, y) jaccard(author_sets$authors[[match(x, author_sets$feed)]],
                     author_sets$authors[[match(y, author_sets$feed)]])
-  )) |>
+  ))
+
+overlap |>
+  mutate(jaccard = round(jaccard, 3)) |>
   pivot_wider(names_from = f2, values_from = jaccard)
 ```
 
-Near-zero overlaps mean the feeds are sampling almost disjoint slices of
-the network — each algorithm is a different *editorial regime*. Which
-pairs overlap at all, and by how much, changes from run to run, but even
+A pairwise matrix is easier to scan as a heatmap. Each cell is the
+Jaccard similarity between the author sets of the row feed and the
+column feed; the diagonal is 1 by definition (every feed overlaps
+perfectly with itself), and we annotate each cell with its value so you
+do not have to squint at the color scale. The color scale stops at the
+largest *off-diagonal* value (or 0.10, if that is larger), so the
+diagonal's 1s don't wash out the small overlaps that matter:
+
+```{r jaccard-heatmap, fig.width=7, fig.height=5.5}
+top_off_diagonal <- max(c(0.10, overlap$jaccard[overlap$f1 != overlap$f2]))
+
+ggplot(overlap, aes(f2, f1, fill = jaccard)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = sprintf("%.2f", jaccard),
+                color = jaccard > top_off_diagonal / 2), size = 3.2,
+            show.legend = FALSE) +
+  scale_color_manual(values = c(`TRUE` = "black", `FALSE` = "white")) +
+  scale_fill_viridis_c(name = "Jaccard\nsimilarity", limits = c(0, top_off_diagonal),
+                       oob = scales::squish) +
+  labs(x = NULL, y = NULL, title = "Jaccard overlap of author sets between feeds") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+The headline finding is usually how *small* these overlaps are: in a
+single snapshot, each feed amplifies a nearly disjoint set of authors.
+Custom feeds are not five windows onto one conversation — they carve the
+network into largely separate audiences and speaker populations. (Which
+cells are nonzero, and by how much, will fluctuate between runs; even
 the largest overlaps in a snapshot tend to be a small fraction of either
-feed's authors.
+feed's authors.)
+
+For a research design, this is the dependent variable in miniature:
+*exposure diversity*. With repeated snapshots you could ask whether
+feeds' author populations churn or ossify over time, and whose voices
+never appear in any algorithmic feed at all.
 
 ## 5. Lists: shared rosters for curation and moderation
 
-Lists are public records too — rosters that anyone can subscribe to as a
-feed, or (for modlists) as a mute/block set. [`bs_get_list()`](https://christophertkenny.com/bskyr/reference/bs_get_list.html) reads a
-list's members:
+Lists are the simplest governance object on Bluesky: a public, named
+roster of accounts (`app.bsky.graph.list` records). One mechanism, two
+very different uses, distinguished by the record's `purpose` field:
+
+* **`curatelist`** — content curation: a list feed (as in our baseline),
+  or a roster to pin and browse.
+* **`modlist`** — moderation: users who subscribe to a moderation list
+  can mute or block *every member at once*. Shared blocklists, which
+  emerged on Twitter as a grassroots harassment defense, are first-class
+  protocol objects here.
+* **`referencelist`** — internal rosters referenced by other records
+  (starter packs use these).
+
+[`app.bsky.graph.getLists`](https://endpoints.bsky.app/#bluesky-app/tag/appbskygraph/GET/xrpc/app.bsky.graph.getLists)
+enumerates an account's published lists (we already called it, through
+`bs_get_actor_lists()`, to find our baseline):
 
 ```{r lists}
 bsky_lists |>
   transmute(name, purpose = str_extract(purpose, "[^#]+$"),
             members = as.integer(list_item_count),
             description = str_trunc(replace_na(description, ""), 80))
+```
 
+Who is actually *on* a list?
+[`app.bsky.graph.getList`](https://endpoints.bsky.app/#bluesky-app/tag/appbskygraph/GET/xrpc/app.bsky.graph.getList)
+pages through a list's members with the same cursor pattern as every
+other paginated endpoint in this series;
+[`bs_get_list()`](https://christophertkenny.com/bskyr/reference/bs_get_list.html)
+follows the cursor for us up to the `limit` we set (our cap, as always).
+Let's unpack the curation list we used as our chronological baseline in
+Section 2, so we can see exactly whose posts that baseline sample
+contained:
+
+```{r list-members}
 if (nrow(baseline_list) == 1) {
   members <- bs_get_list(baseline_list$uri, limit = 200)
+  cat(baseline_list$name, "has", nrow(members), "members\n")
   members |> select(subject_handle, subject_display_name) |> head(10)
 }
 ```
 
+Membership on a list is consequential and *non-consensual*: accounts do
+not opt in to being listed, and inclusion on a widely-subscribed
+moderation list can silently sever someone from a large audience. That
+makes lists a rich research site — who maintains influential modlists,
+how membership changes over time, what the error rates look like — and
+also a sensitive one: a dataset of "accounts on blocklist X" is
+effectively an accusation attached to identities. Aggregate analyses are
+usually the right level of reporting.
+
 ## 6. Starter packs: curating the network itself
 
-Starter packs bundle accounts (and feeds) so newcomers can follow an
-entire community at once — curation of the *graph*, not of content.
-[`bs_get_actor_starter_packs()`](https://christophertkenny.com/bskyr/reference/bs_get_actor_starter_packs.html) lists an account's packs with counts of
-how many users joined through each, this week and all time. (This
-summary view doesn't say how many accounts a pack contains; for that you
-would fetch the pack itself, as Exercise 4 asks.) `bsky_standardize()`
-from `bsky_client.R` gives the count columns the same names whichever
-bskyr version you have installed:
+Starter packs (`app.bsky.graph.starterpack` records) bundle a reference
+list of accounts — and optionally feeds — into a shareable onboarding
+page. A newcomer who joins through a starter pack can follow everyone on
+it with one tap. Where feeds curate *content*, starter packs curate the
+*follow graph*: they decide which corner of the network a new user lands
+in.
+
+[`app.bsky.graph.getActorStarterPacks`](https://endpoints.bsky.app/#bluesky-app/tag/appbskygraph/GET/xrpc/app.bsky.graph.getActorStarterPacks)
+([`bs_get_actor_starter_packs()`](https://christophertkenny.com/bskyr/reference/bs_get_actor_starter_packs.html))
+lists an account's packs with counts of how many users joined through
+each, this week and all time. This summary view doesn't say how many
+accounts each pack contains; to see a pack's members we fetch the pack
+itself, as we do for one pack below. `bsky_standardize()` from
+`bsky_client.R` gives the count columns the same names whichever bskyr
+version you have installed:
 
 ```{r starter-packs}
 packs <- bs_get_actor_starter_packs("bsky.app", limit = 50) |>
-  bsky_standardize()
+  bsky_standardize() |>
+  mutate(across(starts_with("joined"), as.integer))   # counts can arrive as text
 
+cat(nrow(packs), "starter packs published by bsky.app\n")
 packs |>
-  select(record_name, joined_week_count, joined_all_time_count) |>
-  mutate(across(starts_with("joined"), as.integer)) |>   # counts can arrive as text
-  arrange(desc(joined_all_time_count))
+  transmute(name = record_name, joined_this_week = joined_week_count,
+            joined_all_time = joined_all_time_count,
+            created = as.Date(substr(record_created_at, 1, 10)))
+```
+
+Notice the editorial rhythm: the official account spins up packs around
+scheduled events — elections, playoffs, award shows — pre-assembling an
+audience for each. Let's unpack one. A starter pack's accounts live in an
+ordinary reference list, so we fetch the pack with
+[`app.bsky.graph.getStarterPack`](https://endpoints.bsky.app/#bluesky-app/tag/appbskygraph/GET/xrpc/app.bsky.graph.getStarterPack)
+([`bs_get_starter_pack()`](https://christophertkenny.com/bskyr/reference/bs_get_starter_pack.html),
+raw, because its cleaned form flattens the embedded feed list into
+dozens of columns) and then read its list members with the same
+`bs_get_list()` call as before:
+
+```{r starter-pack-unpack}
+# The pack the most users have actually joined through
+top_pack <- packs |> slice_max(joined_all_time_count, n = 1, with_ties = FALSE)
+pack_view <- bs_get_starter_pack(top_pack$uri, clean = FALSE)$starterPack
+
+cat("Starter pack:", pack_view$record$name, "\n")
+cat("Description: ", str_trunc(pack_view$record$description %||% "(none)", 100), "\n")
+cat("Joined through it:", pack_view$joinedAllTimeCount %||% 0, "accounts all-time\n")
+
+if (!is.null(pack_view$list)) {
+  pack_members <- bs_get_list(pack_view$list$uri, limit = 100)
+  cat("Accounts in the pack:", nrow(pack_members), "\n")
+  pack_members |> select(subject_handle, subject_display_name) |> head(10)
+} else {
+  cat("This pack has no account list attached.\n")
+}
 ```
 
 ### Starter packs as a natural experiment
 
-Joining through a pack assigns a newcomer hundreds of follows in one
-click — a discontinuity in initial conditions that Part 05's designs can
-exploit: compare the retention and activity of accounts that joined
-through different packs.
+For network science, starter packs are a gift: a *measurable treatment*
+in network formation. Two users who join Bluesky in the same week
+through different starter packs receive different initial follow
+neighborhoods — assigned largely by whichever link happened to reach
+them, not by slowly homegrown homophily. Because pack membership, join
+counts, and the full follow graph (Part 03) are all public, you can ask
+classic questions with unusual leverage:
+
+* Do users seeded into different packs end up in durably different
+  communities, or does organic rewiring wash out the initial conditions?
+* How much of an account's long-run audience traces back to
+  starter-pack placement — a *Matthew effect* with an observable origin?
+* Do packs accelerate the early-follower accumulation that Part 04's
+  diffusion models treat as exogenous?
+
+The identification is not free — who joins through which pack is not
+random — but compared with inferring initial conditions retrospectively,
+an explicit, timestamped onboarding bundle is about as close to a
+natural experiment in network formation as platforms provide.
 
 ## 7. Labels and stackable moderation
 
-Moderation on Bluesky is *stackable*: independent labeler services emit
-labels (like `spam` or `graphic-media`) that clients can subscribe to
-and act on. The labels themselves are queryable from each labeler.
-bskyr has no wrapper for this endpoint, which is a teachable moment in
-itself: any XRPC endpoint is just an HTTP URL, so we build the request
-directly with [httr2](https://httr2.r-lib.org) against Bluesky's own
-moderation service at `https://mod.bsky.app` (see the
-[`queryLabels` reference](https://endpoints.bsky.app/#bluesky-app/tag/comatprotolabel/GET/xrpc/com.atproto.label.queryLabels)).
+The third leg of Bluesky's governance stack is moderation. Instead of
+one company applying one policy, AT Protocol moderation is performed by
+**labelers**: independent services that publish *labels* — small signed
+records attaching a value like `porn`, `graphic-media`, `rude`, or the
+hide-everything `!takedown` — to accounts, posts, and other records (see
+the [moderation architecture docs](https://bsky.network/docs/advanced-guides/moderation)).
+Users subscribe to labelers (Bluesky's own labeler is just the default
+subscription), and each client decides how to render each label: hide,
+warn, badge, or ignore. This is what Bluesky calls **stackable
+moderation** — many overlapping moderation authorities instead of one —
+introduced in the blog post
+["Bluesky's Stackable Approach to Moderation"](https://bsky.social/about/blog/03-12-2024-stackable-moderation),
+which is worth reading in full as a design statement about who should
+hold moderation power.
 
-Our `query_labels()` sends the patterns in batches of 25 per request,
-pauses between requests, caps the number of requests, and collects the
-labels from every batch into one tibble. One design
-choice deserves attention before we use it: if the labeler **refuses** a
-request, the function stops with an error that carries the labeler's own
-explanation, instead of quietly returning an empty table. A refused
-request and a request that found nothing both "return no labels", but
-only one of them is a finding. `httr2::req_error(body = ...)` is what
-pulls the server's message into the error:
+Crucially for researchers, labelers are *queryable services*. First,
+let's read the Bluesky Moderation Service's public "policy menu" — the
+set of label values it may emit — via
+[`app.bsky.labeler.getServices`](https://endpoints.bsky.app/#bluesky-app/tag/appbskylabeler/GET/xrpc/app.bsky.labeler.getServices).
+bskyr has no wrapper for this endpoint or for label queries, which is a
+teachable moment in itself: any XRPC endpoint is just an HTTP URL, so we
+build the request directly with httr2. `getServices` is a public read,
+so we send it to the public AppView with no login at all:
+
+```{r labeler-services}
+services <- tryCatch(
+  httr2::request(paste0(PUBLIC_APPVIEW, "/xrpc/app.bsky.labeler.getServices")) |>
+    httr2::req_url_query(dids = BSKY_MOD_DID, detailed = "true") |>
+    httr2::req_perform() |>
+    httr2::resp_body_json(),
+  error = \(e) {
+    message("getServices unavailable: ", conditionMessage(e))
+    NULL
+  })
+
+if (!is.null(services) && length(services$views) > 0) {
+  service_view <- services$views[[1]]
+  cat("Labeler:", service_view$creator$handle, "(", service_view$creator$did, ")\n")
+  cat("Liked (subscribed) by", format(service_view$likeCount, big.mark = ","), "accounts\n\n")
+  cat("Label values this service may emit:\n")
+  cat(str_wrap(paste(unlist(service_view$policies$labelValues), collapse = ", "), 80), "\n")
+}
+```
+
+Now the audit question: **do any of the posts our feeds served carry
+moderation labels?** The Bluesky Moderation Service answers
+[`com.atproto.label.queryLabels`](https://endpoints.bsky.app/#bluesky-app/tag/comatprotolabel/GET/xrpc/com.atproto.label.queryLabels)
+at `https://mod.bsky.app`. Our `query_labels()` sends the patterns in
+batches of 25 per request, pauses between requests, caps the number of
+requests, and collects the labels from every batch into one tibble. We
+query the exact URIs of up to 300 posts from our archive.
+
+One design choice deserves attention before we use it: if the labeler
+**refuses** a request, the function stops with an error that carries the
+labeler's own explanation, instead of quietly returning an empty table.
+A refused request and a request that found nothing both "return no
+labels", but only one of them is a finding. Code that blurs the two
+produces confident, wrong conclusions — exactly what happened to an
+earlier version of this document, as the next chunks show.
+`httr2::req_error(body = ...)` is what pulls the server's message into
+the error:
 
 ```{r labels}
 query_labels <- function(patterns, labeler = "https://mod.bsky.app",
@@ -398,15 +899,20 @@ query_labels <- function(patterns, labeler = "https://mod.bsky.app",
 
 post_uris <- head(unique(posts_df$uri), 300)
 post_labels <- query_labels(post_uris)
-nrow(post_labels)
+cat("Queried", length(post_uris), "post URIs from our feed samples ->",
+    nrow(post_labels), "labels found\n")
+post_labels |> count(val, sort = TRUE)
 ```
 
 Labels are usually sparse on curated-feed posts, because curation and
 moderation interact: most labeled content never *reaches* a feed, and
-what the AppView has taken down we never see at all. A label does not
-delete anything, either — when labeled posts do appear, they sit in the
-feed with their label attached, and each user's client decides whether
-to hide, blur, or show them.
+what the AppView has taken down we never see at all. When some labels do
+appear (often adult-content labels on posts from the open trending
+feeds), notice what that teaches: a label does not delete anything. The
+post sits in the feed's public skeleton *with its label attached*, and
+each user's client decides — based on their labeler subscriptions and
+preferences — whether to hide, blur, or show it. Moderation here is
+metadata, not removal.
 
 To confirm the labeler is far from idle, we'd like to widen the query to
 the *accounts* that wrote these posts. The `queryLabels` lexicon allows
@@ -430,12 +936,13 @@ answering every one with *"Support for wildcard label queries is
 temporarily disabled"*. (If the chunk above reports that they work
 again, the service has re-enabled them; the rest of this section works
 either way.) This is the "platform in flux" lesson in its purest form:
-nothing in our code changed, and the API reference still describes
-wildcards, but a measurement that worked one month stopped working the
-next. The earlier version of this document didn't check, and reported
-**"No labels found in this sample"** — a confident empirical claim
-produced by a refused request. That is why `query_labels()` now stops
-with the server's message instead.
+nothing in our code changed, and the
+[API reference for `queryLabels`](https://endpoints.bsky.app/#bluesky-app/tag/comatprotolabel/GET/xrpc/com.atproto.label.queryLabels)
+still describes wildcards, but a measurement that worked one month
+stopped working the next. The earlier version of this document didn't
+check, and reported **"No labels found in this sample"** — a confident
+empirical claim produced by a refused request. That is why
+`query_labels()` now stops with the server's message instead.
 
 So we ask the questions that *can* still be asked, with two kinds of
 pattern the service accepts:
@@ -444,9 +951,10 @@ pattern the service accepts:
   returns labels applied to the account, as opposed to any one of its
   posts.
 * **(b) Labels on their recent posts.** For 20 of the sampled authors we
-  fetch their latest 30 feed items with [`bs_get_author_feed()`](https://christophertkenny.com/bskyr/reference/bs_get_author_feed.html), keep the
-  original posts (the `is_repost()` and `is_reply()` helpers from
-  `bsky_client.R`), and query those exact URIs. This covers only a
+  fetch their latest 30 feed items with
+  [`bs_get_author_feed()`](https://christophertkenny.com/bskyr/reference/bs_get_author_feed.html),
+  keep the original posts (the `is_repost()` and `is_reply()` helpers
+  from `bsky_client.R`), and query those exact URIs. This covers only a
   recent window rather than a whole history, so its counts are lower
   bounds on what a full history would show.
 
@@ -482,23 +990,40 @@ c(feed_posts = per_100(post_labels, length(post_uris)),
 Compare the two rates in the last line, and notice how few labels sit
 behind each. With a few hundred posts and labels this sparse, a handful
 of labeled posts decides which rate is higher, and reruns come out both
-ways — so the comparison is a design for a study, not yet a finding.
-Two things *are* stable: account-level labels are a different kind of
-judgment (flags about an account rather than any one post), and the
-post labels that appear are mostly content-classification labels such
-as `sexual`, `porn`, and `graphic-media`, which drive the warnings users
-configure rather than removing anything. The pattern used here (exact URIs for
-your sample; account DIDs and recent-post URIs for context) is a
-reusable template for studying *label prevalence*. Remember, though,
-that a label is a moderation *action*: a row saying an account was
-labeled `rude` is an allegation attached to an identity, so report
-prevalence in aggregate.
+ways — so the comparison is a design for a study, not yet a finding
+(Exercise 3 asks you to scale it up). Two things *are* stable. The
+account-level labels are a different kind of judgment altogether: flags
+about an account rather than about any one post. And the post labels
+that do appear are mostly content-classification labels such as
+`sexual`, `porn`, and `graphic-media`, which drive the client-side
+warnings users configure rather than removing anything. The two-step
+pattern used here (exact URIs for your sample; account DIDs and
+recent-post URIs for context) is a reusable template for studying
+*label prevalence*: which kinds of accounts and content get labeled, by
+which labelers, and how labels and algorithmic amplification interact.
+
+A caution before you build that study: labels are moderation *actions*,
+and a row like "account X was labeled `rude`" is an allegation attached
+to an identity. Report prevalence in aggregate, and remember that
+third-party labelers vary enormously in standards and accountability.
 
 ## 8. Reproducibility: working from the saved archive
 
+Both artifacts of our audit are on disk — `data/feed_posts.rds` (one
+slim row per post, including its retrieval timestamp) and
+`data/feed_comparison.csv` (the metric table). Every analysis from
+Section 3 on can be rerun *from the files* without touching the network,
+which is how you should hand an audit to a collaborator: the feeds will
+have moved on, but your snapshot is frozen and documented:
+
 ```{r reload}
 archive <- readRDS("data/feed_posts.rds")
+saved_comparison <- read_csv("data/feed_comparison.csv", show_col_types = FALSE)
 
+cat("Reloaded", nrow(archive), "posts; collected on",
+    format(min(as_date(archive$retrieved_at))), "(UTC)\n")
+
+# A reanalysis straight from disk: engagement by feed
 archive |>
   group_by(feed) |>
   summarise(median_likes = median(like_count),
@@ -507,66 +1032,180 @@ archive |>
 
 ## 9. Research design: algorithm audits without platform cooperation
 
-The audit tradition (Sandvig et al. 2014) had to scrape or run sock
-puppets because platforms hid their rankers; Bluesky's architecture
-makes the *outputs* of every public feed generator directly observable.
-What remains unobservable is *personalization*: feeds that rank
-relative to a logged-in user can only be audited from that user's
-standpoint — exactly the layer Huszár et al. (2022) needed internal
-Twitter access to study. A serious audit samples feeds repeatedly over
-time, archives everything with retrieval timestamps, and reports the
-sampling design alongside the findings.
+Step back and compare the designs available to you here against the
+Twitter-era studies we started from:
+
+* **Huszár et al. (2022)** needed Twitter's own servers and a years-long
+  holdback experiment to compare algorithmic against chronological
+  timelines. On Bluesky, the *public skeleton* of that comparison — what
+  each published algorithm serves versus a chronological feed — took us
+  well under a hundred HTTP requests. No permission, no NDA, no special
+  access.
+* **Bandy & Diakopoulos (2021)** had to build sock puppets to observe
+  curated timelines from outside. On Bluesky the equivalent observation
+  is an endpoint. But their problem has not disappeared — it has moved.
+  What we audited is the **feed skeleton**: the generic,
+  viewer-independent output. A logged-in user's Discover feed is
+  personalized, and *that* layer is exactly as invisible to us as
+  Twitter's timeline was. Sock-puppet designs (consented panels of real
+  users donating their feed views, or instrumented research accounts)
+  remain necessary to study personalization, and Bluesky's open protocol
+  makes such panels far easier to instrument.
+* **The governance stack is itself a study population.** Thousands of
+  feed generators, labelers, lists, and starter packs — each with public
+  metadata, subscriber counts, and queryable outputs — form an ecosystem
+  of *competing curation and moderation authorities*. Who runs them?
+  Which gain audiences? Do third-party labelers converge with or diverge
+  from the platform's own decisions? Does stackable moderation actually
+  redistribute governance power, or does everyone stay on the defaults?
+  These questions have no Twitter-era analogue, because the
+  infrastructure they ask about did not exist.
+
+The general lesson: on an open protocol, the unit of audit shifts from
+"the algorithm" to *an ecology of algorithms*, and the scarce resource
+shifts from access to **design** — choosing baselines, denominators, and
+snapshots that make the comparison meaningful.
 
 ## Ethics and limitations
 
-Feed samples are snapshots: the same feed an hour later serves different
-posts, so archive retrieval times and treat comparisons as
-time-specific. Posts surfaced by feeds were written by people who never
-chose to be in your sample — the usual minimization rules apply. Label
-data is moderation data: publishing which accounts carry which labels
-can amplify harm, so aggregate. Survivorship matters too: the AppView
-filters taken-down content before we ever see it, which is part of why
-labels are sparse on feed posts. The platform is also in flux — feed
-rosters, labeler policies, and even which queries a labeler accepts
-change, as the wildcard episode showed. And remember the deepest limitation:
-without logged-in vantage points, personalized curation is invisible.
+**Ethics.** Everything we queried is public infrastructure, but the
+people inside it did not opt into research. Posts surfaced by feeds,
+accounts on lists, and labeled records all belong to users who mostly do
+not know these endpoints exist. We practiced minimization (no post text
+in the archive — our composition questions did not need it), reported
+labels and list memberships in aggregate rather than naming accounts,
+and capped every collection loop. Moderation data deserves extra care:
+labels and modlist memberships are accusations as well as data points,
+and republishing them attached to identities can amplify the very harms
+moderation tries to contain. And remember that feed *publishers* are
+people too — small hobbyist feeds can identify their one maintainer.
+
+**Limitations.** Our audit observed each feed once. That means: (1)
+**no personalization** — we saw the generic skeleton, not what any
+actual user sees, and for feeds like Discover the personalized layer may
+dominate; (2) **single snapshot** — feeds are moving targets, and one
+retrieval confounds the algorithm with the moment (a serious audit
+repeats collection across times of day and weeks); (3) **selection, not
+effects** — composition differences show what feeds *select*, not what
+they *cause*; engagement comparisons especially are selection effects by
+construction; (4) **survivorship** — the AppView already filters
+taken-down and blocked content before we see it, which is part of why
+labels are sparse on the posts the feeds served; (5) **a platform in
+flux** — feed rosters, labeler policies, and even lexicon types (a
+brand-new embed type broke the Python SDK, and a moderation service
+stopped answering wildcard label queries) change continuously, which is
+why the archive records its collection timestamps and why your numbers
+will not match ours.
 
 ## Exercises
 
-1. Add a topical feed you use to `CANDIDATE_FEEDS` and rerun the audit.
-   Where does it fall on concentration and recency?
-2. Sample the Discover feed three times, an hour apart, and measure the
-   Jaccard overlap of its post sets — how fast does the feed churn?
-3. Compute author-level Gini coefficients per feed as an alternative
-   concentration measure.
-4. Unpack the most-joined starter pack's list members and check how many
-   also appear in the feed samples.
-5. Compare label prevalence across feeds: group `posts_df` by feed,
-   query each feed's post URIs (and its authors' recent posts) separately,
-   and report labels per 100 posts per feed.
+The exercises below extend the document, roughly in increasing order of
+effort.
+
+1. **Add another feed to the audit.** Pick a popular community feed
+   (browse the `bs_get_feed_suggestions()` output from Section 1, or the
+   Feeds tab in the app) and add it to `CANDIDATE_FEEDS`, then rerun
+   Sections 2–4. A feed's page URL
+   `https://bsky.app/profile/<handle>/feed/<rkey>` maps to the AT-URI
+   `at://<DID>/app.bsky.feed.generator/<rkey>`; resolve the handle to a
+   DID with
+   [`bs_resolve_handle()`](https://christophertkenny.com/bskyr/reference/bs_resolve_handle.html).
+   How does the newcomer's composition profile compare?
+2. **Bigger samples.** Raise `target` from 150 to 500 in `feed_posts()`
+   and recompute the composition table. Which metrics are stable and
+   which shift? Concentration measures like Gini and HHI are sensitive
+   to sample size (more posts means more chances for rare authors to
+   appear), so this exercise doubles as a lesson in not comparing
+   concentration across samples of different sizes.
+3. **Compare label prevalence across feeds.** Section 7 pooled all post
+   URIs into one label query. Instead, group `posts_df` by feed, query
+   labels separately for each feed's URIs (and its authors' recent
+   posts), and report labels per 100 posts per feed. Do allowlist-style
+   feeds (Science, News) have cleaner histories than the open trending
+   feeds?
+4. **Track one feed's composition across a day.** Rerun the Section 2
+   collection for a single feed every few hours, appending each snapshot
+   (the `retrieved_at` column already distinguishes them) to a growing
+   RDS file. Plot median post age, median likes, and top-10 author share
+   over the day — is the feed's character stable, or does it breathe
+   with the diurnal cycle from Part 05?
+5. **Author churn between snapshots.** With two snapshots of the same
+   feed from Exercise 4, compute the Jaccard similarity of the feed's
+   author set *with itself across time*. High self-overlap means the
+   feed amplifies a stable cast; low self-overlap means it churns.
+   Compare churn between an algorithmic feed and the chronological
+   baseline.
+6. **Starter-pack roster overlap.** Fetch the member lists of several of
+   `bsky.app`'s starter packs (Section 6) and compute pairwise Jaccard
+   overlap between their rosters, reusing `jaccard()` from Section 4. Do
+   the packs partition accounts into disjoint bundles, or is there a
+   core of accounts the platform inserts into every newcomer's network?
 
 ## Research project ideas
 
-* **A longitudinal feed observatory.** Sample a fixed set of feeds daily
-  for a month, archiving composition metrics; characterize how editorial
-  regimes drift and respond to news events.
-* **Starter-pack cohorts.** Identify accounts that joined via packs
-  (join counts are public), build matched cohorts (Part 05), and
-  estimate the causal effect of initial follow endowments on retention.
+**1. A longitudinal audit of the feed marketplace.** *Question:* do
+popular custom feeds diversify exposure relative to the official
+Discover feed, or do they converge on the same engagement-bait
+equilibrium? *Data:* daily snapshots, over four to eight weeks, of the
+top ~25 feeds from `getSuggestedFeeds` plus Discover — composition
+metrics and author sets per feed per day, collected with the resilient
+pipeline from Section 2. *Method:* model each composition metric as a
+panel (feed × day), compare ranked feeds against chronological list-feed
+baselines, and track exposure diversity as the union and overlap of
+author sets over time, in the spirit of Bandy & Diakopoulos (2021).
+*Expected challenge:* third-party feed generators appear, disappear, and
+error intermittently, so the collection design must treat missingness as
+data (which feeds die?) rather than as a nuisance, and concentration
+metrics must be compared at fixed sample sizes.
+
+**2. Starter packs and network formation.** *Question:* does the initial
+follow neighborhood a newcomer receives from a starter pack durably
+shape the community they end up in, or does organic rewiring wash out
+initial conditions? *Data:* a roster of active starter packs with join
+counts; cohorts of recently created accounts whose first-day follows
+closely match a pack's roster (a behavioral signature of joining through
+it); repeated crawls of those accounts' follow graphs over subsequent
+months using Part 03's methods. *Method:* community detection on the
+evolving follow graph, comparing users seeded by different packs but
+matched on join week and early activity; survival analysis of which
+seeded follows persist versus get pruned. *Expected challenge:*
+identification — who joins through which pack is not random (a
+gardening pack recruits gardeners), so the design needs matched
+comparisons and falsification tests, and the "joined via pack" inference
+itself has measurement error worth validating.
+
+**3. Labeler governance: do independent moderators agree?** *Question:*
+how much do third-party labelers' decisions converge with the platform's
+own moderation service, and where they diverge, in which direction?
+*Data:* the public policy menus (`getServices`) of the Bluesky
+Moderation Service and a roster of prominent third-party labelers;
+labels queried from each labeler's own service endpoint (`queryLabels`
+against each labeler's service URL) for a common random sample of
+accounts and posts. *Method:* map each labeler's label values onto a
+shared category scheme, then compute prevalence per labeler and
+inter-labeler agreement (e.g., Cohen's κ) per category — a direct
+empirical test of whether stackable moderation produces redundant or
+genuinely plural governance. *Expected challenge:* labelers differ
+wildly in scope, taxonomy, and uptime, so the category mapping is itself
+a contestable research decision to document; and because labels are
+accusations attached to identities, results must be reported strictly
+in aggregate.
 
 ## References
 
 ### Scholarship
 
-* Sandvig, C., Hamilton, K., Karahalios, K., & Langbort, C. (2014). Auditing algorithms: Research methods for detecting discrimination on internet platforms. *Data and Discrimination*, ICA preconference.
-* Huszár, F., Ktena, S. I., O'Brien, C., Belli, L., Schlaikjer, A., & Hardt, M. (2022). Algorithmic amplification of politics on Twitter. *PNAS*, 119(1).
-* Bandy, J., & Diakopoulos, N. (2021). More accounts, fewer links: How algorithmic curation impacts media exposure in Twitter timelines. *CSCW*.
+* Huszár, F., Ktena, S. I., O'Brien, C., Belli, L., Schlaikjer, A., & Hardt, M. (2022). Algorithmic amplification of politics on Twitter. *Proceedings of the National Academy of Sciences*, 119(1), e2025334119. <https://doi.org/10.1073/pnas.2025334119>
+* Bandy, J., & Diakopoulos, N. (2021). More accounts, fewer links: How algorithmic curation impacts media exposure in Twitter timelines. *Proceedings of the ACM on Human-Computer Interaction*, 5(CSCW1), 1–28. <https://doi.org/10.1145/3449152>
+* Sandvig, C., Hamilton, K., Karahalios, K., & Langbort, C. (2014). Auditing algorithms: Research methods for detecting discrimination on internet platforms. Paper presented at *Data and Discrimination*, ICA preconference.
+* Metaxa, D., Park, J. S., Robertson, R. E., Karahalios, K., Wilson, C., Hancock, J., & Sandvig, C. (2021). Auditing algorithms: Understanding algorithmic systems from the outside in. *Foundations and Trends in Human–Computer Interaction*, 14(4), 272–344. <https://doi.org/10.1561/1100000083>
 * Kleppmann, M., et al. (2024). Bluesky and the AT Protocol: Usable decentralized social media. *arXiv:2402.03239*.
 
 ### Documentation
 
+* Bluesky (2024). [Bluesky's stackable approach to moderation](https://bsky.social/about/blog/03-12-2024-stackable-moderation). Bluesky blog, March 12, 2024.
 * Feed generators: <https://bsky.network/docs/starter-templates/custom-feeds>
 * `com.atproto.label.queryLabels`: <https://endpoints.bsky.app/#bluesky-app/tag/comatprotolabel/GET/xrpc/com.atproto.label.queryLabels>
 * Moderation and labelers: <https://bsky.network/docs/advanced-guides/moderation>
-* Stackable moderation: <https://bsky.social/about/blog/03-12-2024-stackable-moderation>
-* bskyr: <https://christophertkenny.com/bskyr/>
+* Protocol and API documentation: [AT Protocol](https://atproto.com) · [Lexicon guide](https://atproto.com/guides/lexicon) · [AT-URI scheme](https://atproto.com/specs/at-uri-scheme) · [Lists](https://endpoints.bsky.app/#bluesky-app/tag/appbskygraph/GET/xrpc/app.bsky.graph.getList) · [Starter packs](https://endpoints.bsky.app/#bluesky-app/tag/appbskygraph/GET/xrpc/app.bsky.graph.getStarterPack)
+* bskyr: <https://christophertkenny.com/bskyr/>; patchwork: <https://patchwork.data-imaginist.com>; httr2: <https://httr2.r-lib.org>
