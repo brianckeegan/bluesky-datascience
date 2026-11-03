@@ -1,5 +1,5 @@
 {
-  "collected_at": "2026-06-10T16:21:46+00:00",
+  "collected_at": "2026-11-03T18:44:22+00:00",
   "collection_method": "snowball sample over mention and reply-parent edges",
   "seed_actor": "nytimes.com",
   "seed_did": "did:plc:eclio37ymobqex2ncko63h4r",
@@ -13,20 +13,20 @@
     "replies_included": true
   },
   "accounts_crawled": [
-    "did:plc:3dhjfhx2bnydk4akjrcyasok",
-    "did:plc:3kf2k7zfamwpwjf5x5lazrpu",
-    "did:plc:56ojnkucm6ylfmz3h3otztfh",
-    "did:plc:6j654bfrsgzqxto4x74c466d",
-    "did:plc:b2kutgxqlltwc6lhs724cfwr",
+    "did:plc:7udcc2pe3m7t2dcdumehlhh4",
+    "did:plc:dxohir3u5zgsiut3ufcw34yl",
     "did:plc:eclio37ymobqex2ncko63h4r",
     "did:plc:fa7xejyd32fvuar5hpa2n2yi",
-    "did:plc:hmdj5mhly2rbpm2kqxzknstd",
-    "did:plc:itzjvkn3qzkx7lonrgh2zm5a",
-    "did:plc:j62szermx6ods7lp3xqyembx",
-    "did:plc:jebo5skidaoy4c43j3yj6uel",
-    "did:plc:jrin4u344pirosyfjo7qwvsx",
-    "did:plc:mpa43z7u2yc5wlajvghcio3q",
-    "did:plc:txkmlm4tjnu5hh53nlx4iyd2",
+    "did:plc:jehylc3kky6bsh3sbez74o3y",
+    "did:plc:lkrexoxfcjsl2cmljydekfcj",
+    "did:plc:m4qorxad7omtpxmdzbv674da",
+    "did:plc:mdcbwcsjrmrsggrwjggcyuzv",
+    "did:plc:mjzdypffac4kkg3czwhhvfih",
+    "did:plc:s6la4jwjsjjvoa542vfdfp2h",
+    "did:plc:trmyuzrqt6hc2y36l2w3asjv",
+    "did:plc:u5n224ibhv7nbr3svbzy6yxx",
+    "did:plc:xdxq4s6msv44o6o6rbrmnwi2",
+    "did:plc:xvabcp3dkbp5hxutveie4pji",
     "did:plc:yllqcfu4oy424rlfpnzj32ka"
   ],
   "wave_yields": [
@@ -34,23 +34,23 @@
       "wave": 0,
       "posts_collected": 200,
       "new_posts": 200,
-      "new_accounts": 5,
+      "new_accounts": 4,
       "new_hashtags": 0
     },
     {
       "wave": 1,
-      "posts_collected": 388,
-      "new_posts": 388,
-      "new_accounts": 30,
-      "new_hashtags": 1
+      "posts_collected": 300,
+      "new_posts": 300,
+      "new_accounts": 14,
+      "new_hashtags": 0
     },
     {
       "wave": 2,
-      "posts_collected": 825,
-      "new_posts": 825,
-      "new_accounts": 104,
-      "new_hashtags": 61
+      "posts_collected": 1002,
+      "new_posts": 1002,
+      "new_accounts": 231,
+      "new_hashtags": 94
     }
   ],
-  "total_posts": 1413
+  "total_posts": 1502
 }

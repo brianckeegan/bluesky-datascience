@@ -95,7 +95,10 @@ LOCAL_ARCHIVE <- file.path("data", "actions.csv.gz")
 REFRESH <- Sys.getenv("PART05_REFRESH") == "1"
 ```
 
-The refresh reads raw API pages (`clean = FALSE`), so it can classify
+The refresh pages through each account's history with
+[`bs_get_author_feed()`](https://christophertkenny.com/bskyr/reference/bs_get_author_feed.html), sizing its budget
+from the post count in [`bs_get_profile()`](https://christophertkenny.com/bskyr/reference/bs_get_profile.html). It reads
+raw API pages (`clean = FALSE`), so it can classify
 each feed item directly: an item with a `reason` of type
 `#reasonRepost` is a repost, and it is timestamped by *when the account
 reposted* (`reason$indexedAt`) rather than when the original post was
@@ -527,7 +530,9 @@ itself treated. DiD is only as good as its comparison group.
 ## 7. Building a better comparison group: matching on profile covariates
 
 A principled comparison pool: accounts similar to the treated unit on
-observables. Here is nearest-neighbor matching on (logged) followers,
+observables. The candidates are one page of the accounts the Times
+follows ([`bs_get_follows()`](https://christophertkenny.com/bskyr/reference/bs_get_follows.html)), with their profile
+statistics from `bs_get_profile()`. Here is nearest-neighbor matching on (logged) followers,
 posts, and account age. We log the heavy-tailed counts so one
 mega-account doesn't dominate, standardize each feature with `scale()`
 (subtract the mean, divide by the standard deviation, so all three are in
@@ -575,7 +580,7 @@ industrial version.
 
 ## 8. Keyword volume around an event
 
-`bs_search_posts()` with `since`/`until` windows builds a topic-level
+[`bs_search_posts()`](https://christophertkenny.com/bskyr/reference/bs_search_posts.html) with `since`/`until` windows builds a topic-level
 series — e.g., weekly volume of posts mentioning "twitter" around the
 election. Capped to stay polite:
 

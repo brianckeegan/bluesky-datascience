@@ -66,7 +66,8 @@ knitr::opts_chunk$set(eval = bsky_authed)
 ## 1. Collecting a corpus of posts
 
 One account's original, non-reply posts — short, varied, and exactly the
-kind of material a topic codebook is built for. Two helpers from
+kind of material a topic codebook is built for — collected with
+[`bs_get_author_feed()`](https://christophertkenny.com/bskyr/reference/bs_get_author_feed.html). Two helpers from
 `bsky_client.R` do the filtering: `is_repost()` flags posts the account
 reposted from someone else, and `is_reply()` flags replies — including
 replies whose parent post has since been deleted, which a check on the
@@ -358,7 +359,7 @@ a job that runs thousands of times unattended: bad responses become
 Always run the back-of-envelope *before* the batch. `MODEL_PRICES`
 records Anthropic's published prices for three model tiers, in dollars
 per million tokens. Prices change: verify them at
-<https://www.anthropic.com/pricing> before budgeting a real project. The
+<https://claude.com/pricing> before budgeting a real project. The
 estimate uses the crude ~4-characters-per-token heuristic for the
 codebook, the prompt scaffolding, and each post, plus an allowance per
 post for the short JSON answer and the model's brief thinking (billed as
@@ -367,7 +368,7 @@ output) — the same arithmetic as the Python notebook's
 
 ```{r cost, eval=TRUE}
 # Published prices, US dollars per million tokens, as of October 2026.
-# Verify at https://www.anthropic.com/pricing before use. (Haiku's price is
+# Verify at https://claude.com/pricing before use. (Haiku's price is
 # for prompts under 100K tokens, which every annotation prompt here is.)
 MODEL_PRICES <- tribble(
   ~model,              ~input_usd_per_mtok, ~output_usd_per_mtok,
@@ -775,6 +776,6 @@ little about Bluesky at large.
 
 * Claude API (Messages): <https://platform.claude.com/docs/en/api/messages>
 * Claude models: <https://platform.claude.com/docs/en/about-claude/models/overview>
-* Anthropic pricing: <https://www.anthropic.com/pricing>
+* Anthropic pricing: <https://claude.com/pricing>
 * httr2: <https://httr2.r-lib.org/>
 * bskyr: <https://christophertkenny.com/bskyr/>

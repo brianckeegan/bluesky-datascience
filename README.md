@@ -56,6 +56,19 @@ The main libraries used are:
 * Python: [Jupyter Notebook](https://jupyter.org/), [ATProto SDK](https://atproto.blue/), [Pandas](https://pandas.pydata.org/), [Numpy](https://numpy.org/), [Matplotlib](https://matplotlib.org/), [NetworkX](https://networkx.org/), [statsmodels](https://www.statsmodels.org/), [scikit-learn](https://scikit-learn.org/)
 * R: [R Markdown](https://rmarkdown.rstudio.com/docs/), [bskyr](https://christophertkenny.com/bskyr/), the [tidyverse](https://www.tidyverse.org/), [igraph](https://r.igraph.org/), [tidytext](https://juliasilge.github.io/tidytext/), [topicmodels](https://cran.r-project.org/package=topicmodels)
 
+### Where to find documentation
+
+Four sources answer different questions, and Part 00 walks through all four for one endpoint:
+
+| Source | What it answers |
+|---|---|
+| [endpoints.bsky.app](https://endpoints.bsky.app) — the Bluesky HTTP API reference | What can I call, with which parameters, and what comes back? |
+| [atproto.com](https://atproto.com/docs) — AT Protocol documentation | How does the network work: DIDs, handles, records, Lexicon, XRPC, the firehose? |
+| [atproto.blue](https://atproto.blue) — the Python SDK | How do I write this call in Python, and what attributes does the response have? |
+| [bskyr reference](https://christophertkenny.com/bskyr/reference/) — the R package | How do I write this call in R? |
+
+The old `docs.bsky.app` site has been retired: its guides now live on [bsky.network](https://bsky.network/docs/advanced-guides/atproto), and its API pages redirect to the front page of endpoints.bsky.app.
+
 ## For contributors and coding agents
 Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for how to report bugs, propose new notebooks, and submit pull requests, and our [Code of Conduct](CODE_OF_CONDUCT.md) for community expectations. [AGENTS.md](AGENTS.md) documents the project layout, notebook conventions, API environment facts, and how to re-execute notebooks. A weekly [Notebooks workflow](.github/workflows/notebooks.yml) re-runs every tutorial against the live API, so breakage from platform or library changes shows up within a week.
 

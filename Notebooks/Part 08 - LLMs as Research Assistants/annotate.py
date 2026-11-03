@@ -46,7 +46,7 @@ KEYWORD_RULES = _CODEBOOK_DATA["keyword_rules"]
 DEFAULT_MODEL = "claude-haiku-5-5"
 
 # Published prices in US dollars per million tokens (input, output), as of
-# October 2026. Prices change: verify at https://www.anthropic.com/pricing
+# October 2026. Prices change: verify at https://claude.com/pricing
 # before use. (Haiku's price is for prompts under 100K tokens, which every
 # annotation prompt here is.)
 MODEL_PRICES = {

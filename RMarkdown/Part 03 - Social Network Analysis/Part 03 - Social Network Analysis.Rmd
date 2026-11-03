@@ -51,6 +51,9 @@ knitr::opts_chunk$set(eval = bsky_authed)
 
 A follow is a directed tie: `A → B` means A follows B, and B need not
 follow back. Two endpoints expose each side of the relation:
+[`bs_get_follows()`](https://christophertkenny.com/bskyr/reference/bs_get_follows.html) returns the accounts an
+actor follows, and [`bs_get_followers()`](https://christophertkenny.com/bskyr/reference/bs_get_followers.html) the
+accounts that follow it:
 
 ```{r endpoints}
 follows_page <- bs_get_follows("nytimes.com", limit = 10)
@@ -60,13 +63,13 @@ followers_page <- bs_get_followers("nytimes.com", limit = 10)
 followers_page$handle
 ```
 
-A third endpoint, `bs_get_relationships()`, checks ties between specific
+A third endpoint, [`bs_get_relationships()`](https://christophertkenny.com/bskyr/reference/bs_get_relationships.html), checks ties between specific
 pairs — useful when you need a handful of edges, not whole lists.
 
 ## 2. Designing the crawl: boundary specification and sampling
 
 Whole-network analysis needs a *boundary*: who is in, who is out
-(Laumann, Marsden, & Prensky 1989). The classic compromise is the **ego
+(Laumann, Marsden, & Prensky 1983). The classic compromise is the **ego
 network**: one focal account (the *ego*), the accounts it follows (the
 *alters*), and all follow ties *among* them — "1.5 degrees" because we
 collect the alters' ties to each other but not their ties to outsiders.
@@ -159,6 +162,9 @@ c(nodes = vcount(G), edges = ecount(G), alters_not_crawled = nrow(failed_alters)
 
 ### Node attributes with batched `bs_get_profile()`
 
+[`bs_get_profile()`](https://christophertkenny.com/bskyr/reference/bs_get_profile.html) accepts a vector of actors,
+so one call hydrates a whole batch of nodes.
+
 A graph of bare DIDs is hard to interpret, so hydrate every node with
 profile attributes, 25 per request (Part 01's batching trick). The
 `match()` call lines the profile rows up with igraph's vertex order —
@@ -214,13 +220,20 @@ tibble(
   nodes = vcount(G),
   edges = ecount(G),
   density = edge_density(G),
-  reciprocity = reciprocity(G)
+  reciprocity = reciprocity(G),
+  twitter_reciprocity_kwak_2010 = 0.22
 )
 ```
 
 Density is the share of possible ties that exist; reciprocity is the
-share of ties that are returned. Follow networks typically show much
-higher reciprocity than chance — following back is a norm.
+share of ties that are returned. Compare the reciprocity with Kwak et
+al.'s (2010) figure of about 22% for Twitter at large, shown in the last
+column. A newsroom's neighborhood is mostly its own journalists
+following one another, so colleagues reciprocate somewhat more often
+than Twitter users at large, but most follows still go unreturned: many
+staff follow the Times and its star reporters, and those prominent
+accounts follow back only a few. Even inside one organization, the
+follow graph keeps some of the asymmetry of a news medium.
 
 ### Degree distributions
 
@@ -304,9 +317,21 @@ communities <- cluster_louvain(G_undirected)
 
 V(G)$community <- membership(communities)
 
+modularity_score <- modularity(communities)
+
 c(n_communities = length(communities),
-  modularity = round(modularity(communities), 3))
+  modularity = round(modularity_score, 3))
+if (modularity_score >= 0.3) "Above the ~0.3 rule of thumb for clear community structure" else
+  "Below the ~0.3 rule of thumb for clear community structure"
 ```
+
+A common rule of thumb reads modularity above about 0.3 as clear
+community structure. For this newsroom ego it has come out **below**
+that every time we have run the analysis: the network is one interlinked
+professional world in which most journalists follow colleagues across
+desks, so Louvain's partition describes soft tendencies rather than
+sharply separated groups. That is a finding in itself, and it should
+temper how strongly we read the communities below.
 
 ```{r community-members}
 nodes_df <- tibble(
@@ -326,8 +351,10 @@ nodes_df |>
 ```
 
 Reading a few high-profile members per community usually reveals an
-interpretable social context — a discipline, a workplace, a hobby. That
-interpretive step is yours, not the algorithm's.
+interpretable social context. Here the communities tend to track the
+newsroom's beats loosely: politics and Washington reporters often land
+together, as do technology and business reporters. With modularity this
+low the boundaries are fuzzy, and membership shifts between runs. That interpretive step is yours, not the algorithm's.
 
 ## 7. Visualizing the network
 
@@ -437,7 +464,7 @@ follows churn constantly.
 
 ### Scholarship
 
-* Laumann, E. O., Marsden, P. V., & Prensky, D. (1989). The boundary specification problem in network analysis. In *Research Methods in Social Network Analysis*.
+* Laumann, E. O., Marsden, P. V., & Prensky, D. (1983). The boundary specification problem in network analysis. In R. S. Burt & M. J. Minor (Eds.), *Applied Network Analysis* (pp. 18–34). Sage.
 * Granovetter, M. (1973). The strength of weak ties. *American Journal of Sociology*, 78(6), 1360–1380.
 * Burt, R. S. (2004). Structural holes and good ideas. *American Journal of Sociology*, 110(2), 349–399.
 * Kwak, H., Lee, C., Park, H., & Moon, S. (2010). What is Twitter, a social network or a news media? *WWW '10*.
@@ -446,6 +473,6 @@ follows churn constantly.
 ### Documentation
 
 * igraph for R: <https://r.igraph.org/>
-* `app.bsky.graph.getFollows`: <https://docs.bsky.app/docs/api/app-bsky-graph-get-follows>
+* `app.bsky.graph.getFollows`: <https://endpoints.bsky.app/#bluesky-app/tag/appbskygraph/GET/xrpc/app.bsky.graph.getFollows>
 * bskyr: <https://christophertkenny.com/bskyr/>
 * R Markdown: <https://rmarkdown.rstudio.com/docs/>

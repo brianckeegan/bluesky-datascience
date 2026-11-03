@@ -62,7 +62,9 @@ compact binary encoding of JSON-like data) wrapping **CAR** files
 (Content Addressable aRchives, bundles of the records in each commit);
 **Jetstream** is a public service that re-serves it as plain
 JSON over a websocket, with server-side filters so you receive only the
-record types you ask for:
+record types you ask for. Its query parameters (`wantedCollections`,
+`wantedDids`, `cursor`) are documented in the
+[Jetstream section of the Bluesky HTTP API reference](https://endpoints.bsky.app/#jetstream/description/introduction):
 
 ```{r jetstream-url}
 JETSTREAM_URL <- "wss://jetstream2.us-east.bsky.network/subscribe"
@@ -228,6 +230,16 @@ posts_live |>
   summarise(across(c(is_reply, has_embed, has_image), mean))
 ```
 
+The `is_reply` column is the share of new posts that answer another
+post. It moves around a lot from one window to the next — a minute
+dominated by one busy conversation, or by an automated account posting
+in a burst, can push it well above or below the network's long-run
+average — so a single minute is a weak estimate (Exercise 1 asks you to
+see how much it varies). In every window, though, replies are a large
+share of new posts: much of what counts as "posting" is conversation
+rather than broadcast. A substantial minority of posts also carry an
+embed (images, video, links, or quoted posts).
+
 ```{r langs, fig.width=8, fig.height=4}
 posts_live |>
   mutate(lang = replace_na(lang, "(none declared)")) |>
@@ -333,6 +345,10 @@ c(build_reply("lovely weather today"),   # NA: not a command
 Notifications are private to the account, so this — like everything
 below — requires authentication:
 
+bskyr's [`bs_get_notifications()`](https://christophertkenny.com/bskyr/reference/bs_get_notifications.html)
+wraps `app.bsky.notification.listNotifications`
+([API reference](https://endpoints.bsky.app/#bluesky-app/tag/appbskynotification/GET/xrpc/app.bsky.notification.listNotifications)):
+
 ```{r notifications, eval=FALSE}
 notifications <- bs_get_notifications(limit = 25)
 
@@ -354,7 +370,9 @@ The cycle enforces every safety invariant, matching the Python version:
   human responsible.
 
 **This chunk is never executed when knitting** (`eval=FALSE`) — write
-actions are deliberate acts:
+actions are deliberate acts. The live branch posts with
+[`bs_post()`](https://christophertkenny.com/bskyr/reference/bs_post.html),
+threading the reply under the mention it answers:
 
 ```{r bot-cycle, eval=FALSE}
 MAX_REPLIES_PER_RUN <- 5
@@ -443,11 +461,12 @@ effects swamp short samples.
 ## Exercises
 
 1. Re-run the collector at a different time of day and compare
-   events-per-second and the language mix.
+   events-per-second, the reply share, and the language mix.
 2. Add `app.bsky.feed.repost` to `WANTED_COLLECTIONS` and measure the
    repost:post ratio.
 3. Estimate the deletion rate: collect post creates for five minutes,
-   wait an hour, and re-fetch a sample with `bs_get_posts()`.
+   wait an hour, and re-fetch a sample with
+   [`bs_get_posts()`](https://christophertkenny.com/bskyr/reference/bs_get_posts.html).
 4. Extend `build_reply()` with a "stop" kill switch that persists a
    do-not-reply list.
 5. Compute the Gini coefficient of events per author hash — how
@@ -473,8 +492,8 @@ effects swamp short samples.
 
 ### Documentation
 
-* Jetstream: <https://github.com/bluesky-social/jetstream>
-* Firehose: <https://docs.bsky.app/docs/advanced-guides/firehose>
-* Rate limits (points): <https://docs.bsky.app/docs/advanced-guides/rate-limits>
+* Jetstream: <https://github.com/bluesky-social/jetstream>; its query parameters: <https://endpoints.bsky.app/#jetstream/description/introduction>
+* Firehose: <https://bsky.network/docs/advanced-guides/firehose>
+* Rate limits (points): <https://bsky.network/docs/advanced-guides/rate-limits>
 * websocket for R: <https://rstudio.github.io/websocket/>
 * bskyr: <https://christophertkenny.com/bskyr/>

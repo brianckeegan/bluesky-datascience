@@ -52,7 +52,7 @@ Before asking a question, please:
 1. Read the relevant notebook and its markdown narration in full — the
    tutorials are written to be self-explanatory.
 2. Check [`AGENTS.md`](AGENTS.md) and the official Bluesky/ATProto docs
-   ([docs.bsky.app](https://docs.bsky.app), [atproto.com](https://atproto.com),
+   ([endpoints.bsky.app](https://endpoints.bsky.app), [atproto.com](https://atproto.com),
    [atproto.blue](https://atproto.blue)).
 3. Search existing [issues](https://github.com/brianckeegan/bluesky-datascience/issues)
    to see if your question has already been answered.
@@ -147,10 +147,12 @@ different scope.
    needed). In R, use the helpers in `bsky_client.R` (`is_repost()`,
    `is_reply()`, `bsky_standardize()`, …) rather than bskyr column names you
    haven't checked.
-6. **Run the tests** with `python -m pytest tests/` (required if you touch Part 10's bot)
+6. **Check the prose** with `python scripts/check_stale_prose.py` and
+   `python scripts/rewrite_doc_links.py --check`.
+7. **Run the tests** with `python -m pytest tests/` (required if you touch Part 10's bot)
    and `Rscript -e 'testthat::test_dir("RMarkdown/tests/testthat")'` (required if
    you touch `bsky_client.R`; remember to update every copy of it).
-7. **Open a pull request** against `main`, ready for review. The Notebooks
+8. **Open a pull request** against `main`, ready for review. The Notebooks
    workflow will run all of the above automatically.
 
 ## Style Guide

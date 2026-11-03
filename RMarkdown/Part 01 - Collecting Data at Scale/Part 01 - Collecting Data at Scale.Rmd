@@ -64,8 +64,10 @@ knitr::opts_chunk$set(eval = bsky_authed)
 ## 1. Before you collect: define a sampling frame
 
 A *sampling frame* is the explicit list of units your data could possibly
-contain. Ours is one account's complete public activity. Checking the
-profile first tells us how much work is ahead:
+contain. Ours is one account, collected three ways: a census of the
+accounts it follows, the most recent slice of its posts, and a small
+sample of its most recent followers. Checking the profile first tells
+us how much work each would be:
 
 ```{r frame}
 HANDLE <- "nytimes.com"
@@ -156,8 +158,8 @@ items <- list_flatten(map(posts_pages, "feed"))   # every page's items, in order
 c(feed_items = length(items), follows = nrow(follows), followers = nrow(followers))
 ```
 
-Note what the caps did. The follows list (a couple hundred accounts)
-came back *complete*. The posts came back capped at 10,000 — the most
+Note what the caps did. The follows list (small enough to take in
+full) came back *complete*. The posts came back capped at 10,000 — the most
 recent slice of a longer history. And the followers stopped at 2,000 of
 more than a million: a deliberate **sample of the most recent
 followers**, because no analysis below needs all of them. A `limit` is a
@@ -214,7 +216,7 @@ write raw XRPC requests, as later parts do.)
 
 ### Doing more with fewer requests
 
-The cheapest request is the one you never make. `bs_get_profile()`
+The cheapest request is the one you never make. [`bs_get_profile()`](https://christophertkenny.com/bskyr/reference/bs_get_profile.html)
 accepts up to 25 actors per call, so hydrating accounts in batches cuts
 your request count 25-fold:
 
@@ -337,13 +339,17 @@ identical(reloaded, posts)
 
 ## 7. A first look at the archive
 
-The payoff: a complete posting history, summarized in a few lines of
-dplyr and ggplot2. `floor_date()` rounds each timestamp down to the
+The payoff: months of posting history, summarized in a few lines of
+dplyr and ggplot2. We print the slice's date range first, because "the
+most recent 10,000 feed items" covers a different calendar window for
+every account. `floor_date()` rounds each timestamp down to the
 first of its month, and `count()` tallies posts per month — the
 month-binning pattern that Part 05 builds a whole time-series toolkit
 on:
 
 ```{r posts-per-month, fig.width=10, fig.height=4}
+range(posts$created_at)
+
 posts |>
   count(month = floor_date(created_at, "month")) |>
   ggplot(aes(month, n)) +
@@ -352,6 +358,18 @@ posts |>
        title = paste0("Posts per month by @", HANDLE)) +
   theme_minimal()
 ```
+
+Two things to read off this chart. First, the date range printed above:
+for an account that posts dozens of times a day, 10,000 feed items reach
+back only a matter of months, so this archive says nothing about the
+account's early years on Bluesky. That is the cost of a capped slice,
+and it is why Part 05, which needs a fixed date in the past, analyzes a
+committed archive instead. Second, the shape: a newsroom posts at a
+steady, scheduled cadence, so the full months look broadly similar. The
+first and last bars are short because they are **partial months** (the
+slice begins partway through one month and ends today), not because
+posting dropped. Misreading a partial bin as a decline is one of the
+most common mistakes in time-series work, and Part 05 returns to it.
 
 ```{r engagement-summary}
 posts |>
@@ -395,11 +413,11 @@ operation between a census and a convenience sample measures the
 sample, not the population.**
 
 The fix is to ask the question directly. The
-[`app.bsky.graph.getRelationships`](https://docs.bsky.app/docs/api/app-bsky-graph-get-relationships)
+[`app.bsky.graph.getRelationships`](https://endpoints.bsky.app/#bluesky-app/tag/appbskygraph/GET/xrpc/app.bsky.graph.getRelationships)
 endpoint takes one `actor` and a list of `others`, and for each pair
 reports whether the actor follows them (`following`) and whether they
 follow the actor (`followed_by`), as the AT-URIs of the follow records
-or `NA`. bskyr wraps it as `bs_get_relationships()`, which sends the
+or `NA`. bskyr wraps it as [`bs_get_relationships()`](https://christophertkenny.com/bskyr/reference/bs_get_relationships.html), which sends the
 `others` in batches of 30 (the endpoint's maximum per request), so for a
 follows list of this size it makes only a handful of requests:
 
@@ -443,7 +461,7 @@ accounts; an archive freezes what the network has moved past, so decide
 in advance how you will honor deletion and withdrawal. Your collection
 also runs under Bluesky's terms of service and, if you are doing human
 subjects research, your IRB's rules. Methodologically, remember that one
-account is a case study, the author feed omits deleted and moderated
+account is a case study (and our posts are only its most recent months), the author feed omits deleted and moderated
 posts, and engagement counters are point-in-time snapshots that change
 after collection.
 
@@ -453,7 +471,7 @@ after collection.
    `bsky.app`) and compare its posting cadence to this one.
 2. Modify `call_with_backoff()` to give up immediately on errors that
    will never succeed on retry (e.g. an account that does not exist).
-3. Use the `subject_*` columns of `bs_get_follows()` to check whether the
+3. Use the `subject_*` columns of [`bs_get_follows()`](https://christophertkenny.com/bskyr/reference/bs_get_follows.html) to check whether the
    follows list itself records when each follow was created.
 4. Compute the share of posts that are replies, by month — is the account
    becoming more or less conversational?
@@ -483,7 +501,7 @@ after collection.
 ### Documentation
 
 * bskyr: <https://christophertkenny.com/bskyr/>
-* `app.bsky.feed.getAuthorFeed`: <https://docs.bsky.app/docs/api/app-bsky-feed-get-author-feed>
-* Bluesky rate limits: <https://docs.bsky.app/docs/advanced-guides/rate-limits>
+* `app.bsky.feed.getAuthorFeed`: <https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getAuthorFeed>
+* Bluesky rate limits: <https://bsky.network/docs/advanced-guides/rate-limits>
 * httr2 retries: <https://httr2.r-lib.org/reference/req_retry.html>
 * R Markdown: <https://rmarkdown.rstudio.com/docs/>

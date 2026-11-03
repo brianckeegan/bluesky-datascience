@@ -54,7 +54,7 @@ too.
 
 ## 1. Searching for posts
 
-`bs_search_posts()` wraps `app.bsky.feed.searchPosts`. A quoted phrase
+[`bs_search_posts()`](https://christophertkenny.com/bskyr/reference/bs_search_posts.html) wraps `app.bsky.feed.searchPosts`. A quoted phrase
 matches exactly; `since`/`until`, `lang`, and `tag` narrow the window.
 
 Search results come back shaped a little differently from author feeds:
@@ -104,16 +104,37 @@ structure alone* — a strategy that survives even when search does not.
 
 Every post is a record in its author's repository. The *view* of a post
 adds engagement counters and author info; the *record* holds what the
-author wrote. In bskyr's cleaned tibbles the record is a list-column:
+author wrote. In bskyr's cleaned tibbles the record is a list-column.
+
+Rather than pinning one post by its URI (live posts can be deleted at
+any time, which would break the document), we scan the recent posts of
+the series' two standing accounts, `nytimes.com` and `bsky.app`, and
+pick the original post that uses the most *kinds* of facet (mentions,
+hashtags, links; the Facets subsection below explains them), newest first
+among ties. Institutional accounts rarely use all three in one post, so
+expect one or two kinds. `n_feature_types()` collects every feature's
+`$type` in a record and counts the distinct ones:
 
 ```{r record-anatomy}
-feed <- bs_get_author_feed("nytimes.com", limit = 100)
+n_feature_types <- function(record) {
+  types <- unlist(map(record$facets[[1]], \(facet) map_chr(facet$features, "$type")))
+  length(unique(types))
+}
 
-example <- feed |>
-  mutate(n_facets = map_int(record, \(r) length(r$facets[[1]]))) |>
-  filter(n_facets > 0) |>
-  slice_max(n_facets, n = 1, with_ties = FALSE)
+recent_originals <- function(actor) {
+  feed <- bs_get_author_feed(actor, limit = 100)
+  Sys.sleep(0.1)
+  feed[!is_repost(feed), ] |>
+    transmute(uri, author_handle, record,
+              n_types = map_int(record, n_feature_types),
+              created = map_chr(record, "created_at", .default = NA))
+}
 
+example <- bind_rows(recent_originals("nytimes.com"), recent_originals("bsky.app")) |>
+  arrange(desc(n_types), desc(created)) |>
+  slice_head(n = 1)
+
+example |> select(author_handle, n_types)
 example |> mutate(text = map_chr(record, "text")) |> pull(text)
 ```
 
@@ -130,7 +151,8 @@ str(facets, max.level = 3, list.len = 4)
 ```
 
 Each feature's `$type` ends in `#mention` (with a `did`), `#tag` (with a
-`tag`), or `#link` (with a `uri`). Because mentions carry DIDs — stable
+`tag`), or `#link` (with a `uri`). Whichever kinds the example happens
+to contain, the rule is the same. Because mentions carry DIDs — stable
 account identifiers — facets turn a pile of text into a *network*.
 
 ### Languages, replies, and embeds
@@ -288,10 +310,25 @@ count_engaged <- function(posts, exclude = character(0)) {
 engaged0 <- count_engaged(wave0, exclude = seed_did)
 wave1_dids <- names(head(engaged0, WAVE1_ACCOUNTS))
 
+if (length(wave1_dids) < WAVE1_ACCOUNTS) {
+  cat("The design asked for", WAVE1_ACCOUNTS, "wave-1 accounts; wave 0 engaged only",
+      length(wave1_dids), "so wave 1 crawls all of them.\n")
+}
+
 bs_get_profile(wave1_dids) |>
   mutate(posts_engaging = as.integer(engaged0[did])) |>
   select(handle, did, posts_engaging)
 ```
+
+Compare the number of rows above with the design's `WAVE1_ACCOUNTS`. A
+newsroom's posts are mostly headlines and links; it rarely replies to
+anyone and mentions only a few accounts, mostly its own sister
+publications. So the frontier can come out *smaller than the design
+asked for*. That is a finding about the seed, not a bug: an
+institutional account is a narrow doorway into the network, and if your
+design depends on a wide first wave, you would add seeds rather than
+quietly accept fewer accounts. The metadata file records both the
+parameter and the accounts actually crawled.
 
 ### Wave 1: crawl the frontier
 
@@ -331,6 +368,45 @@ crawled <- c(crawled, wave2_dids)
 
 c(posts = nrow(wave2), total_accounts_crawled = length(crawled))
 ```
+
+### Where did the snowball go?
+
+Before measuring saturation, look at *who* wave 2 recruited. Each wave-2
+account was reached because some wave-1 account engaged it. The next
+chunk credits every wave-2 account to the wave-1 account whose posts
+engaged it most often, its **gateway** into the sample. For each wave-2
+DID, it runs `count_engaged()` on each wave-1 post separately (one row
+at a time), keeps the authors of the posts that engaged that DID, and
+takes the most frequent one:
+
+```{r gateway}
+gateway_of <- function(did) {
+  engaged_it <- map_lgl(seq_len(nrow(wave1)),
+                        \(i) did %in% names(count_engaged(wave1[i, ])))
+  authors <- wave1$author_handle[engaged_it]
+  if (length(authors) == 0) return(NA_character_)
+  names(sort(table(authors), decreasing = TRUE))[1]
+}
+
+tibble(gateway = map_chr(wave2_dids, gateway_of)) |>
+  count(gateway, sort = TRUE)
+```
+
+If one wave-1 account is the gateway for most of wave 2, the snowball
+has been **captured by one community**: it followed the densest cluster
+of engagement out of the seed's neighborhood and spent the rest of its
+budget there. With a newsroom seed this tends to happen through one
+well-connected writer or sister publication with a large circle of
+peers: a columnist whose replies and mentions lead to other
+commentators, or a sports site whose writers constantly mention one
+another. Run the document on different days and the gateway can change,
+but the pattern recurs. Two biases are at work. **Homophily**: people
+engage with others like themselves, so once the crawl enters a
+community, every further wave stays inside it. **Popularity bias**:
+ranking the frontier by engagement counts sends the budget to whoever
+is mentioned most. Neither shows up in the saturation numbers below,
+which is why you should always look at *who* a snowball reached as well
+as *how much* it collected.
 
 ## 5. Saturation diagnostics: when to stop
 
@@ -440,7 +516,7 @@ c(posts = nrow(reloaded), authors = n_distinct(reloaded$author_did))
 
 ### Re-hydrating archived posts
 
-Archives go stale: posts get deleted, counters keep moving. `bs_get_posts()`
+Archives go stale: posts get deleted, counters keep moving. [`bs_get_posts()`](https://christophertkenny.com/bskyr/reference/bs_get_posts.html)
 re-fetches a batch of URIs so you can measure attrition:
 
 ```{r rehydrate}
@@ -487,7 +563,10 @@ oversampled by construction. That makes it excellent for *mapping a
 community around a known starting point* and unsuitable for estimating
 population frequencies. Respondent-driven sampling (Heckathorn 1997)
 shows how far the design can be pushed when you track recruitment chains
-carefully; our wave column preserves exactly that information.
+carefully; our wave column preserves exactly that information. And the
+gateway table in Section 4 is a reminder of what *homophily* does to
+such a sample: two waves from a newsroom seed yield a corpus of
+journalists and their conversation partners, whatever the topic.
 
 ## Ethics and limitations
 
@@ -531,7 +610,7 @@ engages are invisible, no matter how central they are to the topic.
 
 ### Documentation
 
-* `app.bsky.feed.searchPosts`: <https://docs.bsky.app/docs/api/app-bsky-feed-search-posts>
-* Richtext facets: <https://docs.bsky.app/docs/advanced-guides/post-richtext>
+* `app.bsky.feed.searchPosts`: <https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.searchPosts>
+* Richtext facets: <https://bsky.network/docs/advanced-guides/post-richtext>
 * bskyr: <https://christophertkenny.com/bskyr/>
 * R Markdown: <https://rmarkdown.rstudio.com/docs/>

@@ -170,7 +170,7 @@ The series exists in two parallel implementations that perform the same analyses
 **Motivation.** Everything so far queried the past. ATProto also broadcasts every public event on the network in real time, which enables live monitoring — and, combined with the write endpoints from Part 00, bots.
 
 **Endpoints.**
-* [Jetstream](https://docs.bsky.app/blog/jetstream) — a friendly JSON websocket of network events, filterable by collection (`app.bsky.feed.post`, `app.bsky.feed.like`, `app.bsky.graph.follow`)
+* [Jetstream](https://bsky.network/blog/jetstream) — a friendly JSON websocket of network events, filterable by collection (`app.bsky.feed.post`, `app.bsky.feed.like`, `app.bsky.graph.follow`)
 * `com.atproto.sync.subscribeRepos` via the SDK's `FirehoseSubscribeReposClient` — the raw, complete firehose
 * Write endpoints from Part 00: `send_post`, `like`, and threaded replies via `ReplyRef`; `get_notifications` / `app.bsky.notification.listNotifications` for detecting mentions (write actions are shown but never executed by the committed notebooks)
 
