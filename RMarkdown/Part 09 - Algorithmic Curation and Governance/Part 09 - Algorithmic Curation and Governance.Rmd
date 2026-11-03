@@ -55,7 +55,8 @@ BSKY_MOD_DID <- "did:plc:ar7c4by46qjdydhdevvrndac"  # moderation.bsky.app
 
 A custom feed is itself a record in its creator's repository — with a
 name, a description, and a like count of subscribers. Everything
-`bsky.app` publishes:
+`bsky.app` publishes, via [`bs_get_feeds()`](https://christophertkenny.com/bskyr/reference/bs_get_feeds.html) (each bskyr function
+links to its reference page on first use):
 
 ```{r actor-feeds}
 bsky_feeds <- bs_get_feeds("bsky.app", limit = 50)
@@ -65,7 +66,7 @@ bsky_feeds |>
   arrange(desc(like_count))
 ```
 
-`bs_get_feed_generator()` resolves any feed URI to its metadata, so
+[`bs_get_feed_generators()`](https://christophertkenny.com/bskyr/reference/bs_get_feed_generators.html) resolves any batch of feed URIs to their metadata, so
 audits can name exactly which version of which algorithm they sampled:
 
 ```{r generators}
@@ -86,7 +87,7 @@ generators |>
 
 ## 2. Sampling posts from custom feeds
 
-`bs_get_feed()` returns what a feed generator is serving right now. Like
+[`bs_get_feed()`](https://christophertkenny.com/bskyr/reference/bs_get_feed.html) returns what a feed generator is serving right now. Like
 Part 07, we take the raw response (`clean = FALSE`) so that whatever
 embed types the feeds surface cannot break us, and flatten just the
 fields the audit needs. Note the bookkeeping that makes an audit an
@@ -129,7 +130,9 @@ map_int(compact(samples), nrow)
 ### A no-algorithm baseline
 
 Audits need a reference point. A *list feed* — the reverse-chronological
-posts of a fixed roster — has no ranking algorithm at all:
+posts of a fixed roster — has no ranking algorithm at all. We find
+`bsky.app`'s curation list with [`bs_get_actor_lists()`](https://christophertkenny.com/bskyr/reference/bs_get_actor_lists.html) and read its
+feed with [`bs_get_list_feed()`](https://christophertkenny.com/bskyr/reference/bs_get_list_feed.html):
 
 ```{r baseline}
 bsky_lists <- bs_get_actor_lists("bsky.app", limit = 50) |>
@@ -228,11 +231,42 @@ posts_df |>
 
 ### What the differences reveal
 
-Ranked discovery feeds serve recent, high-engagement posts from many
-authors; topical feeds re-surface older niche material; the list
-baseline simply mirrors its roster's posting volume, concentration and
-all. None of this required platform cooperation — only public endpoints
-and a sampling design.
+Before interpreting, one small table puts each feed's median likes next
+to the baseline's (with +1 smoothing, so a baseline median of 0 can't
+divide by zero):
+
+```{r contrasts}
+baseline_likes <- comparison$median_likes[comparison$feed == "Baseline (list feed)"]
+
+comparison |>
+  transmute(feed, median_likes, median_age_hours, top10_author_share,
+            unique_authors,
+            likes_vs_baseline = if (length(baseline_likes) == 1)
+              (median_likes + 1) / (baseline_likes + 1) else NA_real_)
+```
+
+The magnitudes are live and will differ from run to run; the logic
+behind each contrast is what's stable:
+
+* **Engagement depends on what a feed selects on.** Discover and What's
+  Hot Classic rank posts by popularity signals, so their posts' like
+  counts sit above the baseline's — usually far above, in Discover's
+  case. The feed conditions on engagement; it didn't cause it. The
+  allowlist feeds (Science, News) instead admit posts from a vetted
+  roster, so their median likes can sit near, or even below, the
+  baseline's: an "algorithmic" feed isn't necessarily an
+  engagement-ranked one.
+* **Recency is a design choice.** Some feeds serve posts only minutes
+  old, others posts a few hours old;
+  the list baseline simply mirrors its roster's posting rhythm, which for
+  a quiet roster reaches days into the past.
+* **Concentration reflects the eligible population.** The allowlist
+  feeds draw on a vetted roster, so a few prolific accounts can supply a
+  large share of their posts; the baseline, with only a handful of
+  members, is concentrated by construction.
+
+None of this required platform cooperation — only public endpoints and
+a sampling design.
 
 ## 4. Audience overlap between feeds
 
@@ -263,12 +297,16 @@ tidyr::crossing(f1 = author_sets$feed, f2 = author_sets$feed) |>
 ```
 
 Near-zero overlaps mean the feeds are sampling almost disjoint slices of
-the network — each algorithm is a different *editorial regime*.
+the network — each algorithm is a different *editorial regime*. Which
+pairs overlap at all, and by how much, changes from run to run, but even
+the largest overlaps in a snapshot tend to be a small fraction of either
+feed's authors.
 
 ## 5. Lists: shared rosters for curation and moderation
 
 Lists are public records too — rosters that anyone can subscribe to as a
-feed, or (for modlists) as a mute/block set:
+feed, or (for modlists) as a mute/block set. [`bs_get_list()`](https://christophertkenny.com/bskyr/reference/bs_get_list.html) reads a
+list's members:
 
 ```{r lists}
 bsky_lists |>
@@ -286,7 +324,7 @@ if (nrow(baseline_list) == 1) {
 
 Starter packs bundle accounts (and feeds) so newcomers can follow an
 entire community at once — curation of the *graph*, not of content.
-`bs_get_actor_starter_packs()` lists an account's packs with counts of
+[`bs_get_actor_starter_packs()`](https://christophertkenny.com/bskyr/reference/bs_get_actor_starter_packs.html) lists an account's packs with counts of
 how many users joined through each, this week and all time. (This
 summary view doesn't say how many accounts a pack contains; for that you
 would fetch the pack itself, as Exercise 4 asks.) `bsky_standardize()`
@@ -406,7 +444,7 @@ pattern the service accepts:
   returns labels applied to the account, as opposed to any one of its
   posts.
 * **(b) Labels on their recent posts.** For 20 of the sampled authors we
-  fetch their latest 30 feed items with `bs_get_author_feed()`, keep the
+  fetch their latest 30 feed items with [`bs_get_author_feed()`](https://christophertkenny.com/bskyr/reference/bs_get_author_feed.html), keep the
   original posts (the `is_repost()` and `is_reply()` helpers from
   `bsky_client.R`), and query those exact URIs. This covers only a
   recent window rather than a whole history, so its counts are lower
@@ -434,15 +472,22 @@ cat("(a) Labels on the", length(sampled_dids), "sampled accounts:", nrow(account
 account_labels |> count(val, sort = TRUE)
 cat("(b) Labels on", length(recent_uris), "recent posts by 20 authors:", nrow(recent_labels), "\n")
 recent_labels |> count(val, sort = TRUE)
+
+# Put the post samples on a common scale: active labels per 100 posts
+per_100 <- function(labels, n_posts) if (n_posts > 0) 100 * sum(!labels$neg) / n_posts else NA_real_
+c(feed_posts = per_100(post_labels, length(post_uris)),
+  authors_recent_posts = per_100(recent_labels, length(recent_uris))) |> round(1)
 ```
 
-Read the two counts side by side with the feed-post count from earlier.
-Account-level labels and labels on authors' *other* recent posts
-typically turn up where the feed samples showed few or none: the
-moderation layer is busy — mostly with content-classification labels
-such as `sexual`, `porn`, and `graphic-media` that drive the warnings
-users configure — it just operates on a different slice of the network
-than the curated feeds surface. The pattern used here (exact URIs for
+Compare the two rates in the last line, and notice how few labels sit
+behind each. With a few hundred posts and labels this sparse, a handful
+of labeled posts decides which rate is higher, and reruns come out both
+ways — so the comparison is a design for a study, not yet a finding.
+Two things *are* stable: account-level labels are a different kind of
+judgment (flags about an account rather than any one post), and the
+post labels that appear are mostly content-classification labels such
+as `sexual`, `porn`, and `graphic-media`, which drive the warnings users
+configure rather than removing anything. The pattern used here (exact URIs for
 your sample; account DIDs and recent-post URIs for context) is a
 reusable template for studying *label prevalence*. Remember, though,
 that a label is a moderation *action*: a row saying an account was
