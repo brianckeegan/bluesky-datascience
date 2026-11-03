@@ -27,7 +27,7 @@ import websockets
 
 # Jetstream is operated by Bluesky and mirrors the relay firehose as
 # friendly JSON. Several public instances exist; this one is geographically
-# close to the main relay. See https://docs.bsky.app/blog/jetstream and
+# close to the main relay. See https://bsky.network/blog/jetstream and
 # https://github.com/bluesky-social/jetstream for the full list.
 JETSTREAM_URL = "wss://jetstream2.us-east.bsky.network/subscribe"
 

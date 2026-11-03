@@ -179,7 +179,7 @@ These apply to both implementations unless noted.
   that explains what is about to happen and why, and important results are
   followed by interpretation in plain language. Define terms on first use,
   anticipate confusion, and link generously to resources — official API/lexicon
-  docs (https://docs.bsky.app, https://atproto.com, https://atproto.blue),
+  docs (https://endpoints.bsky.app, https://atproto.com, https://atproto.blue),
   library documentation (pandas, NetworkX, statsmodels, scikit-learn;
   tidyverse, igraph, tidytext), and accessible readings.
 - **Structure:** H1 title; a motivating introduction; a "Learning objectives"

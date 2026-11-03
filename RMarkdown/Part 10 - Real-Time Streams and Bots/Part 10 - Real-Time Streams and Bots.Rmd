@@ -474,7 +474,7 @@ effects swamp short samples.
 ### Documentation
 
 * Jetstream: <https://github.com/bluesky-social/jetstream>
-* Firehose: <https://docs.bsky.app/docs/advanced-guides/firehose>
-* Rate limits (points): <https://docs.bsky.app/docs/advanced-guides/rate-limits>
+* Firehose: <https://bsky.network/docs/advanced-guides/firehose>
+* Rate limits (points): <https://bsky.network/docs/advanced-guides/rate-limits>
 * websocket for R: <https://rstudio.github.io/websocket/>
 * bskyr: <https://christophertkenny.com/bskyr/>

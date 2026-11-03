@@ -520,8 +520,8 @@ without logged-in vantage points, personalized curation is invisible.
 
 ### Documentation
 
-* Feed generators: <https://docs.bsky.app/docs/starter-templates/custom-feeds>
+* Feed generators: <https://bsky.network/docs/starter-templates/custom-feeds>
 * `com.atproto.label.queryLabels`: <https://endpoints.bsky.app/#bluesky-app/tag/comatprotolabel/GET/xrpc/com.atproto.label.queryLabels>
-* Moderation and labelers: <https://docs.bsky.app/docs/advanced-guides/moderation>
+* Moderation and labelers: <https://bsky.network/docs/advanced-guides/moderation>
 * Stackable moderation: <https://bsky.social/about/blog/03-12-2024-stackable-moderation>
 * bskyr: <https://christophertkenny.com/bskyr/>

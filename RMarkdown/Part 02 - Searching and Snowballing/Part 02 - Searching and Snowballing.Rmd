@@ -531,7 +531,7 @@ engages are invisible, no matter how central they are to the topic.
 
 ### Documentation
 
-* `app.bsky.feed.searchPosts`: <https://docs.bsky.app/docs/api/app-bsky-feed-search-posts>
-* Richtext facets: <https://docs.bsky.app/docs/advanced-guides/post-richtext>
+* `app.bsky.feed.searchPosts`: <https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.searchPosts>
+* Richtext facets: <https://bsky.network/docs/advanced-guides/post-richtext>
 * bskyr: <https://christophertkenny.com/bskyr/>
 * R Markdown: <https://rmarkdown.rstudio.com/docs/>

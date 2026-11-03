@@ -497,7 +497,7 @@ illustrating methods, fatal for causal claims, as Section 7 explains.
 
 ### Documentation
 
-* `app.bsky.feed.getPostThread`: <https://docs.bsky.app/docs/api/app-bsky-feed-get-post-thread>
-* `app.bsky.feed.getLikes`: <https://docs.bsky.app/docs/api/app-bsky-feed-get-likes>
+* `app.bsky.feed.getPostThread`: <https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getPostThread>
+* `app.bsky.feed.getLikes`: <https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getLikes>
 * igraph: <https://r.igraph.org/>
 * bskyr: <https://christophertkenny.com/bskyr/>

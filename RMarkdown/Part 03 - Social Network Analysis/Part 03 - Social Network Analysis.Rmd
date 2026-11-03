@@ -446,6 +446,6 @@ follows churn constantly.
 ### Documentation
 
 * igraph for R: <https://r.igraph.org/>
-* `app.bsky.graph.getFollows`: <https://docs.bsky.app/docs/api/app-bsky-graph-get-follows>
+* `app.bsky.graph.getFollows`: <https://endpoints.bsky.app/#bluesky-app/tag/appbskygraph/GET/xrpc/app.bsky.graph.getFollows>
 * bskyr: <https://christophertkenny.com/bskyr/>
 * R Markdown: <https://rmarkdown.rstudio.com/docs/>

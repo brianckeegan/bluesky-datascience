@@ -25,7 +25,7 @@ Twitter's APIs; when that access was shut off, attention turned to open
 platforms. Bluesky runs on the [AT Protocol](https://atproto.com), an
 open protocol whose data is public by design: profiles, posts, follows,
 likes, and reposts can all be retrieved through documented endpoints at
-[docs.bsky.app](https://docs.bsky.app). The Python series accesses those
+[endpoints.bsky.app](https://endpoints.bsky.app). The Python series accesses those
 endpoints through the `atproto` SDK; here we use bskyr, which wraps the
 same endpoints in R functions that return
 [tibbles](https://tibble.tidyverse.org/) ready for tidyverse analysis.

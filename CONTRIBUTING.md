@@ -52,7 +52,7 @@ Before asking a question, please:
 1. Read the relevant notebook and its markdown narration in full — the
    tutorials are written to be self-explanatory.
 2. Check [`AGENTS.md`](AGENTS.md) and the official Bluesky/ATProto docs
-   ([docs.bsky.app](https://docs.bsky.app), [atproto.com](https://atproto.com),
+   ([endpoints.bsky.app](https://endpoints.bsky.app), [atproto.com](https://atproto.com),
    [atproto.blue](https://atproto.blue)).
 3. Search existing [issues](https://github.com/brianckeegan/bluesky-datascience/issues)
    to see if your question has already been answered.

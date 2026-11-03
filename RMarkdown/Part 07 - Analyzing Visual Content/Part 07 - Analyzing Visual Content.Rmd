@@ -535,6 +535,6 @@ posting client made it.
 
 ### Documentation
 
-* Embed lexicons: <https://docs.bsky.app/docs/advanced-guides/posts#embeds>
+* Embed lexicons: <https://bsky.network/docs/advanced-guides/posts#embeds>
 * reticulate: <https://rstudio.github.io/reticulate/>
 * bskyr: <https://christophertkenny.com/bskyr/>

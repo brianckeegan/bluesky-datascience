@@ -395,7 +395,7 @@ operation between a census and a convenience sample measures the
 sample, not the population.**
 
 The fix is to ask the question directly. The
-[`app.bsky.graph.getRelationships`](https://docs.bsky.app/docs/api/app-bsky-graph-get-relationships)
+[`app.bsky.graph.getRelationships`](https://endpoints.bsky.app/#bluesky-app/tag/appbskygraph/GET/xrpc/app.bsky.graph.getRelationships)
 endpoint takes one `actor` and a list of `others`, and for each pair
 reports whether the actor follows them (`following`) and whether they
 follow the actor (`followed_by`), as the AT-URIs of the follow records
@@ -483,7 +483,7 @@ after collection.
 ### Documentation
 
 * bskyr: <https://christophertkenny.com/bskyr/>
-* `app.bsky.feed.getAuthorFeed`: <https://docs.bsky.app/docs/api/app-bsky-feed-get-author-feed>
-* Bluesky rate limits: <https://docs.bsky.app/docs/advanced-guides/rate-limits>
+* `app.bsky.feed.getAuthorFeed`: <https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getAuthorFeed>
+* Bluesky rate limits: <https://bsky.network/docs/advanced-guides/rate-limits>
 * httr2 retries: <https://httr2.r-lib.org/reference/req_retry.html>
 * R Markdown: <https://rmarkdown.rstudio.com/docs/>
