@@ -57,7 +57,8 @@ knitr::opts_chunk$set(eval = bsky_authed)
 
 We reuse Part 02's design in miniature: collect the seed's posts, find
 the accounts it mentions most, and add their posts to form a small
-*panel corpus*. The fetcher below should look familiar by now — drop
+*panel corpus*. The fetcher below should look familiar by now — it calls
+[`bs_get_author_feed()`](https://christophertkenny.com/bskyr/reference/bs_get_author_feed.html), drops
 reposts, pull `text`, `created_at`, `langs`, and `facets` out of the
 `record` list-column — with `transmute()` (a `mutate()` that keeps only
 the columns it names) producing exactly the tidy frame the rest of the
@@ -90,8 +91,9 @@ nrow(seed_posts)
 
 Next, the one-wave snowball. The nested `map()` calls walk the facet
 structure exactly as in Part 02 (facets → features → mention DIDs);
-`table()` tallies how often each account is mentioned; and we keep the
-six most-mentioned accounts that actually have posts. Two defensive
+`table()` tallies how often each account is mentioned;
+[`bs_get_profile()`](https://christophertkenny.com/bskyr/reference/bs_get_profile.html) looks up the
+most-mentioned accounts; and we keep the six that actually have posts. Two defensive
 habits from Part 02 appear here. We fetch each account by its DID rather
 than its handle, because a handle can stop working (when its domain
 lapses, Bluesky shows it as `handle.invalid`) while the DID stays
@@ -408,6 +410,13 @@ corpus |>
   theme_minimal()
 ```
 
+Treat the monthly line as a demonstration, not a finding. The newsroom
+posts dozens of times a day, so its 600 posts cover only the last few
+weeks; the earliest months contain only the slower-posting accounts. A
+dip or spike in an early month may describe one columnist rather than
+the panel, so check how many posts each month rests on before reading
+anything into it.
+
 ### 4.2 Where dictionaries break
 
 Read the extremes — always:
@@ -419,6 +428,12 @@ corpus |>
   slice(c(1:3, (n() - 2):n())) |>
   transmute(sentiment, text = str_trunc(text, 120))
 ```
+
+Ask what the extremes are measuring. In a newsroom's feed the most
+"positive" posts are often recipes and lifestyle pieces, and the most
+"negative" are often straight reporting of deaths and violence: the
+lexicon scores the words of the story, not the newsroom's attitude
+toward it.
 
 ## 5. Topic modeling with LDA
 
@@ -571,7 +586,8 @@ publication). Sentiment lexicons encode the norms of their builders and
 miss negation, sarcasm, and community-specific language; LDA topics are
 statistical regularities, not meanings, and both will happily produce
 confident numbers from garbage. The corpus design (a seed plus its
-mention network, English-declared posts only) shapes every count above.
+mention network, English posts only, whether declared or detected by our
+function-word test) shapes every count above.
 
 ## Exercises
 

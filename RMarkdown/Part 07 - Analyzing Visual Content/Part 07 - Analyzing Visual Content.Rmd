@@ -54,9 +54,11 @@ A post's `record$embed` is a *union type*: exactly one of
 `app.bsky.embed.images`, `...video`, `...external` (link cards),
 `...record` (quote posts), `...recordWithMedia`, or the newer
 `...gallery` (a multi-photo carousel). The Python notebook
-opens with a war story: its strictly-typed SDK *crashed* on an embed
-type the platform had just shipped, and the fix was to fall back to raw
-JSON. R's list-of-lists representation has that robustness built in —
+opens with a cautionary tale: a strictly typed SDK can fail on an embed
+type the platform has just shipped (as Python's once did on galleries),
+and the fallback is raw JSON. R's list-of-lists representation has that
+robustness built in —
+[`bs_get_author_feed()`](https://christophertkenny.com/bskyr/reference/bs_get_author_feed.html) with
 `clean = FALSE` returns whatever the server sent:
 
 ```{r raw-page}
@@ -200,8 +202,9 @@ count(df, embed_class, sort = TRUE)
 ## 3. How visual is the panel?
 
 A stacked bar per account shows each one's *embed mix* — what share of
-its posts are bare text, images, video, link cards, or quotes. Newsrooms
-should lean on link cards; individuals on text and images:
+its posts are bare text, images, video, link cards, or quotes. Expect the
+newsrooms to lean on link cards, and the platform account to mix
+screenshots, video, and quote posts:
 
 ```{r composition, fig.width=9, fig.height=4.5}
 df |>

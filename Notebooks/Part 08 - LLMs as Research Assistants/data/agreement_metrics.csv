@@ -1,14 +1,14 @@
 metric,value,category,annotator,validated_at
-n_gold_posts,60.0,,keyword_baseline (news-v2 (2026-11)),2026-11-02
-accuracy,0.8667,,keyword_baseline (news-v2 (2026-11)),2026-11-02
-percent_agreement,0.8667,,keyword_baseline (news-v2 (2026-11)),2026-11-02
-cohen_kappa,0.7704,,keyword_baseline (news-v2 (2026-11)),2026-11-02
-precision,0.9259,politics,keyword_baseline (news-v2 (2026-11)),2026-11-02
-recall,0.8929,politics,keyword_baseline (news-v2 (2026-11)),2026-11-02
-f1-score,0.9091,politics,keyword_baseline (news-v2 (2026-11)),2026-11-02
-precision,1.0,science_tech,keyword_baseline (news-v2 (2026-11)),2026-11-02
-recall,0.5714,science_tech,keyword_baseline (news-v2 (2026-11)),2026-11-02
-f1-score,0.7273,science_tech,keyword_baseline (news-v2 (2026-11)),2026-11-02
-precision,0.7931,other,keyword_baseline (news-v2 (2026-11)),2026-11-02
-recall,0.92,other,keyword_baseline (news-v2 (2026-11)),2026-11-02
-f1-score,0.8519,other,keyword_baseline (news-v2 (2026-11)),2026-11-02
+n_gold_posts,60.0,,keyword_baseline (news-v2 (2026-11)),2026-11-03
+accuracy,0.8667,,keyword_baseline (news-v2 (2026-11)),2026-11-03
+percent_agreement,0.8667,,keyword_baseline (news-v2 (2026-11)),2026-11-03
+cohen_kappa,0.7704,,keyword_baseline (news-v2 (2026-11)),2026-11-03
+precision,0.9259,politics,keyword_baseline (news-v2 (2026-11)),2026-11-03
+recall,0.8929,politics,keyword_baseline (news-v2 (2026-11)),2026-11-03
+f1-score,0.9091,politics,keyword_baseline (news-v2 (2026-11)),2026-11-03
+precision,1.0,science_tech,keyword_baseline (news-v2 (2026-11)),2026-11-03
+recall,0.5714,science_tech,keyword_baseline (news-v2 (2026-11)),2026-11-03
+f1-score,0.7273,science_tech,keyword_baseline (news-v2 (2026-11)),2026-11-03
+precision,0.7931,other,keyword_baseline (news-v2 (2026-11)),2026-11-03
+recall,0.92,other,keyword_baseline (news-v2 (2026-11)),2026-11-03
+f1-score,0.8519,other,keyword_baseline (news-v2 (2026-11)),2026-11-03

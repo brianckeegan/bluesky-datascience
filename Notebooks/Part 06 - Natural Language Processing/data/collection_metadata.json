@@ -1,12 +1,12 @@
 {
-  "collected_on": "2026-11-02",
+  "collected_on": "2026-11-03",
   "seed_account": "nytimes.com",
   "panel_accounts": [
     "nytopinion.nytimes.com",
     "theathletic.com",
+    "theathleticfc.bsky.social",
     "davidfrenchjag.bsky.social",
-    "nickkristof.bsky.social",
-    "theathleticfc.bsky.social"
+    "nickkristof.bsky.social"
   ],
   "max_seed_posts": 600,
   "max_panel_posts_each": 150,
