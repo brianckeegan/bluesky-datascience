@@ -102,9 +102,35 @@ structure alone* — a strategy that survives even when search does not.
 
 ## 2. The anatomy of a post record
 
-Every post is a record in its author's repository. The *view* of a post
-adds engagement counters and author info; the *record* holds what the
-author wrote. In bskyr's cleaned tibbles the record is a list-column.
+Endpoints like [`bs_get_author_feed()`](https://christophertkenny.com/bskyr/reference/bs_get_author_feed.html)
+and [`bs_get_posts()`](https://christophertkenny.com/bskyr/reference/bs_get_posts.html)
+return hydrated **post views**. Two layers matter:
+
+* The **record** is what the author's repository actually stores: the
+  text, creation time, language tags, reply references, facets, and
+  embeds. This is the durable, author-controlled part. In bskyr's cleaned
+  tibbles it is the `record` list-column.
+* The **view** wraps the record with AppView-computed context: the
+  author's profile, like/repost/reply counts, and hydrated embeds. This
+  part changes every time you fetch.
+
+Every post is identified by two values you will see everywhere in AT
+Protocol data:
+
+* Its **URI** is the post's address, written in the
+  [`at://` scheme](https://atproto.com/specs/at-uri-scheme):
+  `at://<DID>/<collection>/<record key>`. The **DID**
+  ([decentralized identifier](https://atproto.com/specs/did)) is the
+  account's permanent machine ID. Unlike a handle, it never changes even
+  if the user renames themselves, which is why researchers should key
+  datasets on DIDs. The collection (`app.bsky.feed.post`) says what kind
+  of record this is, and the [record key](https://atproto.com/specs/record-key)
+  is a short, timestamp-flavored ID for this particular post.
+* Its **CID** (content identifier) is a cryptographic fingerprint (hash)
+  of the record's content. Where the URI says "the post at this address",
+  the CID says "exactly this version of it"; together they form a
+  *strong reference* that cannot be silently swapped for different
+  content.
 
 Rather than pinning one post by its URI (live posts can be deleted at
 any time, which would break the document), we scan the recent posts of
@@ -151,14 +177,66 @@ str(facets, max.level = 3, list.len = 4)
 ```
 
 Each feature's `$type` ends in `#mention` (with a `did`), `#tag` (with a
-`tag`), or `#link` (with a `uri`). Whichever kinds the example happens
-to contain, the rule is the same. Because mentions carry DIDs — stable
-account identifiers — facets turn a pile of text into a *network*.
+`tag`), or `#link` (with a full `uri`, even when the visible text was
+shortened for display). This is wonderful for researchers: mentions
+arrive pre-resolved to DIDs (no fragile handle parsing), and links
+arrive un-shortened. Because mentions carry DIDs, stable account
+identifiers, facets turn a pile of text into a *network*.
+
+Each facet's `index` gives `byteStart` and `byteEnd`, offsets into the
+**UTF-8 encoded bytes** of the text, *not* character positions. The
+distinction matters the moment a post contains an emoji or a non-Latin
+script, where one character can occupy several bytes. To recover the
+highlighted span, convert the text to bytes with `charToRaw()`, slice the
+bytes, and convert back. (R vectors count from 1 and include both ends,
+so the slice is `byteStart + 1` through `byteEnd`.)
+
+```{r facet-spans}
+example_text <- example$record[[1]]$text
+text_bytes <- charToRaw(enc2utf8(example_text))
+
+map(facets, \(facet) {
+  span <- rawToChar(text_bytes[(facet$index$byteStart + 1):facet$index$byteEnd])
+  Encoding(span) <- "UTF-8"
+  feature <- facet$features[[1]]
+  tibble(kind = sub(".*#", "", feature$`$type`),
+         span = span,
+         target = feature$did %||% feature$tag %||% feature$uri)
+}) |>
+  list_rbind()
+```
+
+Each row pairs a highlighted span of the visible text with the
+machine-readable target stored behind it. This is exactly the structure
+the helpers in the next section rely on: no regular expressions, no
+guessing.
 
 ### Languages, replies, and embeds
 
-The record also declares its languages (`langs`), whether it replies to
-another post, and any embedded media — all of which later parts use.
+Three more record fields we use when building the archive:
+
+* **`langs`**: a list of self-declared language codes. These are set by
+  the posting client (often auto-detected, sometimes wrong), so treat
+  them as a useful filter, not ground truth.
+* **`reply`**: present when the post is a reply, containing **strong
+  references** (URI + CID pairs, as defined above) to the *parent* post
+  (the post being answered) and the thread *root* (the post that started
+  the thread). The parent's author DID is embedded right inside the
+  `at://` URI, which we exploit for snowballing.
+* **`embed`**: attached media: images, video, an external link card, or
+  a quoted post. The record stores the author's intent (for example
+  `app.bsky.embed.external`), while the view carries the hydrated
+  version with resolved thumbnails. Part 07 is devoted to these.
+
+```{r record-fields}
+example_record <- example$record[[1]]
+
+list(
+  langs = unlist(example_record$langs),
+  is_reply = !is.null(example_record$reply),   # our example is an original post
+  record_embed = example_record$embed[[1]]$`$type` %||% "(none)"
+)
+```
 
 ## 3. Facet helpers
 
@@ -188,7 +266,6 @@ extract_mentions <- function(record) extract_features(record, "#mention", "did")
 extract_tags     <- function(record) extract_features(record, "#tag", "tag")
 extract_links    <- function(record) extract_features(record, "#link", "uri")
 
-example_record <- example$record[[1]]
 list(
   mentions = extract_mentions(example_record),
   hashtags = extract_tags(example_record),
@@ -534,6 +611,15 @@ tibble(uri = sample_uris) |>
 
 ## 7. A first look at the archive
 
+Before any serious analysis, basic descriptives tell us what the snowball
+actually scooped up, and they double as sanity checks on the collection
+itself. Three quick views: the hashtag vocabulary, the most-mentioned
+accounts, and how the corpus is distributed across authors.
+
+First, hashtags. Because `hashtags` is a list-column, `unnest()` gives
+every (post, hashtag) pair its own row, and `count()` tallies them. The
+result is the archive's topical vocabulary at a glance:
+
 ```{r top-tags, fig.width=8, fig.height=5}
 archive |>
   select(hashtags) |>
@@ -547,70 +633,227 @@ archive |>
   theme_minimal()
 ```
 
-```{r by-author}
-archive |>
+Second, the most-mentioned accounts. The `mentions` column stores DIDs,
+stable but unreadable, so after the same unnest-and-count pattern we
+resolve the top ten back to handles with a single batched
+`bs_get_profile()` call (it accepts up to 25 actors). Mentioned accounts
+can be deleted or deactivated by the time you look them up, so any DID
+the call doesn't return is marked as unresolvable. The table is a rough
+who's-who of the conversations the snowball traversed:
+
+```{r top-mentions}
+top_mentions <- archive |>
+  select(mentions) |>
+  unnest(mentions) |>
+  count(mentions, sort = TRUE, name = "times_mentioned") |>
+  slice_head(n = 10) |>
+  rename(did = mentions)
+
+mentioned_profiles <- tryCatch(bs_get_profile(top_mentions$did),
+                               error = \(e) tibble(did = character(), handle = character()))
+
+top_mentions |>
+  left_join(select(mentioned_profiles, did, handle), by = "did") |>
+  mutate(handle = coalesce(handle, "(unresolvable)")) |>
+  select(handle, did, times_mentioned)
+```
+
+Third, the shape of the corpus itself: how many posts each crawled
+author contributed. Watch for imbalance here: if one prolific account
+contributes a third of the archive, any "corpus-level" finding may
+really be a finding about that one account.
+
+```{r by-author, fig.width=8, fig.height=5}
+by_author <- archive |>
   group_by(author_handle) |>
   summarise(posts = n(), replies = sum(is_reply),
             median_likes = median(like_count, na.rm = TRUE)) |>
   arrange(desc(posts))
+
+ggplot(by_author, aes(posts, fct_reorder(author_handle, posts))) +
+  geom_col(fill = "steelblue") +
+  labs(x = "Posts in archive", y = NULL,
+       title = "Posts per author, by snowball account") +
+  theme_minimal()
+
+by_author
 ```
 
 ## 8. Research design: what kind of sample is this?
 
-A snowball sample is not a probability sample: every inclusion
-probability depends on the seed, and well-connected accounts are
-oversampled by construction. That makes it excellent for *mapping a
-community around a known starting point* and unsuitable for estimating
-population frequencies. Respondent-driven sampling (Heckathorn 1997)
-shows how far the design can be pushed when you track recruitment chains
-carefully; our wave column preserves exactly that information. And the
-gateway table in Section 4 is a reminder of what *homophily* does to
-such a sample: two waves from a newsroom seed yield a corpus of
-journalists and their conversation partners, whatever the topic.
+The descriptives above already show the sample's construction leaking
+into its content: the top hashtags and most-mentioned accounts reflect
+whom we chose to crawl at least as much as any underlying conversation.
+A snowball sample is *defensible*, not *representative*. Before treating
+an archive like this as "the conversation", name its biases:
+
+* **Seed dependence.** Everything is anchored to one account's social
+  neighborhood. A different seed yields a different corpus; serious
+  designs use multiple, deliberately diverse seeds and report
+  sensitivity to seed choice.
+* **Popularity bias.** Ranking the frontier by engagement count
+  systematically recruits visible, frequently mentioned accounts. Quiet
+  participants in the same conversations are under-sampled, the same
+  dynamic that makes hashtag samples over-represent the loudest voices
+  (Tufekci 2014).
+* **Homophily.** People engage with similar others, so waves stay inside
+  communities resembling the seed and cross community boundaries slowly.
+  Two waves from a newsroom seed yield a corpus of journalists and
+  sister publications, whatever the topic, and the gateway table in
+  Section 4 shows how far a single account can pull the whole sample.
+* **Activity bias.** "Most recent N posts" covers different time windows
+  for different accounts: a prolific poster's 100 posts span days, a
+  quiet account's span years. Time-bounded designs should filter on
+  `created_at` instead of post counts.
+* **Index and survivorship effects.** Search-based frames (Section 1)
+  inherit the index's gaps; snowball frames inherit deletion effects at
+  collection time. Both differ from real-time collection (Part 10).
+
+None of these are fatal: every sampling frame has biases. What separates
+defensible from indefensible corpora is **documentation**: the seeds, the
+edge definition, the caps, the stopping rule, and the collection date,
+all written down before reviewers ask. That is the job of
+`archive_metadata.json`, and it is the discipline Bruns & Burgess (2011)
+urged when they showed that a "hashtag public" is an analytic
+construction, not a natural object. Respondent-driven sampling
+(Heckathorn 1997) shows how far the design can be pushed when you track
+recruitment chains carefully; our `wave` column preserves exactly that
+information. For a broad, readable catalogue of how these biases arise at
+every stage of the social-data pipeline, see Olteanu et al. (2019).
 
 ## Ethics and limitations
 
-The snowball pulls in *third parties* — people the seed mentioned who
-never interacted with us — so minimize what you keep about them and
-aggregate wherever possible. Mentions and replies are public performance,
-not consent to study. The archive freezes posts people may later delete
-(re-hydration showed attrition is real); honor deletions in long-lived
-datasets. And remember the design's blind spots: accounts the seed never
-engages are invisible, no matter how central they are to the topic.
+**Third parties never opted in.** This is the central ethical fact of
+snowball designs: the seed is a large institutional account, chosen
+because a newsroom's public posting is its professional output, but the
+individual journalists and other accounts pulled in by mentions and
+replies made no such choice. Our archive contains their posts solely
+because someone else engaged them. Minimize accordingly: collect only the
+fields your question needs, prefer aggregates (as in Section 7) over
+individual rows when reporting, and paraphrase rather than quote, since
+verbatim post text is trivially re-identifiable via search even with
+handles removed (the lesson of Zimmer 2010).
+
+**Honor deletion and opt-out signals.** Users delete posts and accounts,
+and some set the `!no-unauthenticated` label on their profiles. Record
+collection dates (we did), re-check with `bs_get_posts()` before
+re-publishing (Section 6), and drop records that have disappeared.
+
+**Bots and automated accounts** ride along in mention-based frontiers:
+inspect your crawl list before interpreting the corpus as human
+conversation.
+
+**Public is not consent, and exempt is not automatic.** Bluesky users
+mostly have not read the protocol docs and may not expect their posts in
+a dataset (Fiesler & Proferes 2018). Consult your IRB and the AoIR
+Internet Research Ethics guidelines (franzke et al. 2020,
+[PDF](https://aoir.org/reports/ethics3.pdf)) before turning a tutorial
+pipeline into a study.
+
+**Limitations of this archive.** It is demonstration-scale (at most
+`MAX_TOTAL_ACCOUNTS` accounts and about a hundred posts from each; the
+metadata file records the exact counts) and account-anchored rather than
+topic-anchored; with search (Section 1) you would combine both to
+triangulate a topical frame. Bluesky's user base skews toward early
+adopters and Twitter migrants, so prevalence claims do not generalize
+beyond the platform (Tufekci 2014).
 
 ## Exercises
 
-1. Re-run the snowball with a different seed and compare the top-hashtag
-   tables — how much do the archives overlap?
-2. Extend `count_engaged()` to weight reply-parents more heavily than
-   mentions. Does wave 1 change?
-3. Add a third wave. What does the marginal-yield plot say about it?
-4. Use `bs_search_posts()` with a `tag` filter to collect the same topic
-   by search, and compare author sets with the snowball archive.
-5. Measure attrition: re-hydrate 50 archived posts a week after
-   collection and estimate the deletion rate.
+These extend the document roughly in order of ambition. For all of them,
+keep the politeness conventions (pauses between requests, explicit caps)
+and write your design choices down the way `archive_metadata.json` does.
+
+1. **Swap the seed.** Change `SEED_ACTOR` to `bsky.app` (the official
+   Bluesky account) and re-run Sections 4–7. Which top hashtags and
+   most-mentioned accounts change, and which crawl parameters did you
+   have to adjust to stay under budget?
+2. **Go one wave deeper.** Add a wave 3: rank the accounts wave 2
+   engaged (excluding everyone already crawled), raise
+   `MAX_TOTAL_ACCOUNTS` modestly (say, to 25), and extend the saturation
+   table and charts. Do the discovery curves for new accounts and new
+   hashtags bend downward, or is the frontier still expanding?
+3. **Change the edge definition.** Modify the frontier ranking to use
+   *mentions only*, then *reply parents only* (write two small variants
+   of `count_engaged()`). How much do the two top-8 frontiers overlap
+   with each other and with the original?
+4. **Time-bound wave 0.** Replace "the most recent posts" with "every
+   original post since a fixed date" by filtering on the record's
+   `created_at` during collection. Section 8 explains why: fixed-window
+   designs make accounts comparable in *time* rather than in post count.
+5. **Compare two seeds' archives.** Build a second archive from a
+   different seed (Exercise 1), save it under a different filename, and
+   quantify how much the two corpora share: the
+   [Jaccard similarity](https://en.wikipedia.org/wiki/Jaccard_index) of
+   their author-DID sets and of their hashtag vocabularies, using
+   `intersect()` and `union()` on the unnested columns.
+6. **Hashtag co-occurrence network.** For every post with two or more
+   hashtags, generate the tag pairs with `combn(tags, 2)`, count pairs,
+   and inspect the top 20 as an edge list. For a preview of Part 03, load
+   the edge list into igraph with `graph_from_data_frame()` and plot the
+   network of tags that travel together.
 
 ## Research project ideas
 
-* **Community boundary mapping.** Seed snowballs from three accounts in
-  different communities and measure where the resulting archives begin to
-  overlap — an empirical map of community boundaries.
-* **Search versus snowball coverage.** For a topic with a clear hashtag,
-  quantify what fraction of search-retrieved posts the snowball recovers,
-  and what the snowball finds that search misses.
+**1. Who do hashtags miss? Auditing a hashtag public on Bluesky.** Bruns
+& Burgess (2011) framed hashtags as "ad hoc publics", and Tufekci (2014)
+warned that hashtag samples capture only the most performative
+participants. *Question:* who participates in a conversation without ever
+tagging it? *Data:* an authenticated `bs_search_posts()` archive for an
+active hashtag over a fixed window, plus a snowball from 3–5 visibly
+active participants over the same window. *Method:* find accounts in the
+snowball corpus whose posts discuss the topic (keyword match in `text`)
+but never carry the hashtag, and compare their posting and engagement
+profiles to the hashtag users'. *Expected challenge:* deciding a post is
+"about the topic" without the tag needs a keyword dictionary or a simple
+classifier, validated by hand-coding a sample.
+
+**2. Seed sensitivity: how fragile are snowball corpora?** Morstatter et
+al. (2013) showed that conclusions can hinge on how a sample was drawn;
+Olteanu et al. (2019) catalogue acquisition bias as a pipeline-wide
+problem. *Question:* how much does a two-wave snowball corpus depend on
+its seed? *Data:* the identical pipeline (same caps, edge definition and
+date) run from five or more seeds in visibly different communities.
+*Method:* pairwise Jaccard overlap of account sets and hashtag
+vocabularies, then a test of which summary statistics (reply share,
+median likes, top-tag concentration) are stable across seeds. *Expected
+challenge:* budget; five crawls multiply the request count, so you need
+Part 01's rate-limit discipline and tight per-account caps.
+
+**3. The half-life of a post archive.** Archives inherit survivorship
+bias (Morstatter et al. 2013), and deletion is an ethical signal you are
+obliged to honor (Zimmer 2010; Fiesler & Proferes 2018). *Question:* how
+fast does a Bluesky archive decay through deletion and engagement drift,
+and is the decay selective? *Data:* one snowball archive, re-hydrated
+weekly with `bs_get_posts()` (Section 6) for 8–12 weeks, storing only
+per-URI status and counts. *Method:* a survival curve for deletion, a
+comparison of deleted and surviving posts on collection-time features,
+and engagement-drift trajectories. *Expected challenge:* the ethics are
+the design: once a post is deleted you must drop its content and keep
+only the fact and date of deletion.
 
 ## References
 
 ### Scholarship
 
-* Heckathorn, D. D. (1997). Respondent-driven sampling: A new approach to the study of hidden populations. *Social Problems*, 44(2), 174–199.
+* Bruns, A., & Burgess, J. (2011). The use of Twitter hashtags in the formation of ad hoc publics. *Proceedings of the 6th European Consortium for Political Research (ECPR) General Conference*.
+* Fiesler, C., & Proferes, N. (2018). "Participant" perceptions of Twitter research ethics. *Social Media + Society*, 4(1).
+* franzke, a. s., Bechmann, A., Zimmer, M., Ess, C., & the Association of Internet Researchers (2020). *Internet Research: Ethical Guidelines 3.0*. <https://aoir.org/reports/ethics3.pdf>
 * González-Bailón, S., Wang, N., Rivero, A., Borge-Holthoefer, J., & Moreno, Y. (2014). Assessing the bias in samples of large online networks. *Social Networks*, 38, 16–27.
-* Tufekci, Z. (2014). Big questions for social media big data. *ICWSM*, 8(1), 505–514.
-* Bruns, A., & Burgess, J. (2011). The use of Twitter hashtags in the formation of ad hoc publics. *ECPR General Conference*.
+* Goodman, L. A. (1961). Snowball sampling. *Annals of Mathematical Statistics*, 32(1), 148–170.
+* Heckathorn, D. D. (1997). Respondent-driven sampling: A new approach to the study of hidden populations. *Social Problems*, 44(2), 174–199.
+* Morstatter, F., Pfeffer, J., Liu, H., & Carley, K. M. (2013). Is the sample good enough? Comparing data from Twitter's Streaming API with Twitter's firehose. *Proceedings of ICWSM*. <https://arxiv.org/abs/1306.5204>
+* Olteanu, A., Castillo, C., Diaz, F., & Kıcıman, E. (2019). Social data: Biases, methodological pitfalls, and ethical boundaries. *Frontiers in Big Data*, 2, 13. <https://www.frontiersin.org/articles/10.3389/fdata.2019.00013/full>
+* Rafail, P. (2018). Nonprobability sampling and Twitter: Strategies for semibounded and bounded populations. *Social Science Computer Review*, 36(2), 195–211.
+* Tufekci, Z. (2014). Big questions for social media big data: Representativeness, validity and other methodological pitfalls. *Proceedings of ICWSM*. <https://arxiv.org/abs/1403.7400>
+* Wickham, H. (2014). Tidy data. *Journal of Statistical Software*, 59(10). <https://www.jstatsoft.org/article/view/v059i10>
+* Zimmer, M. (2010). "But the data is already public": On the ethics of research in Facebook. *Ethics and Information Technology*, 12(4), 313–325.
 
 ### Documentation
 
 * `app.bsky.feed.searchPosts`: <https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.searchPosts>
+* `app.bsky.feed.getPosts`: <https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getPosts>
+* AT Protocol specifications: the [`at://` URI scheme](https://atproto.com/specs/at-uri-scheme), [DIDs](https://atproto.com/specs/did), [record keys](https://atproto.com/specs/record-key)
 * Richtext facets: <https://bsky.network/docs/advanced-guides/post-richtext>
 * bskyr: <https://christophertkenny.com/bskyr/>
 * R Markdown: <https://rmarkdown.rstudio.com/docs/>

@@ -51,9 +51,21 @@ knitr::opts_chunk$set(eval = bsky_authed)
 
 A follow is a directed tie: `A → B` means A follows B, and B need not
 follow back. Two endpoints expose each side of the relation:
-[`bs_get_follows()`](https://christophertkenny.com/bskyr/reference/bs_get_follows.html) returns the accounts an
-actor follows, and [`bs_get_followers()`](https://christophertkenny.com/bskyr/reference/bs_get_followers.html) the
-accounts that follow it:
+[`bs_get_follows()`](https://christophertkenny.com/bskyr/reference/bs_get_follows.html)
+([`app.bsky.graph.getFollows`](https://endpoints.bsky.app/#bluesky-app/tag/appbskygraph/GET/xrpc/app.bsky.graph.getFollows))
+returns the accounts an actor **follows** (its "out-edges"), and
+[`bs_get_followers()`](https://christophertkenny.com/bskyr/reference/bs_get_followers.html)
+([`app.bsky.graph.getFollowers`](https://endpoints.bsky.app/#bluesky-app/tag/appbskygraph/GET/xrpc/app.bsky.graph.getFollowers))
+the accounts that **follow** it (its "in-edges").
+
+Two pieces of vocabulary. An **actor** is the API's word for an account,
+identified by handle or DID. And each endpoint has two names because
+bskyr wraps an underlying **lexicon** method: the AT Protocol's
+[schema language](https://atproto.com/guides/lexicon) formally defines
+every endpoint's inputs and outputs, and the linked reference pages are
+the authoritative description of what each call accepts and returns.
+Both endpoints return at most 100 accounts per request; bskyr follows the
+cursors for you when you ask for more (Part 01).
 
 ```{r endpoints}
 follows_page <- bs_get_follows("nytimes.com", limit = 10)
@@ -63,8 +75,54 @@ followers_page <- bs_get_followers("nytimes.com", limit = 10)
 followers_page$handle
 ```
 
-A third endpoint, [`bs_get_relationships()`](https://christophertkenny.com/bskyr/reference/bs_get_relationships.html), checks ties between specific
-pairs — useful when you need a handful of edges, not whole lists.
+Notice that every account comes with two identifiers. The **DID**
+("decentralized identifier", `did:plc:...`) is a permanent,
+machine-readable identifier that stays with an account for life (see the
+[DID specification](https://atproto.com/specs/did)). The **handle**
+(`nytimes.com`) is the human-readable name, but
+[handles](https://atproto.com/specs/handle) are just domain names and can
+change at any time. Throughout this document we build the network on
+DIDs and keep handles purely as labels, a habit that pays off in any
+longitudinal design: if you revisit a network next year, DIDs will still
+match where handles have churned.
+
+A third endpoint, [`bs_get_relationships()`](https://christophertkenny.com/bskyr/reference/bs_get_relationships.html),
+checks ties between specific pairs, useful when you need a handful of
+edges rather than whole lists (Part 01 used it to measure reciprocity).
+
+### `getKnownFollowers` requires authentication
+
+A fourth graph endpoint,
+[`app.bsky.graph.getKnownFollowers`](https://endpoints.bsky.app/#bluesky-app/tag/appbskygraph/GET/xrpc/app.bsky.graph.getKnownFollowers),
+returns the followers of an account *that you also follow*: the
+"followed by people you know" feature in the app. Because it is defined
+relative to **your** follow list, it only works when you are logged in.
+bskyr has no wrapper for it, so we build the request with
+[httr2](https://httr2.r-lib.org/) and attach the session token from
+[`bs_auth()`](https://christophertkenny.com/bskyr/reference/bs_auth.html),
+the same login bskyr uses for every other call. `tryCatch()` turns a
+refusal into a message instead of stopping the document:
+
+```{r known-followers}
+auth <- bs_auth(get_bluesky_user(), get_bluesky_pass())
+
+known <- tryCatch(
+  httr2::request("https://bsky.social/xrpc/app.bsky.graph.getKnownFollowers") |>
+    httr2::req_url_query(actor = "bsky.app", limit = 10) |>
+    httr2::req_auth_bearer_token(auth$accessJwt) |>
+    httr2::req_perform() |>
+    httr2::resp_body_json(),
+  error = \(e) {
+    message("getKnownFollowers was refused: ", conditionMessage(e))
+    NULL
+  }
+)
+
+if (!is.null(known)) map_chr(known$followers, "handle")
+```
+
+With your own credentials this lists accounts you follow that also
+follow `bsky.app`; an empty result simply means you follow none of them.
 
 ## 2. Designing the crawl: boundary specification and sampling
 
@@ -225,20 +283,38 @@ tibble(
 )
 ```
 
-Density is the share of possible ties that exist; reciprocity is the
-share of ties that are returned. Compare the reciprocity with Kwak et
+Density is the share of possible directed ties that exist: with $n$
+nodes there are $n(n-1)$ possible directed ties, and density is the
+share we observed, from 0 (no edges) to 1 (everyone follows everyone).
+Reciprocity is the share of ties that are returned: if A follows B, does
+B follow A back? Read both against external benchmarks. Density here is
+far higher than the platform as a whole (the full Twitter graph Kwak et
+al. crawled had a density around $10^{-7}$), because an ego network is,
+by construction, a dense pocket of accounts sharing a common anchor.
+Then compare the reciprocity with Kwak et
 al.'s (2010) figure of about 22% for Twitter at large, shown in the last
 column. A newsroom's neighborhood is mostly its own journalists
 following one another, so colleagues reciprocate somewhat more often
 than Twitter users at large, but most follows still go unreturned: many
 staff follow the Times and its star reporters, and those prominent
 accounts follow back only a few. Even inside one organization, the
-follow graph keeps some of the asymmetry of a news medium.
+follow graph keeps some of the asymmetry of a news medium. This is a
+first concrete lesson that *where you draw the boundary changes the
+substantive conclusion*: the same statistic, computed on differently
+bounded networks, tells different stories.
 
 ### Degree distributions
 
-In-degree counts followers *within the network*; out-degree counts
-follows. Heavy right tails are the signature of attention inequality:
+In a directed follow graph each node has two **degrees**: **in-degree**
+(followers within the network, a measure of local audience) and
+**out-degree** (follows within the network, a measure of local attention
+paid). Note the qualifier *within the network*: an account with millions
+of platform-wide followers can have a tiny in-degree here if few of our
+sampled alters follow it. One detail surprises almost everyone at first:
+the **means of in-degree and out-degree are always identical**, because
+every directed edge adds one out-degree to its source and one in-degree
+to its target. The *distributions* around that shared mean can still
+look very different, and that is what the histograms show:
 
 ```{r degrees, fig.width=10, fig.height=4}
 deg <- tibble(
@@ -258,6 +334,11 @@ deg |>
   theme_minimal()
 ```
 
+Degree distributions on social platforms are famously **heavy-tailed**:
+most accounts have few connections while a handful have many. The
+conventional diagnostic is to plot the distribution on **log-log axes**,
+where a heavy tail appears as a slowly decaying, roughly linear scatter:
+
 ```{r degrees-loglog, fig.width=6, fig.height=5}
 deg |>
   pivot_longer(ends_with("degree"), names_to = "direction") |>
@@ -271,11 +352,38 @@ deg |>
   theme_minimal()
 ```
 
+Even at this small scale you can usually see the asymmetry: in-degree
+stretches further to the right (a few locally prominent accounts collect
+many followers within the network), while out-degree is more tightly
+bunched, partly a real social pattern and partly because our crawl
+truncated each alter's follow list. A caution about vocabulary: a
+roughly straight line on log-log axes is *suggestive* of a heavy tail,
+not a test of a power law. Rigorous power-law fitting (Clauset, Shalizi &
+Newman 2009) needs orders of magnitude more data than 100 nodes.
+
 ## 5. Centrality: who matters, and in what sense?
 
-Different centralities answer different questions: in-degree measures
-local audience, betweenness measures brokerage between otherwise distant
-parts of the network, PageRank measures recursively-weighted endorsement.
+"Importance" in a network is not one thing. Different **centrality**
+measures capture different intuitions, and they often disagree in
+informative ways:
+
+* **In-degree**: raw audience *within this network*. Simple, local, easy
+  to game.
+* **Betweenness**: brokerage, the fraction of shortest paths between
+  other pairs of nodes that pass through you. High-betweenness accounts
+  bridge otherwise separate regions and would fragment the network if
+  removed (Granovetter's "weak ties" logic).
+* **PageRank**: recursive prestige, where being followed by
+  well-followed accounts counts for more. Easley & Kleinberg's
+  [Chapter 14](https://www.cs.cornell.edu/home/kleinber/networks-book/networks-book-ch14.pdf)
+  gives a gentle derivation.
+
+Kwak et al. (2010) found that on Twitter, follower counts and PageRank
+produced very similar rankings, while ranking by retweets surfaced a
+*different* set of accounts: "influence" depends on the relation you
+measure. One caveat before ranking anyone: **the ego is central by
+construction.** We built the network around it, and it follows every
+alter, so we drop it from the leaderboard below.
 We ask igraph for **normalized** betweenness (`normalized = TRUE`), which
 divides by the number of pairs of other nodes, so the scores fall
 between 0 and 1 and match what NetworkX reports by default in the Python
@@ -420,59 +528,196 @@ tibble(handle = V(G_loaded)$handle[match(names(pr), V(G_loaded)$name)],
 
 ## 9. Research designs with ego networks
 
-Ego networks support comparative designs: collect many egos and model how
-network properties (density, brokerage, community diversity) relate to
-outcomes (information exposure, support, influence). Classic findings —
-Granovetter's weak ties, Burt's structural holes — are statements about
-ego-network structure that these data can test at platform scale.
+What kinds of questions can a design like this answer?
+
+**Ego-network designs.** Long before platform APIs, surveys like the
+General Social Survey asked respondents to name the people they discuss
+important matters with, producing exactly this structure: an ego,
+alters, and alter–alter ties. Classic findings (that ego networks shrank
+over time, that they are stratified by education, that kin and non-kin
+play different roles) all come from 1.5-degree data. Platform follow
+graphs let you collect the same structure for thousands of egos without
+a survey, at the cost of measuring "follows" rather than "discusses
+important matters with." Granovetter's weak ties and Burt's structural
+holes are both statements about ego-network structure that these data
+can test at platform scale.
+
+**Homophily.** McPherson, Smith-Lovin, and Cook (2001) summarize one of
+sociology's most robust findings: ties form disproportionately between
+similar people. With hydrated node attributes you can quantify it here:
+do alters in the same Louvain community have more similar follower
+counts, account ages, or posting languages than alters in different
+communities? On Twitter, Conover et al. (2011) showed homophily at its
+starkest: the political retweet network was so segregated that two
+communities captured nearly the whole graph.
+
+**Triadic closure.** Networks where your friends tend to be friends with
+each other have many closed triangles. Triadic closure is both a theory
+of tie formation (you meet friends of friends) and a mechanism platforms
+accelerate through "people you may know" recommenders and, on Bluesky,
+starter packs. Two standard measurements:
+[**transitivity**](https://r.igraph.org/reference/transitivity.html)
+(`type = "global"`) is the network-wide share of two-step paths that
+close into triangles, and the **average clustering coefficient**
+(`type = "localaverage"`) asks, node by node, how connected each
+account's neighbors are to one another, then averages. We pass
+`isolates = "zero"` so that accounts with fewer than two neighbors count
+as zero, which is how NetworkX computes it in the Python version:
+
+```{r triadic-closure}
+tibble(
+  transitivity = transitivity(G_undirected, type = "global"),
+  average_clustering = transitivity(G_undirected, type = "localaverage",
+                                    isolates = "zero"),
+  density = edge_density(G_undirected)
+)
+```
+
+Compare both with the density: if ties formed at random with this
+density, the chance that two of an account's neighbors are tied would be
+about the density itself. Clustering well above it says that ties here
+come in closed groups of colleagues, not scattered at random.
+
+**And always: the boundary.** Every number above (density, reciprocity,
+centrality rankings, community count, transitivity) is a property of
+*the network we specified*, not of "Bluesky." A different ego, a
+different sample of alters, a deeper crawl, or follower-based edges
+would yield different numbers. Good network papers state their boundary
+decision in the first paragraph of the methods section; now you can,
+too.
 
 ## Ethics and limitations
 
-A follow list is public, but assembling thousands of ties into a map of
-someone's social world creates information that never existed in any one
-place — treat crawled networks as sensitive even when every edge is
-public. Our boundary choices (one ego, 100 sampled alters, two pages of
-follows per alter) are *measurement decisions* that shape every statistic
-above; report them. Centrality and community labels are descriptions of
-the crawled graph, not of the people. And the graph is a snapshot:
-follows churn constantly.
+**Network data is always about third parties.** The ego in this document
+is an institution, a newsroom whose public account is part of its
+professional output, but the alters, mostly individual journalists, and
+the follow relationships among them belong to people who never opted
+into a study. They are [public records](https://atproto.com/guides/data-repos)
+under the AT Protocol, yet research consistently finds that users are
+surprised to learn their public traces are used in research (Fiesler &
+Proferes 2018). Practical consequences for your own projects:
+
+* **Minimize.** We stored only DIDs, handles, and aggregate public
+  counts: no posts, descriptions, or avatars.
+* **Aggregate when reporting.** Prefer community-level and network-level
+  statistics over claims about named people, especially low-follower
+  accounts.
+* **Think before you share edge lists.** A follow network of identifiable
+  individuals can reveal affiliations (political, medical, religious)
+  that no single profile discloses. A map assembled from thousands of
+  public ties creates information that never existed in any one place.
+  Consider de-identifying DIDs before publishing, and record your
+  collection date so deletions and unfollows can be honored.
+* **Boundary specification is also an ethical decision.** Whoever your
+  crawl touches becomes a research subject. A seeded sample of an
+  institutional ego's follows is a deliberately conservative choice;
+  snowballing outward from strangers raises the stakes with every wave.
+
+**Limitations to keep in view:** our per-alter crawl was truncated at the
+most recent follows, so within-network edges from prolific followers are
+undercounted; the network is a single snapshot of a constantly churning
+graph; centrality and community labels describe the crawled graph, not
+the people; one ego's neighborhood generalizes to nothing beyond itself;
+and Bluesky's user base, early adopters and waves of Twitter migrants, is
+not a sample of any broader population.
 
 ## Exercises
 
-1. Re-crawl with `N_ALTERS = 50` and compare density and modularity to
-   the 100-alter network — how sensitive are they to the boundary?
-2. Add eigenvector centrality (`eigen_centrality()`) to the comparison
-   table. Which accounts move most between rankings?
-3. Compute transitivity (`transitivity(G_undirected)`) and compare it to
-   the density — what does the gap tell you about clustering?
-4. Build the ego network from *followers* instead of follows — sampling
-   alters from one page of recent followers, since this ego has over a
-   million. How does its structure differ?
-5. Color the network plot by `followers_count` quantile instead of
-   community. Do the big accounts cluster together?
+1. **Change the ego.** Set `EGO_HANDLE` to a different account, such as
+   `bsky.app`, and re-run the document from Section 2 onward. Pick an ego
+   that follows at least a few hundred accounts so there is something to
+   sample, and compare its density and reciprocity to the values above.
+2. **Grow (or re-draw) the sample.** Increase `N_ALTERS` to 200 (roughly
+   doubling the crawl, still polite) or simply change `SEED` and re-run.
+   Which summary statistics stay stable across samples and which jump
+   around? This gives you a hands-on feel for sampling error.
+3. **Deepen the crawl.** Raise `FOLLOWS_PER_ALTER` from 200 to 500 and
+   rebuild the network with the same alters and seed. How many
+   within-network edges appear that the shallower crawl missed, and
+   which alters contribute them? This quantifies the truncation bias
+   discussed in Section 3.
+4. **Add a fourth centrality.** Compute closeness centrality
+   (`closeness()`) or eigenvector centrality (`eigen_centrality()`), add
+   it to the Section 5 comparison, and compute Spearman rank correlations
+   among all four measures with `cor(..., method = "spearman")`. Which
+   pair disagrees most, and what kinds of accounts drive the
+   disagreement?
+5. **Reciprocity by community.** For each Louvain community, extract the
+   members' subgraph with `induced_subgraph()` and compute
+   `reciprocity()` within it. Are ties inside communities more mutual
+   than the network-wide rate from Section 4? Interpret your answer in
+   light of the news-medium-versus-social-network distinction.
+6. **Compare two egos' communities.** Build a second ego network around a
+   different institutional ego, run Louvain on both, and compare
+   modularity, the number and sizes of communities, and any alters the
+   two networks share. Do the shared alters sit in structurally similar
+   communities in each network?
 
 ## Research project ideas
 
-* **Homophily in follow ties.** Annotate alters with public profile
-  features (e.g. occupation keywords from bios) and test whether ties are
-  more likely within categories than between them.
-* **Brokerage and information arrival.** For a panel of egos, test
-  whether accounts bridging communities (high betweenness) post links
-  earlier than accounts embedded in a single community.
+**1. Homophily across many ego networks.** McPherson, Smith-Lovin & Cook
+(2001) argue that homophily is among the most robust regularities in
+social life, but most platform evidence comes from a handful of giant
+graphs. *Question:* do follow ties on Bluesky cluster by observable
+account attributes, and does that clustering vary across egos? *Data:*
+30–50 public-facing egos (for example, the members of a public starter
+pack), each with a seeded 1.5-degree network built with this part's
+pipeline, hydrating attributes such as follower-count tier and account
+age. *Method:* Louvain on each network, attribute assortativity with
+igraph's `assortativity_nominal()`, and the alignment between
+communities and attributes. *Expected challenge:* profile-derived
+attributes are noisy proxies, and testing many attributes across many
+egos invites false positives, so pre-register which you will test.
+
+**2. How much does the boundary matter? A sensitivity study.** Laumann,
+Marsden & Prensky (1983) warned that boundary specification can drive
+results, but the warning is rarely quantified for platform data.
+*Question:* how sensitive are standard network statistics to
+defensible-but-different boundary choices? *Data:* one or two egos,
+crawled under systematically varied rules: alters from follows versus
+followers, samples of 50/100/200 alters, crawls truncated at 200 versus
+1,000 follows per alter. *Method:* density, reciprocity, transitivity,
+centrality rankings and Louvain partitions under every condition, with
+rank correlations between rankings and partition similarity
+(`compare(..., method = "adjusted.rand")`) across conditions. *Expected
+challenge:* API calls multiply quickly, so cache every crawl to disk (as
+in Section 8), and decide in advance which differences count as "large".
+
+**3. Migration cohorts and community structure.** Bluesky's population
+arrived in waves: early invite-code adopters, then surges around
+successive Twitter policy shocks. *Question:* do communities in personal
+follow networks align with *when* alters joined, a cohort homophily
+layered on topical homophily? *Data:* ego networks built with this
+pipeline, with each alter's account-creation date from its profile.
+*Method:* test whether Louvain communities differ in median join date
+(`kruskal.test()`) and whether ties are assortative by join cohort.
+*Expected challenge:* creation dates mark when an account was made, not
+when a tie formed (the follow endpoints expose no edge timestamps), so
+you can establish cohort *clustering* but not the tie-formation
+*process*.
 
 ## References
 
 ### Scholarship
 
-* Laumann, E. O., Marsden, P. V., & Prensky, D. (1983). The boundary specification problem in network analysis. In R. S. Burt & M. J. Minor (Eds.), *Applied Network Analysis* (pp. 18–34). Sage.
-* Granovetter, M. (1973). The strength of weak ties. *American Journal of Sociology*, 78(6), 1360–1380.
+* Blondel, V. D., Guillaume, J.-L., Lambiotte, R., & Lefebvre, E. (2008). Fast unfolding of communities in large networks. *Journal of Statistical Mechanics*, P10008. <https://doi.org/10.1088/1742-5468/2008/10/P10008>
 * Burt, R. S. (2004). Structural holes and good ideas. *American Journal of Sociology*, 110(2), 349–399.
-* Kwak, H., Lee, C., Park, H., & Moon, S. (2010). What is Twitter, a social network or a news media? *WWW '10*.
-* Blondel, V. D., Guillaume, J.-L., Lambiotte, R., & Lefebvre, E. (2008). Fast unfolding of communities in large networks. *Journal of Statistical Mechanics*, P10008.
+* Clauset, A., Shalizi, C. R., & Newman, M. E. J. (2009). Power-law distributions in empirical data. *SIAM Review*, 51(4), 661–703. <https://doi.org/10.1137/070710111>
+* Conover, M. D., Ratkiewicz, J., Francisco, M., Gonçalves, B., Menczer, F., & Flammini, A. (2011). Political polarization on Twitter. *Proceedings of ICWSM*. <https://doi.org/10.1609/icwsm.v5i1.14126>
+* Easley, D., & Kleinberg, J. (2010). *Networks, Crowds, and Markets: Reasoning About a Highly Connected World*. Cambridge University Press. <https://www.cs.cornell.edu/home/kleinber/networks-book/>
+* Fiesler, C., & Proferes, N. (2018). "Participant" perceptions of Twitter research ethics. *Social Media + Society*, 4(1). <https://doi.org/10.1177/2056305118763366>
+* Granovetter, M. (1973). The strength of weak ties. *American Journal of Sociology*, 78(6), 1360–1380.
+* Kwak, H., Lee, C., Park, H., & Moon, S. (2010). What is Twitter, a social network or a news media? *Proceedings of WWW '10*, 591–600. <https://doi.org/10.1145/1772690.1772751>
+* Laumann, E. O., Marsden, P. V., & Prensky, D. (1983). The boundary specification problem in network analysis. In R. S. Burt & M. J. Minor (Eds.), *Applied Network Analysis* (pp. 18–34). Sage.
+* McPherson, M., Smith-Lovin, L., & Cook, J. M. (2001). Birds of a feather: Homophily in social networks. *Annual Review of Sociology*, 27, 415–444. <https://doi.org/10.1146/annurev.soc.27.1.415>
+* Menczer, F., Fortunato, S., & Davis, C. A. (2020). *A First Course in Network Science*. Cambridge University Press. <https://cambridgeuniversitypress.github.io/FirstCourseNetworkScience/>
 
 ### Documentation
 
 * igraph for R: <https://r.igraph.org/>
 * `app.bsky.graph.getFollows`: <https://endpoints.bsky.app/#bluesky-app/tag/appbskygraph/GET/xrpc/app.bsky.graph.getFollows>
+* `app.bsky.graph.getFollowers`: <https://endpoints.bsky.app/#bluesky-app/tag/appbskygraph/GET/xrpc/app.bsky.graph.getFollowers>
+* `app.bsky.graph.getKnownFollowers`: <https://endpoints.bsky.app/#bluesky-app/tag/appbskygraph/GET/xrpc/app.bsky.graph.getKnownFollowers>
+* AT Protocol: [DIDs](https://atproto.com/specs/did), [handles](https://atproto.com/specs/handle), [lexicons](https://atproto.com/guides/lexicon)
 * bskyr: <https://christophertkenny.com/bskyr/>
 * R Markdown: <https://rmarkdown.rstudio.com/docs/>

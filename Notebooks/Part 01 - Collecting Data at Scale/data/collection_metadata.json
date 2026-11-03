@@ -3,7 +3,7 @@
     "handle": "nytimes.com",
     "did": "did:plc:eclio37ymobqex2ncko63h4r"
   },
-  "collected_at_utc": "2026-11-03T18:45:23.487186+00:00",
+  "collected_at_utc": "2026-11-03T20:11:05.777538+00:00",
   "authenticated": false,
   "atproto_sdk_version": "0.0.73",
   "collections": {
@@ -14,7 +14,9 @@
         "limit": 100,
         "max_pages": 100
       },
-      "n_records": 9040,
+      "pages_fetched": 100,
+      "truncated": true,
+      "n_records": 9039,
       "notes": "Original posts only; reposts of other accounts excluded."
     },
     "follows.csv": {
@@ -24,6 +26,8 @@
         "limit": 100,
         "max_pages": 40
       },
+      "pages_fetched": 2,
+      "truncated": false,
       "n_records": 123
     },
     "followers.csv": {
@@ -33,7 +37,9 @@
         "limit": 100,
         "max_pages": 20
       },
-      "n_records": 1849
+      "pages_fetched": 20,
+      "truncated": true,
+      "n_records": 1848
     }
   }
 }
