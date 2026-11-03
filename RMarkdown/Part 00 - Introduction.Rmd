@@ -43,6 +43,8 @@ By the end of this document you will be able to:
    cursors for you.
 5. Describe how to write to the network (posts, likes, images with alt
    text), and why these tutorials never do it automatically.
+6. Find the right documentation for a question: the API reference, the
+   protocol documentation, or the bskyr reference.
 
 ### Code
 
@@ -76,7 +78,7 @@ it at any time. Never put your main account password in code. There are
 two ways to supply credentials:
 
 1. Set `BLUESKY_APP_USER` and `BLUESKY_APP_PASS` in your `~/.Renviron`
-   (bskyr's native mechanism, via `bs_set_user()` and `bs_set_pass()`).
+   (bskyr's native mechanism, via [`bs_set_user()`](https://christophertkenny.com/bskyr/reference/bs_set_user.html) and [`bs_set_pass()`](https://christophertkenny.com/bskyr/reference/bs_set_pass.html)).
 2. Save an `atproto.json` file — the same file the Python notebooks use —
    in the repository root: `{"handle": "you.bsky.social", "password": "..."}`.
    It is gitignored, so credentials never end up in version control.
@@ -95,13 +97,13 @@ source("bsky_client.R")
 knitr::opts_chunk$set(eval = bsky_authed)
 ```
 
-When credentials are present, `bs_auth()` exchanges them for a session
+When credentials are present, [`bs_auth()`](https://christophertkenny.com/bskyr/reference/bs_auth.html) exchanges them for a session
 token that every subsequent bskyr call reuses (it is cached for a few
 minutes, so repeated calls don't re-authenticate).
 
 ## Profile
 
-`bs_get_profile()` wraps the API endpoint `app.bsky.actor.getProfiles`
+[`bs_get_profile()`](https://christophertkenny.com/bskyr/reference/bs_get_profile.html) wraps the API endpoint `app.bsky.actor.getProfiles`
 and returns one row per requested account.
 
 Two identifiers appear in every profile, and the difference matters for
@@ -147,7 +149,7 @@ becomes a row, which is how Part 01 hydrates accounts in batches.
 
 ## Posts
 
-`bs_get_author_feed()` wraps `app.bsky.feed.getAuthorFeed` and returns an
+[`bs_get_author_feed()`](https://christophertkenny.com/bskyr/reference/bs_get_author_feed.html) wraps `app.bsky.feed.getAuthorFeed` and returns an
 account's recent posts, newest first. Each row is one feed item, and the
 post's engagement counters (`like_count`, `repost_count`, ...) are
 ordinary columns. The author's actual words live somewhere new: a
@@ -180,13 +182,35 @@ This `mutate()` + `map_chr()` pattern appears in every part of the
 series — it is the single most useful idiom for working with bskyr's
 output.
 
+## Where to find documentation
+
+You have now called your first endpoint, so this is a good moment to learn where its documentation lives. There are four sources, and each one answers a *different* question. Most of the time a beginner loses looking something up is spent asking the right question of the wrong source.
+
+| Source | What it is | Published by | The question it answers | Watch out for |
+|---|---|---|---|---|
+| [endpoints.bsky.app](https://endpoints.bsky.app) | The **Bluesky HTTP API reference**: an interactive page for every endpoint | Bluesky Social PBC | *What can I call, with which parameters, and what comes back?* Parameters (including their allowed values), response fields, and which server answers which requests | It doesn't reliably tell you which endpoints need a login: it lists no login requirement for search or the timeline, yet both refuse anonymous callers. When in doubt, try the call, as this series does. |
+| [atproto.com](https://atproto.com/docs) | The **AT Protocol** documentation: concepts, guides, and the formal specifications | Bluesky Social PBC | *How does the network work?* Why a DID is permanent and a handle isn't, what a record and a repository are, what the firehose carries | It describes the protocol, not the individual `app.bsky.*` endpoints. |
+| [atproto.blue](https://atproto.blue) | Documentation for the **Python `atproto` SDK** this series uses | A community project ([MarshalX/atproto](https://github.com/MarshalX/atproto)), not Bluesky itself | *How do I write this call in Python, and what attributes will the object have?* | The SDK is pre-1.0, and its maintainers warn that compatibility between versions is not guaranteed. That is why this repository pins its version. |
+| [bskyr reference](https://christophertkenny.com/bskyr/reference/) | Documentation for the **R package bskyr**, the R series' counterpart of atproto.blue | Christopher Kenny | *How do I write this call in R, and what columns will the tibble have?* | bskyr logs in for every call, even to read public data. |
+
+### One endpoint, four views
+
+Take the call you just made, which fetched an account's recent posts, and look it up in each source:
+
+1. **Its name.** `app.bsky.feed.getAuthorFeed` is an [NSID](https://atproto.com/specs/nsid) (namespaced identifier): reversed-domain-style dotted words naming a method. The method is defined in a [Lexicon](https://atproto.com/specs/lexicon) schema and called over [XRPC](https://atproto.com/specs/xrpc), the protocol's convention for HTTP requests. Those three terms are atproto.com's territory.
+2. **Its contract.** [Its page on endpoints.bsky.app](https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getAuthorFeed) lists every parameter and response field. It also shows options this series rarely uses: `filter` values such as `posts_with_video` and `posts_and_author_threads`, and an `includePins` switch. The reference is where you discover what an endpoint *can* do.
+3. **In Python** it is `client.get_author_feed(...)`, or equivalently `client.app.bsky.feed.get_author_feed({...})`, documented [on atproto.blue](https://atproto.blue/atproto_client/client/#atproto_client.client.client.Client.get_author_feed).
+4. **In R** it is `bs_get_author_feed()`, documented [in the bskyr reference](https://christophertkenny.com/bskyr/reference/bs_get_author_feed.html).
+
+A tip for finding an endpoint's page on endpoints.bsky.app: the addresses follow a pattern, `https://endpoints.bsky.app/#bluesky-app/tag/<namespace without the dots>/GET/xrpc/<NSID>`. For `app.bsky.graph.getFollows`, the namespace is `app.bsky.graph`, so the tag is `appbskygraph`. (Two exceptions in this series: the raw firehose, `com.atproto.sync.subscribeRepos`, is documented in the [event-stream specification](https://atproto.com/specs/event-stream) on atproto.com, and Jetstream has its own document on endpoints.bsky.app, which Part 10 links.) The old `docs.bsky.app` site that older tutorials link to has been retired; its endpoint links now land on the reference's front page.
+
 ## Timeline
 
 The home timeline — the reverse-chronological feed of accounts *you*
 follow — is defined relative to the logged-in account, which is why this
 endpoint always requires authentication:
 
-`bs_get_timeline()` returns a differently shaped tibble from the other
+[`bs_get_timeline()`](https://christophertkenny.com/bskyr/reference/bs_get_timeline.html) returns a differently shaped tibble from the other
 functions: the author is a packed column (`post_author`, whose `handle`
 we reach with `$`), and the record is the list-column `post_record`. To
 avoid printing other people's posts, we list only the first few authors:
@@ -202,7 +226,7 @@ head(timeline$post_author$handle, 5)
 
 ### Follows
 
-`bs_get_follows()` wraps `app.bsky.graph.getFollows`: the accounts an
+[`bs_get_follows()`](https://christophertkenny.com/bskyr/reference/bs_get_follows.html) wraps `app.bsky.graph.getFollows`: the accounts an
 actor follows, one profile per row.
 
 ```{r follows}
@@ -234,7 +258,7 @@ Part 01 unpacks exactly what is happening under the hood here.
 
 ### Followers
 
-`bs_get_followers()` is the mirror image: accounts that follow the actor.
+[`bs_get_followers()`](https://christophertkenny.com/bskyr/reference/bs_get_followers.html) is the mirror image: accounts that follow the actor.
 Followers are mostly private individuals who never chose to be in your
 dataset, so rather than printing anyone's profile, we look at what *kind*
 of information each row contains:
@@ -265,7 +289,7 @@ bs_post(text = "I am posting this from an R Markdown notebook!")
 
 ### Liking a post
 
-`bs_like()` points at a post by its `uri` (its permanent AT Protocol
+[`bs_like()`](https://christophertkenny.com/bskyr/reference/bs_like.html) points at a post by its `uri` (its permanent AT Protocol
 address: the author's DID, the record type, and a record key) and its
 `cid` (a hash of the post's exact content). Both are columns in any feed
 tibble:
@@ -276,7 +300,7 @@ bs_like(uri = profile_feed$uri[[1]], cid = profile_feed$cid[[1]])
 
 ### Writing a post with an image
 
-`bs_post()` uploads images for you and attaches alt text — which Part 07
+[`bs_post()`](https://christophertkenny.com/bskyr/reference/bs_post.html) uploads images for you and attaches alt text — which Part 07
 shows is both an accessibility practice and a research object:
 
 ```{r post-image, eval=FALSE}
@@ -351,7 +375,7 @@ adopters and people who left Twitter.
 
 ### Documentation
 
-* bskyr documentation: <https://christophertkenny.com/bskyr/>
+* bskyr documentation: <https://christophertkenny.com/bskyr/> (function reference: <https://christophertkenny.com/bskyr/reference/>)
 * Bluesky HTTP API reference: <https://endpoints.bsky.app/>
 * AT Protocol documentation: <https://atproto.com/docs>
 * R Markdown documentation: <https://rmarkdown.rstudio.com/docs/>
