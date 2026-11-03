@@ -80,7 +80,8 @@ with raw lists and `purrr`.
 ## 1. Finding a study post
 
 We need a post with a deep conversation under it. The official
-`bsky.app` account reliably draws large reply threads. We keep only its
+`bsky.app` account reliably draws large reply threads. We fetch its
+recent feed with [`bs_get_author_feed()`](https://christophertkenny.com/bskyr/reference/bs_get_author_feed.html) and keep only its
 *original* posts, dropping reposts (someone else's post) and replies
 (the account joining someone else's conversation), using the
 `is_repost()` and `is_reply()` helpers from `bsky_client.R`:
@@ -103,7 +104,7 @@ case_study |> select(uri, reply_count, like_count, repost_count, text)
 
 ## 2. From thread views to reply trees
 
-`bs_get_post_thread()` returns the post and its replies nested `depth`
+[`bs_get_post_thread()`](https://christophertkenny.com/bskyr/reference/bs_get_post_thread.html) returns the post and its replies nested `depth`
 levels down. We start, as the Python notebook does, with a shallow
 request (`THREAD_FIRST_DEPTH`, two levels), so that truncation is easy
 to see. With `clean = FALSE` the response is the API's JSON as a
@@ -239,6 +240,13 @@ c(
 )
 ```
 
+The observed value sits between the two poles, as almost all real
+cascades do, and much closer to the broadcast star than to the chain:
+Goel et al. (2016) found the same across a billion Twitter events.
+Because the server prunes busy threads mostly at the first level (direct
+replies to the root), the true cascade is probably even more
+broadcast-like than the tree we retrieved.
+
 ```{r depth-profile, fig.width=8, fig.height=4}
 tibble(depth = depths[is.finite(depths)]) |>
   count(depth) |>
@@ -270,7 +278,7 @@ plot(Gt, layout = layout,
 Replying is one engagement among several. Likes carry two timestamps —
 `createdAt` from the liker's client and `indexedAt` from the network —
 which lets us reconstruct the post's attention curve. With
-`clean = FALSE`, `bs_get_post_likes()` hands back a list of raw response
+`clean = FALSE`, [`bs_get_post_likes()`](https://christophertkenny.com/bskyr/reference/bs_get_post_likes.html) hands back a list of raw response
 pages; each page has a `$likes` list whose elements we flatten into one
 row apiece, then convert "when was this like indexed" into "hours since
 the post was born".
@@ -318,6 +326,12 @@ c(likes_retrieved = nrow(likes) + impossible,
   indexed_before_post_dropped = impossible)
 ```
 
+Compare the likes retrieved with the count the post reported. Withdrawn
+likes and deleted accounts explain a small gap. A large gap, even when
+we stayed under `LIKES_CAP`, means the endpoint stopped returning pages
+early: the like list is a sample, not a census, and everything we
+compute from it inherits that.
+
 ### The burst, then the decay
 
 ```{r burst, fig.width=8, fig.height=4}
@@ -343,9 +357,9 @@ shape of social media attention.
 
 ### Reposters and quoters
 
-Two lighter-weight channels remain. `bs_get_reposts()` lists who
+Two lighter-weight channels remain. [`bs_get_reposts()`](https://christophertkenny.com/bskyr/reference/bs_get_reposts.html) lists who
 amplified the post to their own followers (profiles only, no
-timestamps), and `bs_get_quotes()` lists posts that embed it, each the
+timestamps), and [`bs_get_quotes()`](https://christophertkenny.com/bskyr/reference/bs_get_quotes.html) lists posts that embed it, each the
 root of a potential new cascade. Both are capped by the parameters at
 the top of the document:
 
@@ -368,8 +382,16 @@ both <- intersect(likes$did, reposters$did)
 c(likers = n_distinct(likes$did),
   reposters = n_distinct(reposters$did),
   both = length(both),
-  share_of_reposters_who_liked = round(length(both) / nrow(reposters), 2))
+  share_of_reposters_who_liked = round(length(both) / nrow(reposters), 2),
+  share_of_likers_who_reposted = round(length(both) / n_distinct(likes$did), 3))
 ```
+
+Read the two shares against each other. Only a small fraction of likers
+go on to repost: engagement behaves like a funnel from cheap signals to
+costly ones. The other direction varies more from post to post: most
+reposters of a product announcement also like it, but a post people
+share to argue with can draw many reposts without likes. And if the like
+list is incomplete (see the shortfall above), the overlap is undercounted.
 
 ## 5. Heavy-tailed engagement across posts
 
@@ -452,6 +474,17 @@ conditioning on *content verified externally*, not on success. The
 honest design defines the population of posts first (an account's full
 history, a time window from the firehose — Part 10) and treats cascade
 size as the outcome, never the sampling criterion.
+
+This document did that only halfway, and it is worth being precise about
+which half. The **engagement distributions** in Section 5 are
+success-blind: they use each account's most recent posts, a time window
+chosen before looking at engagement. The **case-study cascade** in
+Sections 2–4 is not: we picked it *because* it had the most replies of
+`bsky.app`'s recent posts, which is sampling on the dependent variable
+in miniature. Its size, depth and structural virality describe an
+outlier chosen for being large, and tell us nothing about how a typical
+post spreads. A success-blind version would compute the same cascade
+metrics for *every* post in the time window, small and large alike.
 
 ## Ethics and limitations
 
