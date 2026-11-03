@@ -694,86 +694,216 @@ coders err too, and validation cuts both ways.
 
 ## 8. When are LLM labels defensible as research measures?
 
-The emerging consensus (Gilardi et al. 2023; Törnberg 2023; Ziems et al.
-2024; Ollion et al. 2024): LLM annotation is defensible when (1)
-validated against human gold labels *on your own task and corpus*, (2)
-accompanied by the exact codebook, prompt, and model string (the value
-of `DEFAULT_MODEL`, not just "Claude"), (3) re-validated when any of
-them changes, and (4) reported with the same agreement statistics you
-would demand of human coders, including the confusion matrix and
-per-category precision and recall. It is not defensible as an oracle:
-hosted models are updated and retired, so save every raw response and
-the date you collected it. The workflow in this document *is* the
-argument: instrument, gold standard, baseline, metrics, error analysis.
+Suppose you now add an API key, run Section 4.4, and find the LLM agrees
+with your gold labels at kappa = 0.85. What does defensible use of those
+labels look like? The emerging methodological consensus:
+
+**Defensible practice**
+
+* **Validate on a gold sample, every time.** Performance varies sharply
+  across tasks, languages, and even prompt phrasings (Ziems et al.
+  2024). A kappa from someone else's paper — or from your own *previous*
+  project — does not transfer.
+* **Version everything**: the exact codebook text, the exact prompt
+  template, the exact model string (the value of `DEFAULT_MODEL`, not
+  just "Claude"), the parameters, and the dates. The prompt + model
+  **is** your instrument; readers must be able to inspect it, and you
+  must be able to detect when it changes underneath you.
+* **Report uncertainty.** Publish the confusion matrix and per-category
+  precision and recall, not a single accuracy number. If you collected
+  confidence scores, use them — route low-confidence posts to human
+  review, or carry label uncertainty into downstream estimates rather
+  than pretending the labels are exact.
+* **Re-validate when anything changes** — a new time period, a new
+  community, a new model version. Domain drift quietly degrades
+  annotators that validated beautifully last year.
+
+**Standing concerns**
+
+* **Closed-model reproducibility.** Hosted models are updated and
+  eventually retired; the same prompt can return different labels next
+  year, and no parameter setting ever guaranteed identical outputs
+  (Ollion et al. 2024). Mitigations: save every raw model response (not
+  just the parsed labels), pin dated model versions where the provider
+  offers them, and report collection dates — while recognizing that,
+  unlike a keyword dictionary, a hosted instrument can never be
+  perfectly frozen. Open-weight models trade some capability for
+  genuine freezability.
+* **Zero-shot vs. few-shot.** Our prompt is *zero-shot*: codebook, post,
+  no worked examples. Adding a handful of labeled examples to the prompt
+  (*few-shot*) often helps — Gilardi et al. (2023) found zero-shot
+  ChatGPT already competitive with crowd workers, and Törnberg (2023)
+  found it competitive with experts on political tweets, while Ziems et
+  al. document task-dependent gains from examples. Few-shot examples are
+  part of the instrument too: choose them deliberately (cover the edge
+  cases, not just the easy wins), document them, and never let your
+  validation posts leak into the prompt.
+* **The benchmark perspective.** Ziems et al.'s multi-task benchmark is
+  a useful prior: LLMs do best on tasks with crisp, surface-visible
+  definitions (topic, relevance) and worst on subtle latent constructs
+  (implicit stance, figurative language, expert framing tasks).
+  Calibrate your expectations — and your validation-sample size — to
+  where your task sits on that spectrum.
+* **Bias auditing.** LLM errors are not random: models can be
+  systematically better at labeling some dialects, communities, or
+  viewpoints than others. If your research design compares groups,
+  validate *within* each group, not just overall.
 
 ## Ethics and limitations
 
-Sending posts to a commercial API is a *disclosure* of user content to a
-third party — minimize (send text only, never handles or DIDs), check
-the provider's data-use and retention terms, and consider whether your
-IRB considers this sharing. We annotated a news organization's account:
-posts an institution wrote for publication, not a private person's
-expression. Topic-labeling a stranger's posting history builds a
-profile of someone who never opted in, and needs justification. LLMs
-encode training biases that can label some dialects or stances
-systematically differently; per-category metrics and error reading are
-your detection tools. Our gold labels were coded by the tutorial
-authors, who also wrote the keyword lists, and 60 posts leave wide
-uncertainty around kappa: a real study needs independent double coding
-with reported inter-coder reliability and a larger validation sample.
-Finally, one news organization's edited, headline-style posts say
-little about Bluesky at large.
+**Sending user content to third-party servers.** Every post you annotate
+with a hosted LLM is transmitted to another company's infrastructure —
+in our case Anthropic's. The posts here are public, but public
+availability is not blanket consent (Fiesler & Proferes 2018), and users
+who tolerated their posts being *read* may not expect them to be
+*processed by an AI company*. Before annotating at scale: check the
+provider's data-use and retention terms (whether API inputs are used for
+training, and how long they are retained); minimize what you send — our
+prompt contains only the post text, not handles, DIDs, or profile data;
+consider your IRB's view on transmitting user data to a third party; and
+prefer locally run open-weight models for sensitive populations or
+topics where the transmission itself is the harm.
+
+**One institutional account.** We deliberately annotated a news
+organization's account: posts written for publication by an
+institution, not a person's private expression. Topic-labeling an
+arbitrary stranger's posting history produces a behavioral profile of a
+person who never opted into being profiled. Legitimate designs exist
+(public officials, aggregates across many accounts), but they need
+justification — especially for categories more sensitive than "politics
+vs. other."
+
+**The gold standard is the weakest link here.** Sixty posts coded by the
+tutorial authors, who also wrote the keyword lists, is a demonstration,
+not a measurement. Real projects need multiple independent coders,
+reported inter-coder reliability, and a validation sample sized to put
+acceptably tight confidence intervals on kappa — 60 posts leaves wide
+ones.
+
+**Labels are not ground truth.** Even a perfect annotator only
+reproduces the codebook's worldview. Our rule 2, for instance,
+*constructs* a particular boundary between politics and sports rather
+than discovering one. Automated content analysis scales your codebook's
+assumptions right along with its categories (Grimmer & Stewart 2013).
+
+**Representativeness.** One news organization's feed says nothing about
+Bluesky at large — its posts are edited, headline-style text, unlike
+most users' posts — and Bluesky's early-adopter, Twitter-migrant skew
+says nothing about the general public (Mislove et al. 2011). The
+pipeline transfers; the prevalence estimates do not.
 
 ## Exercises
 
-1. **Be a second coder.** Have a classmate independently code 20 of the
-   gold posts using *only* the codebook text, then compute the
-   human–human kappa with `cohen_kappa()`. Compare it to the
-   machine–human kappa: agreement ceilings are properties of tasks.
-2. **Extend the codebook to four categories.** Split `other` into
-   `sports` and `lifestyle` in a copy of `codebook.json`, recode 20
-   posts, and note which new boundary disputes need decision rules.
-3. **Improve the baseline, carefully.** Add or remove keywords in a copy
-   of `codebook.json` and re-run the validation. Every fix used the gold
-   sample itself, so your improved kappa is optimistic — you trained on
-   the test set (as, the Section 5 caution admits, did the original
-   lists). How would you measure the improvement honestly?
-4. **Run the real LLM annotator.** With an Anthropic API key, run
-   Section 4.4, then re-run Sections 6–7. Does the LLM recover the
-   "no keywords matched" posts? Run it twice and measure its
-   self-agreement (test–retest reliability).
-5. **Calibration.** Compute agreement separately for posts where the
-   LLM's reported confidence is above and below 0.8. Is the model more
-   accurate on posts it claims to be sure about?
+1. **Extend the codebook to four categories.** Split `other` into
+   `sports` and `lifestyle` (recipes, shopping advice, games, and the
+   like), both common in `data/posts.csv`. Copy the shared
+   `codebook.json` (its path is `CODEBOOK_PATH`), update `labels`, the
+   codebook text, and the decision rules in your copy, then re-read 20
+   posts and check that *you* can apply the new scheme consistently
+   before asking any machine to. Notice how every added category creates
+   new boundary disputes that need decision rules: is a story about a
+   stadium's security budget `sports` or `politics`?
+2. **Grow the gold standard and recompute.** Sample 20 posts from
+   `data/posts.csv` that are *not* already in the gold file, hand-code
+   them with the codebook, append them to a copy of the gold labels
+   (leave the original 60 rows untouched), and re-run Sections 5–6. Does
+   kappa move? With n = 80 instead of 60, your estimates also get more
+   stable — small validation samples leave wide uncertainty around kappa.
+3. **Be a second coder.** Have a classmate independently code 20 of the
+   gold posts using *only* the codebook text (no peeking at
+   `gold_label`), then compute the human–human Cohen's kappa with
+   `cohen_kappa()`. Compare it to the machine–human kappa: agreement
+   ceilings are properties of tasks, and the human–human number tells
+   you what ceiling to expect.
+4. **Improve the keyword baseline — carefully.** Read all of the
+   disagreements from Section 7, add or remove keywords in
+   `keyword_rules` in a copy of `codebook.json`, and re-run the
+   validation. Then reflect: every fix you made used the gold sample
+   itself, so your improved kappa is optimistic — you have effectively
+   trained on your test set (as, the Section 5 caution admits, did the
+   authors of the original lists). How would you measure the improvement
+   honestly?
+5. **Run the real LLM annotator and compare.** Get an API key from
+   [Anthropic](https://docs.claude.com), set it with
+   `Sys.setenv(ANTHROPIC_API_KEY = "...")` (or in `.Renviron`), and
+   re-run Section 4.4 (cost: well under a dollar). Then re-run Sections
+   6–7 with `gold$llm_label` in place of `baseline_label`. Where does the
+   LLM beat the keywords — does it recover the "no keywords matched"
+   posts from the error analysis? Where does it still disagree with the
+   gold labels?
+6. **Test prompt variations.** With a key, try at least two variants:
+   (a) delete the DECISION RULES block from the codebook text before
+   building prompts, and (b) add three labeled few-shot examples to the
+   prompt (chosen from posts *outside* the gold sample — never let
+   validation posts leak into the prompt). Recompute kappa for each
+   variant. How sensitive is your "instrument" to its wording?
 
 ## Research project ideas
 
-* **Does one validation generalize across communities?** Validate the
-  same codebook and annotator on gold samples from two contrasting
-  communities (say, accounts from two starter packs, Part 09), and
-  compare where the annotator fails in each — disentangling annotator
-  failure from codebook misfit.
-* **Annotator drift audit.** Re-run the same prompt and gold sample
-  monthly across model versions and tiers, and chart agreement over
-  time — a reliability study of the instrument itself.
-* **Dialect fairness.** Build gold samples in two language varieties and
-  test whether LLM agreement differs, extending the algorithmic-bias
-  audit tradition to annotation.
+**1. Does one validation generalize across communities?** LLM
+annotators are usually validated once, on one sample — but Bluesky hosts
+very different communities. *Question:* does an annotator (LLM or
+otherwise) validated on one community's posts perform equally well on
+another's? *Data:* posts from accounts in two contrasting starter packs
+or feeds (Part 09 shows how to enumerate them) — say, academic Bluesky
+versus sports or fandom Bluesky. *Method:* one shared codebook; a
+separate human-coded gold sample of 60–100 posts per community;
+per-community kappa, confusion matrices, and error analyses; a
+comparison of *where* the annotator fails in each. *Expected challenge:*
+building genuinely comparable gold standards — the codebook will fit one
+community better than the other, and you must disentangle annotator
+failure from codebook misfit, which is itself a finding worth reporting.
+
+**2. Prompt and model sensitivity as a measurement-stability study.** If
+the prompt-plus-model is the instrument, how stable is the instrument?
+*Question:* how much do labels change across reasonable paraphrases of
+the same codebook, across zero-shot versus few-shot prompts, and across
+model tiers (e.g., the Haiku, Sonnet, and Opus tiers listed in
+`MODEL_PRICES`)? *Data:* a fixed corpus of ~500 posts plus a 100-post
+gold sample. *Method:* a factorial grid of prompt variants × models; for
+each cell, kappa against gold *and* pairwise label-flip rates between
+cells; identify which posts flip under every perturbation. *Expected
+challenge:* cost grows with the grid, and you must separate instrument
+instability from genuine ambiguity — posts that flip across prompts are
+often posts human coders would also dispute, so collect human
+disagreement data on the flippers.
+
+**3. Validated prevalence estimation for political talk on Bluesky.**
+Much published Twitter work estimated the *prevalence* of some content
+category (incivility, misinformation engagement, political talk).
+*Question:* what share of posting by a defined population on Bluesky —
+e.g., accounts in a journalism starter pack — is political, and how did
+it change around a major news event (Part 05's event-study skills)?
+*Data:* author feeds for 50–100 accounts over several months. *Method:*
+LLM annotation at scale, validated against a stratified gold sample;
+crucially, correct the headline prevalence estimate for classifier error
+rather than just counting predicted labels, in the spirit of Hopkins &
+King (2010), since even a high-kappa annotator with asymmetric errors
+(like our baseline's low `science_tech` recall) biases raw category
+proportions. *Expected challenge:* misclassification correction needs
+good estimates of the error rates themselves, which pushes you toward a
+larger gold sample — budget your human-coding time as seriously as your
+API spend.
 
 ## References
 
 ### Scholarship
 
-* Cohen, J. (1960). A coefficient of agreement for nominal scales. *Educational and Psychological Measurement*, 20(1), 37–46.
-* Gilardi, F., Alizadeh, M., & Kubli, M. (2023). ChatGPT outperforms crowd workers for text-annotation tasks. *PNAS*, 120(30), e2305016120.
-* Krippendorff, K. (2018). *Content Analysis: An Introduction to Its Methodology* (4th ed.). SAGE.
-* Landis, J. R., & Koch, G. G. (1977). The measurement of observer agreement for categorical data. *Biometrics*, 33(1), 159–174.
+* Cohen, J. (1960). A coefficient of agreement for nominal scales. *Educational and Psychological Measurement*, 20(1), 37–46. [doi:10.1177/001316446002000104](https://doi.org/10.1177/001316446002000104)
+* Fiesler, C., & Proferes, N. (2018). "Participant" perceptions of Twitter research ethics. *Social Media + Society*, 4(1). [doi:10.1177/2056305118763366](https://doi.org/10.1177/2056305118763366)
+* Gilardi, F., Alizadeh, M., & Kubli, M. (2023). ChatGPT outperforms crowd workers for text-annotation tasks. *Proceedings of the National Academy of Sciences*, 120(30), e2305016120. [doi:10.1073/pnas.2305016120](https://doi.org/10.1073/pnas.2305016120)
+* Grimmer, J., & Stewart, B. M. (2013). Text as data: The promise and pitfalls of automatic content analysis methods for political texts. *Political Analysis*, 21(3), 267–297. [doi:10.1093/pan/mps028](https://doi.org/10.1093/pan/mps028)
+* Hopkins, D. J., & King, G. (2010). A method of automated nonparametric content analysis for social science. *American Journal of Political Science*, 54(1), 229–247. [doi:10.1111/j.1540-5907.2009.00428.x](https://doi.org/10.1111/j.1540-5907.2009.00428.x)
+* Krippendorff, K. (2018). [*Content Analysis: An Introduction to Its Methodology*](https://www.sagepub.com/shop/buy-a-book/content-analysis-4-258450) (4th ed.). SAGE Publications.
+* Landis, J. R., & Koch, G. G. (1977). The measurement of observer agreement for categorical data. *Biometrics*, 33(1), 159–174. [doi:10.2307/2529310](https://doi.org/10.2307/2529310)
+* Mislove, A., Lehmann, S., Ahn, Y.-Y., Onnela, J.-P., & Rosenquist, J. N. (2011). Understanding the demographics of Twitter users. *Proceedings of ICWSM*, 5(1), 554–557. [doi:10.1609/icwsm.v5i1.14168](https://doi.org/10.1609/icwsm.v5i1.14168)
 * Ollion, É., Shen, R., Macanovic, A., & Chokri, A. (2024). The dangers of using proprietary LLMs for research. *Nature Machine Intelligence*, 6, 4–5.
-* Törnberg, P. (2023). ChatGPT-4 outperforms experts and crowd workers in annotating political Twitter messages with zero-shot learning. *arXiv preprint* arXiv:2304.06588.
-* Ziems, C., Held, W., Shaikh, O., Chen, J., Zhang, Z., & Yang, D. (2024). Can large language models transform computational social science? *Computational Linguistics*, 50(1), 237–291.
+* Törnberg, P. (2023). ChatGPT-4 outperforms experts and crowd workers in annotating political Twitter messages with zero-shot learning. *arXiv preprint*. [arXiv:2304.06588](https://arxiv.org/abs/2304.06588)
+* Ziems, C., Held, W., Shaikh, O., Chen, J., Zhang, Z., & Yang, D. (2024). Can large language models transform computational social science? *Computational Linguistics*, 50(1), 237–291. [doi:10.1162/coli_a_00502](https://doi.org/10.1162/coli_a_00502)
 
 ### Documentation
 
+* Bluesky HTTP API reference, including [`app.bsky.feed.getAuthorFeed`](https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getAuthorFeed): [endpoints.bsky.app](https://endpoints.bsky.app)
 * Claude API (Messages): <https://platform.claude.com/docs/en/api/messages>
 * Claude models: <https://platform.claude.com/docs/en/about-claude/models/overview>
 * Anthropic pricing: <https://claude.com/pricing>
