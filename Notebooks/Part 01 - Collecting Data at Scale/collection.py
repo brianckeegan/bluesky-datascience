@@ -58,6 +58,12 @@ def fetch_all_pages(
     -------
     list
         All items concatenated across pages, in API order.
+
+    After each call, ``fetch_all_pages.last_run`` records how the loop ended:
+    ``{"pages": ..., "max_pages": ..., "truncated": ...}``, where
+    ``truncated`` is True when the loop stopped at ``max_pages`` with more
+    pages remaining. Copy it into your collection metadata, so the archive
+    says whether it is a census or a capped slice.
     """
     items = []
     cursor = None
@@ -81,7 +87,9 @@ def fetch_all_pages(
 
         time.sleep(delay)  # politeness: never hammer the server back-to-back
 
-    if pages == max_pages and cursor is not None:
+    truncated = cursor is not None  # the API still had pages to give
+    fetch_all_pages.last_run = {"pages": pages, "max_pages": max_pages, "truncated": truncated}
+    if truncated:
         print(f"  stopped at max_pages={max_pages} with more pages remaining")
     if progress_every:
         print(f"Done: {len(items):,} items across {pages} page(s)")

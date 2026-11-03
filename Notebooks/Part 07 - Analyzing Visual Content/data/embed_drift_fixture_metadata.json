@@ -1,0 +1,9 @@
+{
+  "source": "app.bsky.feed.getAuthorFeed, actor bsky.app, filter posts_no_replies (public AppView)",
+  "collected_at": "2026-11-03T20:11:46+00:00",
+  "contents": "three of bsky.app's own posts (two video, one image); no other accounts",
+  "deliberate_edits": [
+    "item 2, app.bsky.embed.images#view: each image's 'thumb' renamed to 'previewUrl' (a lexicon change to a type the SDK already models)",
+    "item 3: embed replaced by a made-up 'app.bsky.embed.hologram#view' (a type no SDK models)"
+  ]
+}

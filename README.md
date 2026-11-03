@@ -40,6 +40,8 @@ install.packages(c("bskyr", "tidyverse", "jsonlite", "igraph",
                    "tidytext", "topicmodels", "reshape2", "rmarkdown",
                    "digest", "websocket"))  # reshape2: tidying LDA in Part 06;
                                             # websocket only for Part 10
+install.packages(c("httr2", "later",         # called directly in Parts 08-10
+                   "patchwork"))              # multi-panel figures
 install.packages(c("sandwich", "lmtest"))   # optional: HAC errors in Part 05
 ```
 

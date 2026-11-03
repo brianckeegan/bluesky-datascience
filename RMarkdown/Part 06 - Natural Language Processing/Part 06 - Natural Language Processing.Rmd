@@ -20,13 +20,64 @@ tokenization and sentiment lexicons and
 The analytical questions are identical: what does a corpus of posts talk
 about, in what tone, and how would we know if our measurements were wrong?
 
+The previous parts treated posts mostly as *events*: things that happen
+at a time, get engagement, and connect accounts. But the posts
+themselves are language, and for social scientists language is data.
+What are people talking about? How do they feel about it? Do different
+communities talk about the same events in different words? These
+questions launched an entire subfield when Twitter data became
+available: O'Connor *et al.* (2010) famously showed that simple
+sentiment counts over tweets tracked consumer-confidence and
+presidential-approval polls, and a decade of "text as data" methods
+followed.
+
+There are three broad families of automated content analysis, and this
+document touches the first two:
+
+1. **Dictionary methods** count words from a curated lexicon. They are
+   transparent and fast but inherit every blind spot of their
+   dictionary. Python uses **VADER** (Hutto & Gilbert 2014), a sentiment
+   lexicon built for social media; R uses the **Bing** lexicon that ships
+   with tidytext.
+2. **Unsupervised methods** discover structure without labels. Our
+   example is **Latent Dirichlet Allocation (LDA)** topic modeling, which
+   describes each document as a mixture of word-distribution "topics."
+3. **Supervised methods** learn from human-labeled examples. We defer
+   these to Part 08, where a large language model plays the role of the
+   annotator and we validate it against human judgment.
+
+Whatever the method, the governing principle comes from [Grimmer &
+Stewart (2013)](https://doi.org/10.1093/pan/mps028): all quantitative
+models of language are wrong, but some are useful, so **validate,
+validate, validate**. For more depth, keep that review article open
+alongside its book-length successor, [*Text as
+Data*](https://press.princeton.edu/books/paperback/9780691207551/text-as-data)
+(Grimmer, Roberts, & Stewart 2022), and Silge & Robinson's free [*Text
+Mining with R*](https://www.tidytextmining.com/), the tidytext
+companion. For the craft of human-coded content analysis that all of
+these methods try to automate, Krippendorff's *Content Analysis* is the
+standard reference.
+
 ### Learning objectives
 
-* Build a multi-account corpus from author feeds.
-* Tokenize short social text and weigh what stopword removal throws away.
-* Compute word/bigram frequencies and per-account distinctive terms.
-* Score sentiment with a lexicon and know where lexicons break.
-* Fit and read an LDA topic model, and validate everything.
+After working through this document you will be able to:
+
+1. Build a text corpus from author feeds when authenticated search is
+   unavailable, reusing the facet-based snowball logic from Part 02.
+2. Filter posts by language using the `langs` field on post records, and
+   handle posts that declare no language at all.
+3. Preprocess short social text (URLs, @-handles, hashtags,
+   contractions) with a transparent, inspectable pipeline.
+4. Compute word and n-gram frequencies with tidytext and find each
+   account's *distinctive* vocabulary with log-odds ratios.
+5. Score sentiment with a lexicon, visualize its distribution and monthly
+   trend, and articulate its failure modes.
+6. Fit and interpret an LDA topic model: top words per topic,
+   document-topic mixtures, and topic prevalence by account.
+7. Explain when to reach for transformer sentence embeddings instead of
+   word counts.
+8. Hand-validate automated measures and connect them to the
+   LLM-annotation workflow in Part 08.
 
 ## Setup
 
@@ -53,7 +104,33 @@ knitr::opts_chunk$set(eval = bsky_authed)
 
 ## 1. Building a corpus from author feeds
 
+Every text analysis starts with a **corpus**: a defined collection of
+documents. For topical research questions the usual corpus builder is
+keyword search,
+[`app.bsky.feed.searchPosts`](https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.searchPosts)
+(bskyr's
+[`bs_search_posts()`](https://christophertkenny.com/bskyr/reference/bs_search_posts.html)),
+which Part 02 used to snowball from seed hashtags into a deduplicated
+post archive. That remains the workhorse when you are studying a
+*topic*. This document demonstrates the other common design: a **panel
+corpus** built from the posting histories of a defined set of accounts.
+Panel corpora answer account-centric questions (how do *these*
+communicators talk?) and are the standard design for studying elites,
+organizations, and communities of practice.
+
 ### 1.1 A seed account and one snowball wave
+
+Who goes in the panel? We seed with `nytimes.com`, a newsroom whose
+@-mentions point to its own sister accounts and journalists, and collect
+its ~600 most recent posts. Then we expand the **account set** from the
+seed's @-mentions, which live in each post record's `facets` (the
+structured annotations marking mentions, links, and hashtags). The
+half-dozen accounts it mentions most become the rest of the panel: a
+one-wave, mention-based snowball. This is a defensible *demonstration*
+corpus, not a defensible *research* corpus: a real project would define
+the panel from the research question (all members of a legislature, all
+newsrooms in a state), not from one account's conversational orbit. The
+boundary-specification worries from Part 03 apply to corpora too.
 
 We reuse Part 02's design in miniature: collect the seed's posts, find
 the accounts it mentions most, and add their posts to form a small
@@ -86,8 +163,18 @@ fetch_posts <- function(actor, max_posts) {
 }
 
 seed_posts <- fetch_posts(SEED_ACCOUNT, 600)
-nrow(seed_posts)
+
+c(posts = nrow(seed_posts), collected_on = COLLECTED_ON,
+  earliest = min(seed_posts$created_at), latest = max(seed_posts$created_at))
 ```
+
+`COLLECTED_ON` records the collection date, a series convention from
+Part 01: a corpus is a *snapshot*, and anyone re-knitting this document
+later will collect different posts, so the date travels with the
+archive's metadata (Section 8). The date range shows how far back ~600
+posts reaches for this account: posting rate determines the window, a
+composition fact that matters when we plot trends over time in Section
+4.1.
 
 Next, the one-wave snowball. The nested `map()` calls walk the facet
 structure exactly as in Part 02 (facets → features → mention DIDs);
@@ -113,6 +200,8 @@ mention_dids <- seed_posts$facets |>
   unlist() |>
   discard(is.na)
 
+c(mentions = length(mention_dids), distinct_accounts = n_distinct(mention_dids))
+
 top_mentioned <- head(names(sort(table(mention_dids), decreasing = TRUE)), 8)
 profiles <- bs_get_profile(top_mentioned)
 panel_dids <- profiles |>
@@ -131,6 +220,10 @@ panel_posts <- map(panel_dids, \(did) {
 
 c(seed = nrow(seed_posts), panel = nrow(panel_posts))
 ```
+
+With the 600-post seed and at most six panel accounts at 150 posts each,
+the corpus is capped at about 1,500 posts: plenty for a tutorial, small
+enough to stay polite.
 
 ### 1.2 Tidying and filtering by language
 
@@ -238,6 +331,21 @@ corpus |> count(author, sort = TRUE)
 
 ## 2. Preprocessing short social text
 
+Counting words sounds trivial until you look at an actual post. Social
+media text is short (Bluesky caps posts at 300 graphemes), dense with
+platform syntax (URLs, @-handles that are *domain names* on Bluesky,
+#hashtags), and full of contractions, emoji, and creative spelling.
+Every preprocessing choice changes what your model can see.
+
+Two terms of art first. A **token** is the basic unit text gets chopped
+into for counting (here, lowercase words), and **tokenization** is the
+deceptively consequential act of chopping: is `#DataScience` one token
+or two? A **stopword** is a word so common and so topically empty (*the*,
+*and*, *of*, *is*) that we delete it before counting, on the theory that
+it says nothing about what a post is *about*. Both come with judgment
+calls: *not* sits on many stopword lists, and dropping it destroys
+negation.
+
 Before tokenizing, we strip links and handles with the `strip_links()`
 helper from Section 1.2. That includes **display URLs**: Bluesky clients
 show links without the `https://` (for example
@@ -271,10 +379,23 @@ c(posts = n_distinct(tokens$uri), tokens = nrow(tokens),
 
 ### What did we just throw away?
 
-Stopword lists built for documents amputate meaning from 300-character
-posts: negations ("not"), pronouns, and intensifiers all carry signal
-for some questions. Print a before/after pair whenever you change the
-pipeline, and keep the raw `text` column forever.
+Be honest about the costs before celebrating the clean tokens:
+
+* **Emoji and emoticons** often carry the entire sentiment of a short
+  post ("great. 🙄"). Our tokenizer keeps only letters, so they vanish.
+* **Sarcasm and irony** survive preprocessing but defeat every
+  bag-of-words method, since they depend on context no word list
+  encodes.
+* **Multilinguality**: an English-only filter plus English stopwords
+  means code-switching posts are mangled and non-English voices are
+  excluded entirely.
+* **Word order and negation**: "the protest stopped the violence" and
+  "the violence stopped the protest" become identical bags of words, and
+  stopword lists often delete "not".
+
+None of these are reasons not to proceed; they are reasons to *validate*
+whatever we compute downstream. Print a before/after pair whenever you
+change the pipeline, and keep the raw `text` column forever:
 
 ```{r before-after}
 example <- corpus |> filter(author == SEED_ACCOUNT) |>
@@ -285,11 +406,19 @@ tokens |> filter(uri == example$uri) |> pull(word)
 
 ## 3. Word and n-gram frequencies
 
-The simplest content analysis is a word count. Single words (*unigrams*)
-show vocabulary; adjacent pairs (*bigrams*, built by `unnest_tokens()`
-with `token = "ngrams", n = 2`) recover phrases that unigrams shred,
-like "data science". `reorder_within()` is a tidytext convenience that
-sorts the bars within each facet:
+The simplest content analysis is a word count. An **n-gram** is a run
+of *n* adjacent tokens: a **unigram** is a single word, a **bigram** an
+adjacent pair, and so on. Counting n-grams is the workhorse of every
+"bag-of-words" analysis, so called because it treats a document as an
+unordered bag of tokens. Bigrams (built by `unnest_tokens()` with
+`token = "ngrams", n = 2`) recover a little of the word order we
+destroyed, surfacing names and phrases that unigrams split apart, like
+"new york". One refinement you will meet constantly is **tf-idf** (term
+frequency–inverse document frequency), which down-weights words that
+appear in *many* documents; tidytext's `bind_tf_idf()` computes it. We
+stay with raw counts, because they are directly readable and the LDA
+model in Section 5 is defined over counts. `reorder_within()` sorts the
+bars within each facet:
 
 ```{r frequencies, fig.width=12, fig.height=6}
 unigrams <- tokens |> count(word, sort = TRUE)
@@ -314,6 +443,11 @@ bind_rows(
        title = paste("Most frequent terms across", nrow(corpus), "posts")) +
   theme_minimal()
 ```
+
+Notice how much more *interpretable* the bigrams tend to be: a two-word
+place name or a person's full name tells you something that a lone
+"new" does not. That interpretability gain is why n-grams are worth their
+cost (a much larger, sparser vocabulary).
 
 ### 3.1 What makes each account distinctive?
 
@@ -346,11 +480,30 @@ distinctive <- account_words |>
 distinctive
 ```
 
+Each row should read like a thumbnail sketch of an account's beat: the
+opinion columnists' moral and political vocabulary, the newsroom's place
+names and breaking-news words, the sports accounts' teams and leagues.
+That is exactly the kind of *face validity check* Grimmer & Stewart
+prescribe: before trusting any statistic, look at whether the words it
+surfaces make sense for accounts you know. A row with fewer than eight
+words belongs to an account too thinly represented to have eight words
+used at least three times. And if a row looks nothing like the account
+you know, go back to the language table in Section 1.2: a filter that
+silently drops most of an account's posts leaves a caricature of it.
+(This is the smoothed log-odds of Monroe, Colaresi, & Quinn 2008.)
+
 ## 4. Sentiment analysis with a lexicon
 
-Python used VADER, a lexicon tuned for social media. tidytext ships the
-Bing lexicon (positive/negative word lists); the mechanics — and the
-failure modes — are the same. First, the demos that show what
+**Dictionary methods** score documents by looking words up in a curated
+lexicon. Python uses VADER (Hutto & Gilbert 2014), a lexicon built for
+microblog text whose rules also read capitalization, exclamation points,
+intensifiers, emoticons and simple negation. tidytext ships the **Bing**
+lexicon (Hu & Liu 2004): two plain word lists, positive and negative. Our
+score is positive words minus negative words, so it is an integer with no
+fixed range, where Python's VADER compound score runs from −1 to +1. The
+mechanics differ; the failure modes are the same family. Sentiment gets
+the **raw text**, because preprocessing is method-specific: what is noise
+to a topic model can be signal to a lexicon. The demos show what
 lexicon-based scoring can and cannot see:
 
 ```{r sentiment-demo}
@@ -368,15 +521,21 @@ score_text <- function(texts) {
 }
 
 demos <- c("The new feature is good.",
+           "The new feature is GOOD!!!",          # emphasis: Bing ignores it
            "The new feature is not good.",        # negation: NOT handled by Bing
+           "The new feature is good :(",          # emoticon: not in Bing
            "Oh great, ANOTHER outage. Just what I needed today.")  # sarcasm: no
 
 tibble(text = demos, score = score_text(demos))
 ```
 
-Note the failures: unlike VADER, a plain word lexicon misses negation
-entirely, and no lexicon catches sarcasm. Validation (Section 7) is not
-optional.
+Note the failures. Unlike VADER, a plain word list scores emphasis,
+negation and emoticons exactly like the bare word, so "not good" counts as
+positive; and no lexicon catches the sarcasm in the last line. Keep that
+in mind whenever you see an aggregate sentiment number. Validation
+(Section 7) is not optional. Now score every post and look at the shape
+of the distribution. Predict one feature first: a post containing no
+lexicon words at all scores exactly 0.
 
 ```{r sentiment-corpus, fig.width=8, fig.height=5}
 corpus <- corpus |> mutate(sentiment = score_text(text))
@@ -390,7 +549,18 @@ ggplot(corpus, aes(sentiment)) +
   theme_minimal()
 ```
 
+The big spike at zero is typical of short text: many posts contain no
+lexicon words at all, so they score neutral by default. "Neutral" here
+often means "no evidence," not "measured neutrality."
+
 ### 4.1 Sentiment over time
+
+O'Connor *et al.* (2010) aggregated tweet sentiment into time series and
+found it tracked national polls, the founding demonstration that cheap
+text measures can proxy expensive surveys. At our small scale we can do
+the descriptive version: the monthly mean score with a 95% confidence
+band (mean ± 1.96 standard errors), skipping months with fewer than 20
+posts.
 
 ```{r sentiment-time, fig.width=10, fig.height=5}
 corpus |>
@@ -419,7 +589,24 @@ anything into it.
 
 ### 4.2 Where dictionaries break
 
-Read the extremes — always:
+Every dictionary inherits three structural weaknesses:
+
+* **Negation and scope.** VADER catches "not good" but longer-range
+  negation ("I wish I could say this was good") slips through; Bing
+  catches neither.
+* **Sarcasm and irony.** As demonstrated above; communities with heavily
+  ironic registers can invert the measure entirely.
+* **Domain drift.** Lexicon ratings are frozen at collection time, on the
+  platforms and slang of that moment. "Sick" as praise, community
+  in-jokes, or political terms whose valence flips over time all decay a
+  dictionary's validity.
+
+The remedy is not a better dictionary but a validation habit, starting
+with reading the extremes. We display verbatim posts **only from the seed
+account** (`nytimes.com`, a large institutional account publishing for a
+public audience); for the other panel accounts we report aggregates and
+would paraphrase rather than quote, because verbatim text is trivially
+re-identifiable via search:
 
 ```{r sentiment-extremes}
 corpus |>
@@ -437,9 +624,17 @@ toward it.
 
 ## 5. Topic modeling with LDA
 
-Latent Dirichlet Allocation (LDA) treats each post as a *mixture* of
-topics and each topic as a *distribution over words* — and learns both
-from word co-occurrence alone, with no labels. The model wants a
+Where dictionaries impose categories, **unsupervised** methods discover
+them. **Latent Dirichlet Allocation (LDA)** (Blei, Ng, & Jordan 2003)
+treats each post as a *mixture* of topics and each topic as a
+*distribution over words*, and learns both from word co-occurrence
+alone, with no labels. Note the technical meaning of **topic** here:
+nothing more than a probability distribution over the vocabulary.
+Whether a given distribution corresponds to a human-recognizable theme
+is an empirical question, not a guarantee. And LDA was designed for long
+documents: 300-character posts give it very little co-occurrence
+evidence per document, so expect a couple of crisp topics and a couple
+of junk ones. The model wants a
 **document-term matrix** (rows = posts, columns = words, cells =
 counts), which `cast_dtm()` builds from our tidy token counts. We first
 prune the vocabulary at both ends, as the Python notebook does with
@@ -482,6 +677,9 @@ topic_words <- tidy(lda_fit, matrix = "beta") |>
 topic_words
 ```
 
+Read each row and try to name the topic. If you can't, that's
+diagnostic data, not a personal failing.
+
 ### 5.2 Documents as topic mixtures
 
 The **gamma** matrix is the other face: each post's estimated mixture
@@ -501,7 +699,16 @@ corpus |>
             share = round(most_concentrated$gamma, 2))
 ```
 
+Most short posts are dominated by one or two topics, with the rest of
+the mass spread thinly (an artifact of the Dirichlet prior as much as of
+the writing).
+
 ### 5.3 Topic prevalence by account
+
+Averaging topic shares within each account gives a *topic profile*, the
+unsupervised cousin of Section 3.1's distinctive-words table. A heatmap
+makes the panel's division of attention legible at a glance: read a row
+to see what an account talks about, a column to see who owns a topic.
 
 ```{r prevalence, fig.width=10, fig.height=5}
 doc_topics |>
@@ -519,15 +726,39 @@ doc_topics |>
 
 ### 5.4 Choosing k, and other confessions
 
-We set `k = 8` because it makes a readable demo. There is no true k:
-fit several, compare interpretability (and metrics like perplexity or
-the [ldatuning](https://cran.r-project.org/package=ldatuning) scores),
-and report the choice as a researcher degree of freedom.
+We set `k = 8` because it produced readable topics for a corpus of this
+size, which is to say, we chose it the way most people actually do.
+Honest caveats:
+
+* **There is no true k.** Held-out **perplexity** (how surprised the
+  fitted model is by documents it never saw; lower is better, and
+  topicmodels exposes it as `perplexity()`) can guide the choice, but
+  Chang *et al.* (2009) showed perplexity can *anti*-correlate with human
+  topic interpretability. Fit several values, read the topics, and report
+  the sensitivity (the
+  [ldatuning](https://cran.r-project.org/package=ldatuning) package
+  automates several metrics).
+* **Topics are not concepts.** They are co-occurrence clusters. Two
+  themes that share vocabulary merge; one theme discussed in two registers
+  splits. Naming topics is an interpretive act you should document.
+* **Instability.** Different random seeds yield different topics; fixing
+  the seed makes the *document* stable, not the *finding*.
+* **Short texts strain LDA.** Common upgrades: pool posts by author or
+  by week into pseudo-documents, use biterm topic models, or move to
+  embeddings (next section).
+
+An LDA topic enters a paper only after validation: top words, top
+*documents*, and a human check that the label fits.
 
 ## 6. Beyond word counts: transformer sentence embeddings
 
-Modern NLP represents whole sentences as dense vectors that capture
-meaning beyond shared vocabulary. From R the practical routes are the
+Everything above treated documents as bags of words, discarding order,
+syntax, and context. The modern alternative is to encode each post as a
+dense vector, a **sentence embedding**, using a pretrained transformer
+model (Reimers & Gurevych 2019). Posts that *mean* similar things land
+near each other in vector space even when they share no vocabulary
+("the eagles won" / "philadelphia takes the championship"), which
+dissolves much of Section 2. From R the practical routes are the
 [text](https://r-text.org/) package (which wraps Hugging Face
 transformers via reticulate) or calling a Python encoder directly. The
 workflow is the same as the Python notebook's: embed posts, then
@@ -539,14 +770,24 @@ embeddings <- text::textEmbed(corpus$text[1:3])
 dim(embeddings$texts$texts)
 ```
 
+The trade-off is interpretability: a topic's top words can be printed
+and argued about; the hundreds of dimensions of an embedding cannot. For
+research that must justify its measures, count-based methods plus
+validation remain a defensible, sometimes preferable, choice.
+
 ## 7. Validate, validate, validate
 
-Every measurement above — tokens, sentiment scores, topic labels — is a
-*proxy* read off text by rules that do not understand it. The discipline
-(Grimmer & Stewart 2013): draw a random sample, read it against the
-machine's labels, and quantify the agreement before trusting any
-downstream result. Part 08 turns this into a full workflow with gold
-labels and agreement metrics.
+Grimmer & Stewart (2013) close their review of text-as-data methods
+with a three-word command, **"validate, validate, validate"**, because
+every method in this document produces numbers whether or not those
+numbers mean anything. The cheapest, highest-value validation is also
+the least glamorous: **read a random sample and check**. The chunk below
+draws a reproducible random sample of seed-account posts and lays the
+automated measures alongside the text. Read each one and ask: does the
+sentiment score match your reading? Does the dominant topic's label fit?
+Tally your agreement rate; a real project would do this with a few
+hundred posts, multiple coders, and a chance-corrected agreement
+statistic like Cohen's kappa.
 
 ```{r validation-sample}
 set.seed(42)
@@ -561,7 +802,20 @@ doc_topics |>
             text = str_trunc(text, 140))
 ```
 
+You will probably find a few clear mismatches: a sarcastic post scored
+positive, a post assigned to a topic by one incidental word. That
+experience, not any summary statistic, is what calibrates how much
+weight your measures can bear. Hand-coding is the bottleneck of content
+analysis, which is why **Part 08** picks up exactly here: using a large
+language model as an annotator at scale and validating *it* against a
+hand-coded gold sample with formal agreement metrics.
+
 ## 8. Saving the corpus and results
+
+Following the series' reproducibility convention, we save the
+analysis-ready corpus (with sentiment scores), the topic table, and a
+small JSON of collection parameters and dates, so the analyses above can
+be re-run from disk without touching the API:
 
 ```{r save}
 dir.create("data", showWarnings = FALSE)
@@ -579,48 +833,149 @@ read_csv("data/corpus.csv", show_col_types = FALSE) |> nrow()
 
 ## Ethics and limitations
 
-Text is people talking. Quoting strangers' posts verbatim in
-publications makes them findable and harassable; paraphrase or aggregate
-(our extremes table above is for *your* validation reading, not for
-publication). Sentiment lexicons encode the norms of their builders and
-miss negation, sarcasm, and community-specific language; LDA topics are
-statistical regularities, not meanings, and both will happily produce
-confident numbers from garbage. The corpus design (a seed plus its
-mention network, English posts only, whether declared or detected by our
-function-word test) shapes every count above.
+**Public text is still people's speech.** Most Bluesky users have not
+read the protocol docs and may not expect their posts in a research
+corpus (Fiesler & Proferes 2018). This document's conventions are
+deliberate: verbatim examples come only from the seed account (a
+national newsroom whose posts are professional output); for everyone
+else we report aggregates (frequency tables, topic shares, monthly
+means) and would paraphrase rather than quote, because verbatim posts
+are trivially re-identifiable via search (Zimmer 2010). The saved corpus
+records its collection date so deletions can be honored if the archive
+is ever shared; better still, share derived measures rather than raw
+text.
+
+**A mention-based panel is not a sample.** A handful of accounts in one
+newsroom's conversational orbit, mostly its own sister accounts and
+journalists, support a tutorial, not a population claim. Bluesky's user
+base itself skews toward early adopters and Twitter migrants, so even a
+good sample of it would not generalize to "the public."
+
+**The English filter has politics.** Self-declared `langs` is sometimes
+wrong and often missing, and the missingness follows the software an
+account uses, so filtering on it can drop whole accounts without warning
+(Section 1.2). Our function-word test recovers undeclared English posts,
+but any English-only design still excludes non-English speakers
+entirely. A multilingual design needs multilingual tools, and the
+embeddings of Section 6 are a start.
+
+**Measures are not meanings.** Lexicons miss sarcasm and drift across
+domains; LDA topics are co-occurrence clusters that merge, split, and
+shift with the random seed; word counts ignore order and context. Every
+number above is a model output, defensible only to the extent it has
+been validated against human reading, which is also the bridge to Part
+08.
+
+**Behavior under incentives, not attitudes.** Posts measure public
+expression on a platform, with its norms and audiences, not private
+belief. A panel's sentiment trend tells you how they *post*, not how
+they *feel*.
 
 ## Exercises
 
-1. Re-run the pipeline keeping stopwords. Which analyses change most?
-2. Add the AFINN lexicon (`get_sentiments("afinn")`, via the textdata
-   package) and compare scores with Bing on the same posts.
-3. Fit LDA with k = 4 and k = 12 and compare the topic-word tables.
-   Which is more interpretable?
-4. Compute distinctive *bigrams* per account instead of unigrams.
-5. Hand-label 30 posts for positive/negative/neutral and compute the
-   lexicon's accuracy against your labels.
+Each exercise extends this document. The first few are small
+modifications; the later ones are mini-analyses you could write up in a
+page or two.
+
+1. **Change the number of topics.** Re-fit the Section 5 model with
+   `N_TOPICS <- 5` and again with `N_TOPICS <- 12`, regenerating the
+   top-words table each time. Which of the `k = 8` topics merge at 5, and
+   which split at 12? Write one sentence per model saying which value you
+   would defend and why.
+2. **Add custom stopwords.** Look at the top-20 unigram chart in Section
+   3 and pick two or three words that read as corpus-specific filler
+   rather than content. Add them to `custom_stop`, then re-run Sections 3
+   and 5. How sensitive are the frequency rankings and topics to this
+   small change?
+3. **Swap the panel.** Re-run Section 1 with `SEED_ACCOUNT <- "bsky.app"`
+   and let the mention snowball build a new panel. Compare the
+   distinctive-words table and topic heatmap to the originals. What does
+   the contrast teach you about how much these measures depend on corpus
+   construction rather than on the method?
+4. **Bigram topics.** Build the LDA document-term matrix from bigrams
+   instead of unigrams and refit. Are the top-words tables easier or
+   harder to label? Watch what happens to the vocabulary size, and think
+   about why a much larger vocabulary might hurt a model fitted to a
+   corpus of very short documents.
+5. **Sentiment around an event.** Find a month where the Section 4.1
+   trend line dips or spikes. Filter `corpus` to that month, sort by
+   `sentiment`, and read the ten most extreme posts (verbatim only for
+   the seed account, paraphrase for others). Was the swing driven by a
+   real-world event, by a change in *who* was posting, or by a lexicon
+   failure mode? Deliver a 3–4 sentence verdict with evidence.
+6. **Distinctive terms, head to head.** Adapt Section 3.1 to compare just
+   two panel accounts directly, and inspect *both* tails: the largest
+   log-odds are distinctively A's vocabulary, the smallest distinctively
+   B's. This two-corpus design is exactly the "fightin' words" setting of
+   Monroe, Colaresi, & Quinn (2008).
 
 ## Research project ideas
 
-* **Linguistic accommodation.** Using log-odds over time, test whether
-  accounts that mention each other converge in vocabulary.
-* **Topic dynamics around events.** Fit a topic model to a snowball
-  archive (Part 02) spanning a news event and trace topic prevalence
-  before, during, and after (combining Parts 05 and 06).
+**1. How do newsrooms frame the same story differently?** *Question:*
+when several news organizations on Bluesky cover the same event, do they
+use systematically different vocabularies and emphases? *Data:* a panel
+corpus built with Section 1's collector, but with a defensible,
+criterion-based panel (say, 10–20 newsroom accounts chosen *before*
+looking at their content), restricted to a pre-registered window around
+one event. *Method:* distinctive-terms log-odds between outlets (Section
+3.1) plus an LDA fitted on the pooled corpus with topic prevalence by
+outlet (Section 5.3); have two coders independently label the topics and
+a sample of posts, and report a chance-corrected agreement statistic
+(Krippendorff 2018). *Expected challenge:* 300-character posts give LDA
+very thin co-occurrence evidence, so you will likely need to pool posts
+into per-outlet-per-day pseudo-documents, a decision that itself needs
+justification and a sensitivity check.
+
+**2. An audit of off-the-shelf sentiment on Bluesky.** *Question:* how
+valid are lexicon methods on 2026 Bluesky text, and where exactly do they
+fail? Van Atteveldt, van der Velden, & Boukes (2021) ran this design on
+Dutch news headlines and found dictionary methods trailing far behind
+human coders and trained classifiers; does the same hold here? *Data:* a
+few thousand posts from a topical corpus (Part 02's authenticated
+search), with a random sample of ~300 posts hand-coded negative, neutral
+or positive by two or three coders. *Method:* threshold the lexicon score
+into the same three classes and compare against the human gold standard
+(accuracy, per-class recall, and a qualitative autopsy of the misses).
+*Expected challenge:* the bottleneck is the codebook: if your coders
+cannot agree with each other, no instrument can be meaningfully validated
+against their labels. This design connects directly to Part 08.
+
+**3. Do network communities talk differently?** *Question:* do the
+follow-graph communities detected in Part 03 have measurably distinctive
+vocabularies, that is, do structural and linguistic boundaries coincide?
+*Data:* community assignments from a Part 03 collection, plus
+author-feed corpora for the accounts in the two or three largest
+communities. *Method:* distinctive-terms analysis and topic prevalence by
+community, then a simple bag-of-words classifier predicting community
+membership; validate by reading the highest- and lowest-confidence
+predictions. *Expected challenge:* communities differ in many correlated
+ways at once (topic, register, geography), so the interesting work is
+disentangling *why* the text is classifiable, not just reporting that it
+is.
 
 ## References
 
 ### Scholarship
 
-* Grimmer, J., & Stewart, B. M. (2013). Text as data: The promise and pitfalls of automatic content analysis. *Political Analysis*, 21(3), 267–297.
+* Blei, D. M., Ng, A. Y., & Jordan, M. I. (2003). [Latent Dirichlet Allocation](https://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf). *Journal of Machine Learning Research*, 3, 993–1022.
+* Chang, J., Boyd-Graber, J., Gerrish, S., Wang, C., & Blei, D. M. (2009). [Reading tea leaves: How humans interpret topic models](https://papers.nips.cc/paper/3700-reading-tea-leaves-how-humans-interpret-topic-models). *NeurIPS*.
+* Fiesler, C., & Proferes, N. (2018). ["Participant" perceptions of Twitter research ethics](https://doi.org/10.1177/2056305118763366). *Social Media + Society*, 4(1).
+* Grimmer, J., & Stewart, B. M. (2013). [Text as data: The promise and pitfalls of automatic content analysis methods for political texts](https://doi.org/10.1093/pan/mps028). *Political Analysis*, 21(3), 267–297.
+* Grimmer, J., Roberts, M. E., & Stewart, B. M. (2022). [*Text as Data: A New Framework for Machine Learning and the Social Sciences*](https://press.princeton.edu/books/paperback/9780691207551/text-as-data). Princeton University Press.
+* Hu, M., & Liu, B. (2004). Mining and summarizing customer reviews. *KDD '04*. (The Bing lexicon.)
+* Hutto, C. J., & Gilbert, E. (2014). [VADER: A parsimonious rule-based model for sentiment analysis of social media text](https://doi.org/10.1609/icwsm.v8i1.14550). *ICWSM*.
+* Krippendorff, K. (2018). [*Content Analysis: An Introduction to Its Methodology*](https://doi.org/10.4135/9781071878781) (4th ed.). SAGE.
+* Monroe, B. L., Colaresi, M. P., & Quinn, K. M. (2008). [Fightin' words: Lexical feature selection and evaluation for identifying the content of political conflict](https://doi.org/10.1093/pan/mpn018). *Political Analysis*, 16(4), 372–403.
+* O'Connor, B., Balasubramanyan, R., Routledge, B. R., & Smith, N. A. (2010). [From tweets to polls: Linking text sentiment to public opinion time series](https://doi.org/10.1609/icwsm.v4i1.14031). *ICWSM*.
+* Reimers, N., & Gurevych, I. (2019). [Sentence-BERT: Sentence embeddings using Siamese BERT-networks](https://doi.org/10.18653/v1/D19-1410). *EMNLP*.
 * Silge, J., & Robinson, D. (2017). *Text Mining with R: A Tidy Approach*. O'Reilly. <https://www.tidytextmining.com/>
-* Blei, D. M., Ng, A. Y., & Jordan, M. I. (2003). Latent Dirichlet allocation. *JMLR*, 3, 993–1022.
-* Hutto, C., & Gilbert, E. (2014). VADER: A parsimonious rule-based model for sentiment analysis of social media text. *ICWSM*.
-* Monroe, B. L., Colaresi, M. P., & Quinn, K. M. (2008). Fightin' words: Lexical feature selection and evaluation for identifying the content of political conflict. *Political Analysis*, 16(4), 372–403.
+* van Atteveldt, W., van der Velden, M. A. C. G., & Boukes, M. (2021). [The validity of sentiment analysis: Comparing manual annotation, crowd-coding, dictionary approaches, and machine learning algorithms](https://doi.org/10.1080/19312458.2020.1869198). *Communication Methods and Measures*, 15(2), 121–140.
+* Zimmer, M. (2010). ["But the data is already public": On the ethics of research in Facebook](https://doi.org/10.1007/s10676-010-9227-5). *Ethics and Information Technology*, 12(4), 313–325.
 
 ### Documentation
 
+* Bluesky HTTP API reference: [`app.bsky.feed.getAuthorFeed`](https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getAuthorFeed), [`app.bsky.feed.searchPosts`](https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.searchPosts), [`app.bsky.actor.getProfiles`](https://endpoints.bsky.app/#bluesky-app/tag/appbskyactor/GET/xrpc/app.bsky.actor.getProfiles)
 * tidytext: <https://juliasilge.github.io/tidytext/>
 * topicmodels: <https://cran.r-project.org/package=topicmodels>
 * text (transformers in R): <https://r-text.org/>
-* bskyr: <https://christophertkenny.com/bskyr/>
+* bskyr reference: <https://christophertkenny.com/bskyr/reference/>

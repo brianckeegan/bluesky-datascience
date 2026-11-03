@@ -148,10 +148,18 @@ the polite pause our Python loop adds. At about 100 requests that's
 fine; for much larger crawls, loop over cursors yourself and add
 `Sys.sleep(0.1)` between pages.
 
+The three limits mirror the Python notebook's `max_pages` caps, written
+as record counts: 100 pages of posts, a follows limit with plenty of
+headroom (so that list is a census), and 20 pages of followers:
+
 ```{r collect-all}
-posts_pages <- bs_get_author_feed(HANDLE, limit = 10000, clean = FALSE)
-follows     <- bs_get_follows(HANDLE, limit = 500)
-followers   <- bs_get_followers(HANDLE, limit = 2000)
+POSTS_LIMIT     <- 10000   # Python: max_pages = 100
+FOLLOWS_LIMIT   <- 4000    # Python: max_pages = 40; a census, the list is far shorter
+FOLLOWERS_LIMIT <- 2000    # Python: max_pages = 20
+
+posts_pages <- bs_get_author_feed(HANDLE, limit = POSTS_LIMIT, clean = FALSE)
+follows     <- bs_get_follows(HANDLE, limit = FOLLOWS_LIMIT)
+followers   <- bs_get_followers(HANDLE, limit = FOLLOWERS_LIMIT)
 
 items <- list_flatten(map(posts_pages, "feed"))   # every page's items, in order
 
@@ -168,40 +176,84 @@ stopping condition is "the API ran out of data."
 
 ## 4. Rate limits, polite clients, and exponential backoff
 
-Bluesky's PDS publishes its rate limits in `RateLimit-*` response
-headers. We can read them with a single raw request:
+Why all this fuss about caps and pauses? Because APIs meter access.
+Bluesky's [documented rate limits](https://bsky.network/docs/advanced-guides/rate-limits)
+have two layers:
+
+* **Per-IP request limit:** at most **3,000 requests per 5-minute
+  window** to a PDS host. At a polite pace this is hard to hit with one
+  document, but a parallelized crawler hits it fast.
+* **Write limits in "points":** creating a record costs 3 points,
+  updating 2, deleting 1, with budgets of **5,000 points per hour** and
+  **35,000 per day** per account, roughly 1,666 new posts, likes or
+  follows per hour. These exist to stop spam and matter for the bots of
+  Part 10, not for read-only collection.
+
+There are also per-account session limits (for example, 30 new sessions
+per 5 minutes), which is one reason `bsky_client.R` logs in once and
+bskyr reuses the session.
+
+How do you know where you stand? Servers tell you, in **`RateLimit-*`
+HTTP response headers** attached to every response. One subtlety of
+Bluesky's architecture: these headers come from **PDS hosts** (personal
+data servers, like `bsky.social`, which enforce the limits), not from
+the public AppView. We can read them with a single raw
+[httr2](https://httr2.r-lib.org/) request to a harmless PDS endpoint,
+`com.atproto.server.describeServer`:
 
 ```{r rate-headers}
 resp <- httr2::request("https://bsky.social/xrpc/com.atproto.server.describeServer") |>
   httr2::req_perform()
 
 httr2::resp_headers(resp)[c("ratelimit-limit", "ratelimit-remaining",
-                            "ratelimit-reset")]
+                            "ratelimit-reset", "ratelimit-policy")]
 ```
+
+Reading these from the top: this IP may make `ratelimit-limit` requests
+per window (`ratelimit-policy` spells out the window, `w=300` seconds),
+it has `ratelimit-remaining` requests left, and the window resets at
+`ratelimit-reset`, a Unix timestamp. Convert it to a readable time with
+`as_datetime(as.numeric(...))` from lubridate if you want to know when a
+big collection can safely start.
 
 ### Handling 429s with exponential backoff
 
-When you do hit the limit the server answers `429 Too Many Requests`. The
-standard response is *exponential backoff*: wait, retry, and double the
-wait each time, so a struggling server gets breathing room instead of a
-stampede. The wrapper below uses R's `tryCatch()` — which runs a chunk of
-code and, instead of crashing on an error, hands the error to us as an
-object we can inspect and respond to. We try the call; if it fails we
-sleep `base_wait^attempt` seconds and try again, up to `max_tries`:
+If you exhaust the budget anyway, the server answers **HTTP status 429
+("Too Many Requests")**, with the error name `RateLimitExceeded`. A 429
+is not a failure to be caught and ignored: it is the server telling you
+to slow down, and the correct response is to **wait and retry, waiting
+longer after each successive failure**.
+
+That strategy is called **exponential backoff**: wait 1 second, then 2,
+then 4, 8, 16, ..., usually with a dash of random "jitter" so that many
+clients rate-limited at the same moment don't all retry in synchrony and
+re-overload the server. The wrapper below uses R's `tryCatch()`, which
+runs a piece of code and, instead of crashing on an error, hands the
+error to us as an object we can inspect. Two details matter:
+
+* httr2, the HTTP engine inside bskyr, gives every HTTP error a class
+  naming its status, so a rate limit is an error of class
+  `httr2_http_429`. We also check the message for `RateLimitExceeded`.
+* Anything that *isn't* a rate limit is re-raised immediately, because
+  retrying a typo'd handle five times helps no one. This matches the
+  Python version's `call_with_backoff`.
 
 ```{r backoff}
-call_with_backoff <- function(fun, ..., max_tries = 5, base_wait = 2) {
+is_rate_limit_error <- function(e) {
+  inherits(e, "httr2_http_429") || grepl("RateLimitExceeded|429", conditionMessage(e))
+}
+
+call_with_backoff <- function(fun, ..., max_tries = 5, base_wait = 1) {
   for (attempt in seq_len(max_tries)) {
     result <- tryCatch(fun(...), error = function(e) e)
     if (!inherits(result, "error")) {
       return(result)
     }
-    if (attempt == max_tries) {
-      stop(result)
+    if (!is_rate_limit_error(result) || attempt == max_tries) {
+      stop(result)   # not a rate limit, or out of retries: give up now
     }
-    wait <- base_wait^attempt
-    message("Request failed (", conditionMessage(result),
-            "); retrying in ", wait, "s")
+    wait <- base_wait * 2^(attempt - 1) + runif(1, 0, 0.5)   # 1, 2, 4, ... s plus jitter
+    message("Rate limited; retrying in ", round(wait, 1), "s")
     Sys.sleep(wait)
   }
 }
@@ -209,6 +261,10 @@ call_with_backoff <- function(fun, ..., max_tries = 5, base_wait = 2) {
 bsky_profile <- call_with_backoff(bs_get_profile, "bsky.app")
 bsky_profile$followers_count
 ```
+
+In practice you will rarely see the wrapper retry: at our pace the
+budget is generous. It is a seatbelt, and Exercise 6 shows how to watch
+it work without sending a single real request.
 
 (Under the hood, bskyr's HTTP engine [httr2](https://httr2.r-lib.org/)
 can also retry transparently via `req_retry()` — worth knowing when you
@@ -306,27 +362,53 @@ file.size(c("data/posts.csv", "data/posts.rds")) / 1024
 
 ### Recording collection metadata
 
-An archive without provenance is a liability. Write down what you
-collected, when, how, and as whom:
+Data files alone are not an archive. Six months from now (or for the
+colleague reproducing your study), the crucial questions will be: *when*
+was this collected, *from where*, *with what parameters*, and *what
+exactly is in it?* The answers should travel with the data, so we write
+them into a small JSON file alongside the archives, the seed of a real
+[data management plan](https://en.wikipedia.org/wiki/Data_management_plan).
+
+Two fields deserve attention: `limit` and `truncated`. `truncated` is
+`TRUE` when a collection stopped at its limit with records still
+remaining. That single flag is the difference between "all of this
+account's follows" and "the most recent slice of its followers", and a
+reader of the archive should never have to guess which one they have.
+For the raw post pages the last page's cursor tells us directly. For
+bskyr's tidy tibbles, the `cursor` attribute holds the cursors of the
+pages that came back *with* one (the last page of a complete list has
+none). If every page bskyr requested, one per 100 records of the limit,
+carried a cursor, the server still had more to give. (Counting rows
+would not work: pages often hold slightly fewer than 100 accounts,
+because the AppView drops deactivated and blocked accounts after fetching
+a page, so a capped collection can come back under its limit.)
 
 ```{r metadata}
+posts_truncated <- !is.null(tail(posts_pages, 1)[[1]]$cursor)   # the server had more pages
+hit_limit <- function(x, limit) length(attr(x, "cursor")) >= ceiling(limit / 100)
+
 metadata <- list(
   account = list(handle = HANDLE, did = profile$did),
   collected_at_utc = format(now("UTC"), "%Y-%m-%dT%H:%M:%SZ"),
   bskyr_version = as.character(packageVersion("bskyr")),
   collections = list(
     posts = list(endpoint = "app.bsky.feed.getAuthorFeed",
+                 limit = POSTS_LIMIT, truncated = posts_truncated,
                  n_records = nrow(posts),
                  notes = "Original posts only; reposts excluded."),
     follows = list(endpoint = "app.bsky.graph.getFollows",
+                   limit = FOLLOWS_LIMIT, truncated = hit_limit(follows, FOLLOWS_LIMIT),
                    n_records = nrow(follows)),
     followers = list(endpoint = "app.bsky.graph.getFollowers",
+                     limit = FOLLOWERS_LIMIT, truncated = hit_limit(followers, FOLLOWERS_LIMIT),
                      n_records = nrow(followers))
   )
 )
 
 write_json(metadata, "data/collection_metadata.json",
            pretty = TRUE, auto_unbox = TRUE)
+
+map_lgl(metadata$collections, "truncated")   # which collections are capped slices
 ```
 
 ### Proving the round trip
@@ -451,42 +533,171 @@ whole neighborhoods.
 
 ## Ethics and limitations
 
-Everything we collected is public, but **public is not the same as
-consented**: the people in these archives did not agree to be studied
-(boyd & Crawford 2012; Fiesler & Proferes 2018). Practice *data
-minimization* — collect only what your question needs, prefer aggregates,
-and think hard before storing third parties (the followers list is a
-list of people who never interacted with you). People delete posts and
-accounts; an archive freezes what the network has moved past, so decide
-in advance how you will honor deletion and withdrawal. Your collection
-also runs under Bluesky's terms of service and, if you are doing human
-subjects research, your IRB's rules. Methodologically, remember that one
-account is a case study (and our posts are only its most recent months), the author feed omits deleted and moderated
-posts, and engagement counters are point-in-time snapshots that change
-after collection.
+We teach the mechanics and the ethics in the same document because they
+are the same activity: every loop you write collects traces of *people*.
+Bluesky's openness (no API keys, no paywall, the whole firehose public
+by protocol design) makes collection astonishingly easy, and that ease is
+precisely why the judgment has to come from you.
+
+### Public is not the same as consented
+
+Everything we collected is public: anyone with a browser could read it.
+It does not follow that the people who posted it agreed to be research
+subjects. Fiesler & Proferes (2018) surveyed Twitter users and found
+that most had no idea their tweets were used in research, and many were
+uncomfortable once they learned, with comfort varying by context: what
+topic, which study, whether they would be quoted or named. Most Bluesky
+users have never read the AT Protocol documentation and may not realize
+that their follows, likes and even *blocks* are globally readable. "It
+was public" is where the ethical analysis starts, not where it ends. The
+[AoIR Internet Research Ethics guidelines](https://aoir.org/reports/ethics3.pdf)
+(franzke et al. 2020), written for researchers without legal training,
+frame the right question as one of *contextual* expectations: what flows
+of their information would the people in your dataset reasonably
+anticipate?
+
+This document's design reflects that: we collected a large
+*institutional* account, a newsroom whose public posting is its
+professional output, rather than pointing a new loop at a stranger.
+
+### Minimization, third parties, and what you choose not to collect
+
+The cheapest privacy protection is data you never collect. Our flatten
+step in Section 5 quietly does ethics: of the dozens of fields in each
+response, we kept roughly ten that our questions need. **Purpose
+limitation** is the same principle over time: an archive collected to
+study posting rhythms should not be quietly repurposed into a profiling
+tool. Minimization also has a *who* dimension: our follower archive
+holds a couple of thousand accounts that never interacted with this
+tutorial, swept in because they once followed the seed, which is why we
+capped that sample rather than collecting all of the more than a
+million. Prefer aggregates when reporting (the reciprocity share exposes
+no individual), and think hard before publishing raw lists of accounts.
+
+### Deletion, withdrawal, and the life of an archive
+
+People delete posts, and deletion is meaningful: it often signals regret,
+or that content attracted harassment. The live API honors deletions;
+your RDS file does not. Best practice is layered: record the collection
+date (our metadata file does); re-check against the live API before
+quoting or republishing anything; and share bare post URIs for
+re-hydration rather than full content. Verbatim quotation deserves
+special caution: a quoted post is trivially re-identifiable with a
+search box, even if you "anonymized" the handle (Zimmer 2010), so
+paraphrase or aggregate.
+
+### Terms of service, IRBs, and the post-API backdrop
+
+Working through official APIs and their
+[rate limits](https://bsky.network/docs/advanced-guides/rate-limits)
+keeps you inside the platform's
+[terms of service](https://bsky.social/about/support/tos). That is not a
+given historically: Freelon (2018) chronicles how Twitter's and
+Facebook's API closures stranded a research field and tempted
+researchers toward terms-violating scraping. Design your pipeline so its
+access method is one you could defend in public. If your work involves
+human subjects, talk to your IRB or ethics board *before* collecting:
+"public data" does not automatically mean exempt, and boards increasingly
+expect a data management plan covering storage, retention,
+de-identification and deletion (the metadata file is the first piece of
+one).
+
+### Limitations of what we built
+
+Bluesky's users are early adopters and Twitter migrants, not a sample of
+any general population, so prevalence claims do not generalize
+off-platform, just as Twitter's never did (Ruths & Pfeffer 2014).
+Engagement counts condition on visible reactions: the protocol exposes
+no impression or view data. A single account's activity supports claims
+about that account, and our posts are only its most recent months. The
+author feed omits deleted and moderated posts, and engagement counters
+are point-in-time snapshots that keep changing after collection. And the
+platform is in flux: lexicons, limits and moderation infrastructure
+evolve, which is why we save snapshots, record parameters, and treat
+re-collection as a new measurement rather than a refresh.
 
 ## Exercises
 
-1. Re-run the collection for a different public account (e.g.
-   `bsky.app`) and compare its posting cadence to this one.
-2. Modify `call_with_backoff()` to give up immediately on errors that
-   will never succeed on retry (e.g. an account that does not exist).
-3. Use the `subject_*` columns of [`bs_get_follows()`](https://christophertkenny.com/bskyr/reference/bs_get_follows.html) to check whether the
-   follows list itself records when each follow was created.
-4. Compute the share of posts that are replies, by month — is the account
-   becoming more or less conversational?
-5. Compare the on-disk size of the posts archive as CSV, RDS, and (with
-   the [arrow](https://arrow.apache.org/docs/r/) package) Parquet.
+These extend the document in roughly increasing order of ambition. For
+any exercise that collects new data, write down the sampling frame and
+estimate the request budget *before* running anything.
+
+1. **Collect a different account.** Repoint the pipeline at the official
+   [`bsky.app`](https://bsky.app/profile/bsky.app) account. Start from
+   `bs_get_profile()` to size the job: its follower count is in the
+   millions, so cap followers at a small `limit` (say 2,000) and record
+   the truncation honestly in your metadata file.
+2. **Change the page size and time it.** With `limit > 100` bskyr asks
+   for 100 per request, so loop over cursors yourself with
+   `bs_get_author_feed(HANDLE, limit = 25, cursor = ...)` for the same
+   number of posts, wrapping each approach in `system.time()`. How do
+   the request count and wall-clock time change? This is why you should
+   usually ask for the largest page an endpoint allows.
+3. **Explore the `filter` parameter.** The
+   [`getAuthorFeed`](https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getAuthorFeed)
+   endpoint accepts `filter` values such as `posts_no_replies` and
+   `posts_with_media`. bskyr's function has no `filter` argument, so send
+   the request with httr2 (as Section 4 did for the rate-limit headers,
+   against `https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed`).
+   Compare the media-only feed's size to the `has_embed` share from
+   Section 7. They won't match, because embeds include link cards and
+   quoted posts as well as images; explaining the gap is the exercise.
+4. **CSV vs. RDS vs. Parquet at different scales.** Slice the post
+   archive to its first 100, 500, 1,000 and all rows; write each slice
+   as CSV, RDS and (with the [arrow](https://arrow.apache.org/docs/r/)
+   package) Parquet; and plot file size and load time against row count.
+   Does each binary format's advantage grow, shrink or hold steady?
+5. **A polite multi-account crawler.** Sample five accounts from
+   `follows` and collect each one's most recent ~200 posts, pausing
+   between accounts and saving one RDS file per account plus a single
+   shared metadata JSON. Estimate the total request budget first, then
+   confirm afterward that the actual count matched.
+6. **Watch backoff work, without hammering the server.** Write a fake
+   function that signals an error of class `httr2_http_429` (use
+   `rlang::abort("RateLimitExceeded", class = "httr2_http_429")`) on its
+   first two calls and succeeds on the third, then pass it to
+   `call_with_backoff()`. You should see two retry messages and then a
+   result. Try a fake that fails with a different error too: it should
+   fail at once, without retrying.
 
 ## Research project ideas
 
-* **Activity and audience growth.** Collect monthly posting volume and
-  follower counts for a panel of public accounts and model how posting
-  consistency relates to audience growth.
-* **Reciprocity norms.** For accounts of different sizes, measure the
-  share of follows that are mutual with `bs_get_relationships()` (not by
-  intersecting two capped lists); test whether reciprocity declines with
-  audience size, as it did on Twitter.
+Three research designs that need nothing beyond this document's
+endpoints and methods, each sketched as *question → data → method →
+expected challenge*.
+
+**1. The migration cohorts of Bluesky.** Did users who arrived during the
+post-US-election surge of late 2024 behave differently from earlier
+adopters, and did they stay? The follower sample carries each account's
+creation date (hydrate it with `bs_get_profile()`), so you can define
+joining cohorts directly. Sample a few dozen accounts per cohort, collect
+their posting histories, and compare activity: posts per month since
+joining, time to last post, share still active. The challenge is the
+sampling frame (Ruths & Pfeffer 2014): the most recent followers of one
+newsroom are not Bluesky users in general, and deleted and suspended
+accounts have *already* vanished from follower lists, which biases
+retention estimates upward.
+
+**2. A social network or a news media?** Kwak et al. (2010) found that
+only about 22% of Twitter follow relationships were reciprocated. Is
+Bluesky different? Choose a defensible frame (for instance, all members
+of a few public starter packs spanning different communities), collect
+each account's follows (capping very large accounts and recording the
+caps), and compute per-account reciprocity with
+`bs_get_relationships()`, as in Section 7, rather than by intersecting
+two capped lists. Compare reciprocity across community types and
+account size. The challenge is scale and politeness: this is the project
+where request budgeting, backoff and overnight pacing become method.
+
+**3. How fast do archives decay?** Your RDS file is a snapshot of a
+moving target. Take today's post URIs, then once a week re-hydrate a
+fixed random sample with [`bs_get_posts()`](https://christophertkenny.com/bskyr/reference/bs_get_posts.html)
+and record which no longer resolve. After a couple of months, estimate a
+deletion rate and ask what kinds of posts disappear: replies?
+high-engagement posts? particular topics? This design sits directly on
+the ethics literature (Fiesler & Proferes 2018): the deletion-respecting
+practices above become your *findings*. The challenge is interpretive:
+you observe that a post vanished, not why.
 
 ## References
 
@@ -495,13 +706,22 @@ after collection.
 * boyd, d., & Crawford, K. (2012). Critical questions for big data. *Information, Communication & Society*, 15(5), 662–679.
 * Fiesler, C., & Proferes, N. (2018). "Participant" perceptions of Twitter research ethics. *Social Media + Society*, 4(1).
 * Freelon, D. (2018). Computational research in the post-API age. *Political Communication*, 35(4), 665–668.
+* franzke, a. s., Bechmann, A., Zimmer, M., Ess, C., & the Association of Internet Researchers (2020). *Internet Research: Ethical Guidelines 3.0*. <https://aoir.org/reports/ethics3.pdf>
 * Kwak, H., Lee, C., Park, H., & Moon, S. (2010). What is Twitter, a social network or a news media? *Proceedings of WWW '10*, 591–600.
+* Ruths, D., & Pfeffer, J. (2014). Social media for large studies of behavior. *Science*, 346(6213), 1063–1064. <https://doi.org/10.1126/science.346.6213.1063>
 * Zimmer, M. (2010). "But the data is already public": On the ethics of research in Facebook. *Ethics and Information Technology*, 12(4), 313–325.
+
+For tidy data and file formats:
+
+* Wickham, H. (2014). Tidy data. *Journal of Statistical Software*, 59(10). <https://doi.org/10.18637/jss.v059.i10>
 
 ### Documentation
 
 * bskyr: <https://christophertkenny.com/bskyr/>
 * `app.bsky.feed.getAuthorFeed`: <https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getAuthorFeed>
+* `app.bsky.graph.getFollows` / `getFollowers`: <https://endpoints.bsky.app/#bluesky-app/tag/appbskygraph/GET/xrpc/app.bsky.graph.getFollows>
+* `app.bsky.graph.getRelationships`: <https://endpoints.bsky.app/#bluesky-app/tag/appbskygraph/GET/xrpc/app.bsky.graph.getRelationships>
 * Bluesky rate limits: <https://bsky.network/docs/advanced-guides/rate-limits>
+* AT Protocol specifications: <https://atproto.com/>
 * httr2 retries: <https://httr2.r-lib.org/reference/req_retry.html>
 * R Markdown: <https://rmarkdown.rstudio.com/docs/>

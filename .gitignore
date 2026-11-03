@@ -167,5 +167,12 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-# R Markdown knits write data/ next to each document; R outputs are not committed
+# R Markdown knits write data/, a github_document .md and figure folders next
+# to each document; R outputs are not committed
 RMarkdown/**/data/
+RMarkdown/**/*.md
+RMarkdown/**/*_files/
+RMarkdown/**/*.html
+.Rhistory
+.RData
+.Rproj.user/

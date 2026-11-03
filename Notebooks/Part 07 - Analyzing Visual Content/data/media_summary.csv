@@ -1,5 +1,5 @@
 uri,author,created_at,text_length,embed_class,n_images,n_images_with_alt,alt_text,external_domain,external_uri,like_count,repost_count
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mzg7hgxgqk26,bsky.app,2026-11-03T16:00:00.226Z,291,record,0,0,,,,552,150
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mzg7hgxgqk26,bsky.app,2026-11-03T16:00:00.226Z,291,record,0,0,,,,707,194
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mz4cvlf7z22v,bsky.app,2026-10-30T17:34:58.466Z,214,images,1,1,Screenshots showing where the new moderation inbox lives in the Bluesky app. Settings > moderation tools > moderation inbox,,,1827,324
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mz46jsw4ic2h,bsky.app,2026-10-30T16:16:48.745Z,169,images,1,1,"Image of an iPhone with the new Bluesky trending widget at the top of the screen. 
 
@@ -40,7 +40,7 @@ Here lies Myspace
 ""Please add me to your top 8""",,,3764,411
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3myi3k45jh22z,bsky.app,2026-10-22T16:30:02.437Z,222,video,0,0,,,,2138,336
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3myi2ihquwk26,bsky.app,2026-10-22T16:11:13.754Z,291,video,0,0,,,,5842,1592
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mycyypdrxc2s,bsky.app,2026-10-20T16:01:12.410Z,48,record,0,0,,,,686,104
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mycyypdrxc2s,bsky.app,2026-10-20T16:01:12.410Z,48,record,0,0,,,,687,104
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3myaytlknus25,bsky.app,2026-10-19T20:53:01.192Z,89,record,0,0,,,,2083,237
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3my43eyfzs225,bsky.app,2026-10-17T21:55:13.889Z,54,record,0,0,,,,9300,1799
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mxzez2m7wk2r,bsky.app,2026-10-16T20:09:31.738Z,285,record,0,0,,,,1075,119
@@ -84,7 +84,7 @@ at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3moe2xoxccp24,bsky.app,
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mnzpi4dv7s25,bsky.app,2026-06-11T17:04:58.016Z,288,images,1,1,A demonstration of someone scanning a Bluesky profile QR code.,,,2254,416
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mnzmprxpe22y,bsky.app,2026-06-11T16:15:34.343Z,153,images,1,1,"A group chat staffed entirely by the Bluesky team's pets, who are very excited to tell each other that group chats now exist.",,,4284,1039
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mnslrkd6ok2g,bsky.app,2026-06-08T21:10:01.530Z,207,images,5,5,"We've increased the number of photos you can attach to a post from 4 to 10. That's why we're adding a carousel. | The carousel only shows for posts with at least 5 photos.
-Old posts with photos will continue to show the regular grid layout. | Each photo displays a numbered badge to make it super clear there are more photos to browse. | We've improved the gesture handling so you don't accidentally open the drawer menu or go back/forward in your browser while swiping. | We're always eager to hear your feedback. Let us know your thoughts about the new carousel!",,,10926,2185
+Old posts with photos will continue to show the regular grid layout. | Each photo displays a numbered badge to make it super clear there are more photos to browse. | We've improved the gesture handling so you don't accidentally open the drawer menu or go back/forward in your browser while swiping. | We're always eager to hear your feedback. Let us know your thoughts about the new carousel!",,,10926,2184
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mni6hmaff22u,bsky.app,2026-06-04T17:45:11.965Z,97,none,0,0,,,,14662,2109
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mndkh3ugst2b,bsky.app,2026-06-02T21:36:20.000Z,261,none,0,0,,,,2117,389
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mmwmla3xph26,bsky.app,2026-05-28T18:09:50.000Z,177,images,1,1,"The Bluesky and Standard.site logos sharing an emoji handshake above examples of the new, dynamic link cards.",,,3148,534
@@ -93,11 +93,11 @@ at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mlr7prm6g22c,bsky.app,
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3ml7bvrr4yk2l,bsky.app,2026-05-06T18:02:27.843Z,128,record,0,0,,,,883,78
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3ml54ry2iwc2x,bsky.app,2026-05-05T21:25:32.034Z,190,images,1,1,Demonstration of where the Germ DM button appears on your Bluesky profile after you pair your accounts within the Germ DM app.,,,2464,404
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mk4lzkrnk22d,bsky.app,2026-04-22T23:00:21.312Z,254,video,0,0,,,,7183,1074
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mk3sdiixhs2n,bsky.app,2026-04-22T15:20:37.187Z,248,external,0,0,,davidimel.substack.com,https://davidimel.substack.com/p/bluesky-is-looking-for-its-myspace,1277,154
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mk3sdiixhs2n,bsky.app,2026-04-22T15:20:37.187Z,248,external,0,0,,davidimel.substack.com,https://davidimel.substack.com/p/bluesky-is-looking-for-its-myspace,1277,153
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mjxj5pui322g,bsky.app,2026-04-20T22:25:40.948Z,139,record,0,0,,,,713,81
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mjwxhedylc2o,bsky.app,2026-04-20T17:08:57.065Z,199,none,0,0,,,,5035,467
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mjprnr5ptk2m,bsky.app,2026-04-17T20:36:31.198Z,281,none,0,0,,,,8093,1065
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mjpdn3rsmk2o,bsky.app,2026-04-17T16:25:36.402Z,259,none,0,0,,,,9969,1547
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mjwxhedylc2o,bsky.app,2026-04-20T17:08:57.065Z,199,none,0,0,,,,5035,466
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mjprnr5ptk2m,bsky.app,2026-04-17T20:36:31.198Z,281,none,0,0,,,,8093,1064
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mjpdn3rsmk2o,bsky.app,2026-04-17T16:25:36.402Z,259,none,0,0,,,,9969,1546
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mjnlu7smsk2w,bsky.app,2026-04-16T23:47:25.963Z,236,none,0,0,,,,20406,4891
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mjmlrpvc7c25,bsky.app,2026-04-16T14:13:22.425Z,163,external,0,0,,status.bsky.app,https://status.bsky.app,8098,1720
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mjhun5ptvs2r,bsky.app,2026-04-14T17:08:34.139Z,208,record,0,0,,,,2320,221
@@ -127,7 +127,7 @@ at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mdjcrkcav22j,bsky.app,
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mdjby5ifhc2e,bsky.app,2026-01-28T22:08:51.609Z,247,external,0,0,,bsky.social,https://bsky.social/about/blog/01-28-2026-bluesky-2026-predictions,2601,441
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mdbijyi5qk27,bsky.app,2026-01-25T19:44:54.882Z,286,record,0,0,,,,1776,263
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mcibiyf7fs2r,bsky.app,2026-01-15T19:02:31.579Z,173,none,0,0,,,,2819,327
-at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mcibezwvxk2g,bsky.app,2026-01-15T19:00:18.987Z,297,images,1,1,"A preview of the Live Now feature, showing the popup that appears when someone is live streaming and you click their avatar.",,,6204,1492
+at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mcibezwvxk2g,bsky.app,2026-01-15T19:00:18.987Z,297,images,1,1,"A preview of the Live Now feature, showing the popup that appears when someone is live streaming and you click their avatar.",,,6203,1492
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mbuch6tggk2f,bsky.app,2026-01-07T20:26:10.201Z,297,none,0,0,,,,5176,560
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mbhel6ij7s2y,bsky.app,2026-01-02T16:59:34.947Z,286,record,0,0,,,,3831,913
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mbb4vo2ah22j,bsky.app,2025-12-31T05:26:18.433Z,253,images,1,1,Bluesky is growing in Japan,,,4811,1617
@@ -181,30 +181,32 @@ at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3ln6ixpgjcs2m,bsky.app,
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3ln23glbupk2j,bsky.app,2025-04-17T21:47:27.758Z,275,record,0,0,,,,4451,327
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3lmi3hlglc224,bsky.app,2025-04-10T18:00:06.171Z,148,images,1,1,Bluesky 1.100. A screenshot of a chat message that says “Nice”. The response picker is open.,,,19347,2119
 at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3llzh4fl3o226,bsky.app,2025-04-04T22:18:39.760Z,272,record,0,0,,,,11833,2366
-at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzgicy7biy2c,npr.org,2026-11-03T18:38:34.115534Z,144,external,0,0,,n.pr,https://n.pr/4BEBNVZ,10,2
-at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzgfrimhi22v,npr.org,2026-11-03T17:52:59.907055Z,119,external,0,0,,n.pr,https://n.pr/4zny6Cq,33,6
-at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzgd6mv64z2v,npr.org,2026-11-03T17:06:39.361590Z,199,external,0,0,,n.pr,https://n.pr/4iTS7Lc,65,4
-at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzgam3q6t52a,npr.org,2026-11-03T16:20:29.912334Z,179,external,0,0,,n.pr,https://n.pr/48fKPeR,87,24
-at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzg5zq6apt2x,npr.org,2026-11-03T15:34:26.330774Z,109,external,0,0,,n.pr,https://n.pr/4zvGbFy,58,14
-at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzg3g2l5h32c,npr.org,2026-11-03T14:47:38.657661Z,111,external,0,0,,n.pr,https://n.pr/4zudY1G,44,15
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzgnfv5jav2s,npr.org,2026-11-03T20:09:40.327537Z,203,external,0,0,,n.pr,https://n.pr/4Aae12E,70,25
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzgkuo5sqv2i,npr.org,2026-11-03T19:24:15.092468Z,142,external,0,0,,n.pr,https://n.pr/4A9a9Pd,37,11
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzgicy7biy2c,npr.org,2026-11-03T18:38:34.115534Z,144,external,0,0,,n.pr,https://n.pr/4BEBNVZ,29,4
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzgfrimhi22v,npr.org,2026-11-03T17:52:59.907055Z,119,external,0,0,,n.pr,https://n.pr/4zny6Cq,40,6
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzgd6mv64z2v,npr.org,2026-11-03T17:06:39.361590Z,199,external,0,0,,n.pr,https://n.pr/4iTS7Lc,69,7
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzgam3q6t52a,npr.org,2026-11-03T16:20:29.912334Z,179,external,0,0,,n.pr,https://n.pr/48fKPeR,93,26
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzg5zq6apt2x,npr.org,2026-11-03T15:34:26.330774Z,109,external,0,0,,n.pr,https://n.pr/4zvGbFy,60,15
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzg3g2l5h32c,npr.org,2026-11-03T14:47:38.657661Z,111,external,0,0,,n.pr,https://n.pr/4zudY1G,47,16
 at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzfyuvnl4j2i,npr.org,2026-11-03T14:02:15.592708Z,129,external,0,0,,n.pr,https://n.pr/48x1R86,49,8
-at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzfx52wjla2v,npr.org,2026-11-03T13:31:02.073471Z,162,external,0,0,,n.pr,https://n.pr/4zoV9gh,78,19
-at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzfvhaq6gt2x,npr.org,2026-11-03T13:00:56.225340Z,112,external,0,0,,n.pr,https://n.pr/3UxOD7S,45,6
-at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzftovp5c62a,npr.org,2026-11-03T12:29:25.610904Z,128,external,0,0,,n.pr,https://n.pr/4BH61aM,57,13
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzfx52wjla2v,npr.org,2026-11-03T13:31:02.073471Z,162,external,0,0,,n.pr,https://n.pr/4zoV9gh,79,20
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzfvhaq6gt2x,npr.org,2026-11-03T13:00:56.225340Z,112,external,0,0,,n.pr,https://n.pr/3UxOD7S,46,6
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzftovp5c62a,npr.org,2026-11-03T12:29:25.610904Z,128,external,0,0,,n.pr,https://n.pr/4BH61aM,58,13
 at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzfrwob4sa2s,npr.org,2026-11-03T11:57:58.757174Z,117,external,0,0,,n.pr,https://n.pr/4zqOtyl,53,9
-at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzfouesoda2c,npr.org,2026-11-03T11:03:00.518828Z,131,external,0,0,,n.pr,https://n.pr/4BDQSae,66,13
-at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzfnhulum42i,npr.org,2026-11-03T10:38:07.096661Z,210,external,0,0,,n.pr,https://n.pr/4sG4TQM,67,15
-at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzfmumwmzm2o,npr.org,2026-11-03T10:27:21.552067Z,194,external,0,0,,n.pr,https://n.pr/4zohw5n,197,84
-at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzfm2aj7qy2c,npr.org,2026-11-03T10:12:36.102894Z,215,external,0,0,,n.pr,https://n.pr/4ewPb4P,250,110
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzfouesoda2c,npr.org,2026-11-03T11:03:00.518828Z,131,external,0,0,,n.pr,https://n.pr/4BDQSae,67,13
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzfnhulum42i,npr.org,2026-11-03T10:38:07.096661Z,210,external,0,0,,n.pr,https://n.pr/4sG4TQM,68,16
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzfmumwmzm2o,npr.org,2026-11-03T10:27:21.552067Z,194,external,0,0,,n.pr,https://n.pr/4zohw5n,204,86
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzfm2aj7qy2c,npr.org,2026-11-03T10:12:36.102894Z,215,external,0,0,,n.pr,https://n.pr/4ewPb4P,260,114
 at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzfktw7jdo2x,npr.org,2026-11-03T09:51:10.263518Z,138,external,0,0,,n.pr,https://n.pr/4zqav4k,74,21
 at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzfjv7uu5l2x,npr.org,2026-11-03T09:34:00.191675Z,140,external,0,0,,n.pr,https://n.pr/48vs7Qb,57,13
 at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzfixffek52x,npr.org,2026-11-03T09:17:19.323532Z,111,external,0,0,,n.pr,https://n.pr/4A8g2fC,60,13
 at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzffiyuis72v,npr.org,2026-11-03T08:15:35.217358Z,125,external,0,0,,n.pr,https://n.pr/4BB2yLb,76,19
-at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzfbz5jsae2a,npr.org,2026-11-03T07:13:01.989449Z,130,external,0,0,,n.pr,https://n.pr/4zudXuE,55,10
-at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzf6k3cov52o,npr.org,2026-11-03T06:10:55.101039Z,140,external,0,0,,n.pr,https://n.pr/4zqavRS,66,18
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzfbz5jsae2a,npr.org,2026-11-03T07:13:01.989449Z,130,external,0,0,,n.pr,https://n.pr/4zudXuE,56,10
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzf6k3cov52o,npr.org,2026-11-03T06:10:55.101039Z,140,external,0,0,,n.pr,https://n.pr/4zqavRS,67,18
 at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzf343w6rb2s,npr.org,2026-11-03T05:09:24.801650Z,142,external,0,0,,n.pr,https://n.pr/4f3dlUr,87,14
-at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mze7uhm3wm2x,npr.org,2026-11-02T21:01:57.583769Z,206,external,0,0,,n.pr,https://n.pr/3UWR4ku,129,23
-at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mze5dbpmlc2b,npr.org,2026-11-02T20:16:33.470778Z,208,external,0,0,,n.pr,https://n.pr/4BEKMX5,221,92
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mze7uhm3wm2x,npr.org,2026-11-02T21:01:57.583769Z,206,external,0,0,,n.pr,https://n.pr/3UWR4ku,130,23
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mze5dbpmlc2b,npr.org,2026-11-02T20:16:33.470778Z,208,external,0,0,,n.pr,https://n.pr/4BEKMX5,223,92
 at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzdz2xslc22a,npr.org,2026-11-02T19:00:19.692270Z,205,external,0,0,,n.pr,https://n.pr/3X0D75A,249,53
 at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzdvrjq3uq2c,npr.org,2026-11-02T18:01:21.721704Z,202,external,0,0,,n.pr,https://n.pr/4zneo9T,123,10
 at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mzdre4ffn62x,npr.org,2026-11-02T16:42:16.568132Z,254,external,0,0,,n.pr,https://n.pr/3Wmudzc,105,27
@@ -245,7 +247,7 @@ at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mz72jhvms42v,npr.org,2
 at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mz6xfztd2u27,npr.org,2026-10-31T18:47:24.753271Z,214,external,0,0,,n.pr,https://n.pr/3WWJ4jY,287,47
 at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mz6vgjdqqn2v,npr.org,2026-10-31T18:11:53.532013Z,151,external,0,0,,n.pr,https://n.pr/4edKRaq,113,29
 at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mz6tz45op32a,npr.org,2026-10-31T17:46:29.751808Z,186,external,0,0,,n.pr,https://n.pr/4f3sViV,135,35
-at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mz6s3oikml2x,npr.org,2026-10-31T17:12:08.637220Z,148,external,0,0,,n.pr,https://n.pr/4itcPA6,197,100
+at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mz6s3oikml2x,npr.org,2026-10-31T17:12:08.637220Z,148,external,0,0,,n.pr,https://n.pr/4itcPA6,198,100
 at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mz6ooknkiy2s,npr.org,2026-10-31T16:11:07.118877Z,212,external,0,0,,n.pr,https://n.pr/4jRR0fZ,81,20
 at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mz6norwrge2b,npr.org,2026-10-31T15:53:21.035000Z,199,external,0,0,,n.pr,https://n.pr/3W5qgPo,121,23
 at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3mz6m3rvypw2c,npr.org,2026-10-31T15:24:49.744041Z,208,external,0,0,,n.pr,https://n.pr/4zZZbvn,85,11
@@ -314,8 +316,6 @@ at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3myyxhbviyu2a,npr.org,2
 at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3myyw27hn5o2m,npr.org,2026-10-29T09:06:55.836644Z,200,external,0,0,,n.pr,https://n.pr/4e5nfVi,216,67
 at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3myyskc2kc52v,npr.org,2026-10-29T08:04:20.386447Z,148,external,0,0,,n.pr,https://n.pr/3UpQ4oF,228,30
 at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3myyozlrynk2o,npr.org,2026-10-29T07:01:19.010206Z,211,external,0,0,,n.pr,https://n.pr/3WBtg66,133,30
-at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3myylkfexaz2v,npr.org,2026-10-29T05:59:07.746517Z,211,external,0,0,,n.pr,https://n.pr/47LtRVi,181,48
-at://did:plc:ln72v57ivz2g46uqf4xxqiuh/app.bsky.feed.post/3myyfpton532a,npr.org,2026-10-29T04:14:47.980063Z,246,external,0,0,,n.pr,https://n.pr/4yNVDeY,453,72
 at://did:plc:7lqpdof4fqal4imvharp66vb/app.bsky.feed.post/3mzec5yqaic2e,boulderrl.bsky.social,2026-11-02T21:43:05.069Z,283,external,0,0,,boulderreportinglab.org,https://boulderreportinglab.org/2026/11/02/cu-boulder-shooting-thornton-teen-arrested-in-killing-of-student-on-university-hill/,6,1
 at://did:plc:7lqpdof4fqal4imvharp66vb/app.bsky.feed.post/3mzebzbksn22e,boulderrl.bsky.social,2026-11-02T21:40:26.557Z,283,external,0,0,,boulderreportinglab.org,https://boulderreportinglab.org/2026/11/02/cu-boulder-shooting-thornton-teen-arrested-in-killing-of-student-on-university-hill/,2,0
 at://did:plc:7lqpdof4fqal4imvharp66vb/app.bsky.feed.post/3mzbffld57k2d,boulderrl.bsky.social,2026-11-01T18:03:01.455Z,263,external,0,0,,boulderreportinglab.org,https://boulderreportinglab.org/2026/11/01/cu-boulder-student-killed-another-critically-injured-in-shooting-at-university-hill-house-party/,3,0
@@ -451,28 +451,28 @@ at://did:plc:7lqpdof4fqal4imvharp66vb/app.bsky.feed.post/3mko2ip5ulc2f,boulderrl
 at://did:plc:7lqpdof4fqal4imvharp66vb/app.bsky.feed.post/3mkiap5itr22b,boulderrl.bsky.social,2026-04-27T14:09:37.549Z,299,external,0,0,,boulderreportinglab.org,https://boulderreportinglab.org/2026/04/26/three-recent-boulder-fires-were-likely-human-caused-officials-say/,2,0
 at://did:plc:7lqpdof4fqal4imvharp66vb/app.bsky.feed.post/3mkiakrp2ms2b,boulderrl.bsky.social,2026-04-27T14:07:10.951Z,260,external,0,0,,boulderreportinglab.org,https://boulderreportinglab.org/2026/04/26/inside-bvsds-final-meeting-on-possible-school-closures-as-declining-enrollment-forces-tough-choices/,1,0
 at://did:plc:7lqpdof4fqal4imvharp66vb/app.bsky.feed.post/3mkiagihfgc2b,boulderrl.bsky.social,2026-04-27T14:04:47.045Z,299,external,0,0,,boulderreportinglab.org,https://boulderreportinglab.org/2026/04/26/boulder-reporting-lab-wins-19-spj-top-of-the-rockies-awards-including-8-first-place-honors/,3,1
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzgfv6ttod2v,propublica.org,2026-11-03T17:55:03.911410453Z,231,external,0,0,,propublica.org,https://www.propublica.org/article/midterm-election-propublica-reporting-findings?utm_campaign=propublica-sprout&utm_content=1793728503&utm_medium=social&utm_source=bluesky,228,64
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzg6dr63gg2m,propublica.org,2026-11-03T15:40:02.948013762Z,270,external,0,0,,propublica.org,https://www.propublica.org/article/navatek-lindsey-graham-jim-clyburn-fbi-anti-corruption-bribery?utm_campaign=propublica-sprout&utm_content=1793720402&utm_medium=social&utm_source=bluesky,274,111
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzg2gpibp72m,propublica.org,2026-11-03T14:30:06.880735412Z,265,external,0,0,,propublica.org,https://www.propublica.org/article/ruidoso-new-mexico-floods-fire?utm_campaign=propublica-sprout&utm_content=1793716206&utm_medium=social&utm_source=bluesky,114,28
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzfyzuqtqc2q,propublica.org,2026-11-03T14:05:02.477Z,279,none,0,0,,,,565,296
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzfvgjbcok23,propublica.org,2026-11-03T13:00:31.673Z,230,external,0,0,,propublica.org,https://www.propublica.org/article/propublica-approach-2026-midterm-elections?utm_source=bluesky&utm_medium=social&utm_campaign=propublica-bsky,290,74
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzexa5a5li2a,propublica.org,2026-11-03T04:00:05.44972219Z,214,external,0,0,,propublica.org,https://www.propublica.org/article/five-voting-disruptions-midterm-election?utm_campaign=propublica-sprout&utm_content=1793678404&utm_medium=social&utm_source=bluesky,342,120
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzeqjkm4xk2i,propublica.org,2026-11-03T02:00:05.271309852Z,268,external,0,0,,podcasts.apple.com,https://podcasts.apple.com/us/podcast/inside-trumps-futile-hunt-for-noncitizen-voters/id1896058335?i=1000798673664,673,279
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzejt3nosz2t,propublica.org,2026-11-03T00:00:08.946274616Z,241,external,0,0,,propublica.org,https://www.propublica.org/article/cisa-election-security-donald-trump?utm_campaign=propublica-sprout&utm_content=1793664008&utm_medium=social&utm_source=bluesky,443,205
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzeg4u4g3p2b,propublica.org,2026-11-02T22:54:01.613082503Z,273,external,0,0,,propublica.org,https://www.propublica.org/article/fbi-susan-collins-navatek-campaign-donations-investigation?utm_campaign=propublica-sprout&utm_content=1793660040&utm_medium=social&utm_source=bluesky,746,355
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzdwfwwdfc23,propublica.org,2026-11-02T18:12:46.705Z,231,external,0,0,,propublica.org,https://www.propublica.org/article/american-citizens-ice-detention-congress-impact?utm_source=bluesky&utm_medium=social&utm_campaign=propublica-bsky,1708,1044
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzgfv6ttod2v,propublica.org,2026-11-03T17:55:03.911410453Z,231,external,0,0,,propublica.org,https://www.propublica.org/article/midterm-election-propublica-reporting-findings?utm_campaign=propublica-sprout&utm_content=1793728503&utm_medium=social&utm_source=bluesky,332,101
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzg6dr63gg2m,propublica.org,2026-11-03T15:40:02.948013762Z,270,external,0,0,,propublica.org,https://www.propublica.org/article/navatek-lindsey-graham-jim-clyburn-fbi-anti-corruption-bribery?utm_campaign=propublica-sprout&utm_content=1793720402&utm_medium=social&utm_source=bluesky,301,119
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzg2gpibp72m,propublica.org,2026-11-03T14:30:06.880735412Z,265,external,0,0,,propublica.org,https://www.propublica.org/article/ruidoso-new-mexico-floods-fire?utm_campaign=propublica-sprout&utm_content=1793716206&utm_medium=social&utm_source=bluesky,122,31
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzfyzuqtqc2q,propublica.org,2026-11-03T14:05:02.477Z,279,none,0,0,,,,593,308
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzfvgjbcok23,propublica.org,2026-11-03T13:00:31.673Z,230,external,0,0,,propublica.org,https://www.propublica.org/article/propublica-approach-2026-midterm-elections?utm_source=bluesky&utm_medium=social&utm_campaign=propublica-bsky,302,80
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzexa5a5li2a,propublica.org,2026-11-03T04:00:05.44972219Z,214,external,0,0,,propublica.org,https://www.propublica.org/article/five-voting-disruptions-midterm-election?utm_campaign=propublica-sprout&utm_content=1793678404&utm_medium=social&utm_source=bluesky,344,120
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzeqjkm4xk2i,propublica.org,2026-11-03T02:00:05.271309852Z,268,external,0,0,,podcasts.apple.com,https://podcasts.apple.com/us/podcast/inside-trumps-futile-hunt-for-noncitizen-voters/id1896058335?i=1000798673664,681,284
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzejt3nosz2t,propublica.org,2026-11-03T00:00:08.946274616Z,241,external,0,0,,propublica.org,https://www.propublica.org/article/cisa-election-security-donald-trump?utm_campaign=propublica-sprout&utm_content=1793664008&utm_medium=social&utm_source=bluesky,444,206
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzeg4u4g3p2b,propublica.org,2026-11-02T22:54:01.613082503Z,273,external,0,0,,propublica.org,https://www.propublica.org/article/fbi-susan-collins-navatek-campaign-donations-investigation?utm_campaign=propublica-sprout&utm_content=1793660040&utm_medium=social&utm_source=bluesky,748,356
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzdwfwwdfc23,propublica.org,2026-11-02T18:12:46.705Z,231,external,0,0,,propublica.org,https://www.propublica.org/article/american-citizens-ice-detention-congress-impact?utm_source=bluesky&utm_medium=social&utm_campaign=propublica-bsky,1715,1054
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzdobexqtq2a,propublica.org,2026-11-02T15:47:03.702141821Z,268,external,0,0,,propublica.org,https://www.propublica.org/article/missouri-abortion-gender-transition-minors-amendment-3?utm_campaign=propublica-sprout&utm_content=1793634423&utm_medium=social&utm_source=bluesky,648,310
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzdm7enr6c23,propublica.org,2026-11-02T15:10:08.803Z,36,record,0,0,,,,241,61
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzdkzmtm4j2x,propublica.org,2026-11-02T14:49:02.297403119Z,246,external,0,0,,propublica.org,https://www.propublica.org/article/ken-paxton-travel-security-costs?utm_campaign=propublica-sprout&utm_content=1793630941&utm_medium=social&utm_source=bluesky,1173,571
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzdgmk5vfi2v,propublica.org,2026-11-02T13:30:08.313027196Z,236,external,0,0,,propublica.org,https://www.propublica.org/article/border-wall-remains-native-american-organ-pipe?utm_campaign=propublica-sprout&utm_content=1793626207&utm_medium=social&utm_source=bluesky,2801,1701
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzdkzmtm4j2x,propublica.org,2026-11-02T14:49:02.297403119Z,246,external,0,0,,propublica.org,https://www.propublica.org/article/ken-paxton-travel-security-costs?utm_campaign=propublica-sprout&utm_content=1793630941&utm_medium=social&utm_source=bluesky,1175,572
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzdgmk5vfi2v,propublica.org,2026-11-02T13:30:08.313027196Z,236,external,0,0,,propublica.org,https://www.propublica.org/article/border-wall-remains-native-american-organ-pipe?utm_campaign=propublica-sprout&utm_content=1793626207&utm_medium=social&utm_source=bluesky,2828,1713
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzdex7k2ux2a,propublica.org,2026-11-02T13:00:18.790262751Z,243,external,0,0,,propublica.org,https://www.propublica.org/article/five-voting-disruptions-midterm-election?utm_campaign=propublica-sprout&utm_content=1793624418&utm_medium=social&utm_source=bluesky,421,225
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzcdxorboc2a,propublica.org,2026-11-02T03:10:01.278125054Z,230,images,1,1,Screenshot of a tool that allows you to search for your ZIP code and see if the USPS has reduced how often mail is picked up in that area.,,,1651,1248
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzcdxorboc2a,propublica.org,2026-11-02T03:10:01.278125054Z,230,images,1,1,Screenshot of a tool that allows you to search for your ZIP code and see if the USPS has reduced how often mail is picked up in that area.,,,1652,1249
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzc4pg6inb2v,propublica.org,2026-11-02T01:00:07.643829264Z,211,external,0,0,,propublica.org,https://www.propublica.org/article/midterm-election-propublica-reporting-findings?utm_campaign=propublica-sprout&utm_content=1793581206&utm_medium=social&utm_source=bluesky,518,242
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzbvz3aedk2a,propublica.org,2026-11-01T23:00:15.032Z,215,external,0,0,,propublica.org,https://www.propublica.org/article/sports-betting-impact-louisiana-ohio-congress?utm_source=bluesky&utm_medium=social&utm_campaign=propublica-bsky,1205,339
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzbpccnjf72t,propublica.org,2026-11-01T21:00:09.090918326Z,214,external,0,0,,propublica.org,https://www.propublica.org/article/brent-taylor-memphis-tennessee-preemption-laws?utm_campaign=propublica-sprout&utm_content=1793566808&utm_medium=social&utm_source=bluesky,796,379
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzbpccnjf72t,propublica.org,2026-11-01T21:00:09.090918326Z,214,external,0,0,,propublica.org,https://www.propublica.org/article/brent-taylor-memphis-tennessee-preemption-laws?utm_campaign=propublica-sprout&utm_content=1793566808&utm_medium=social&utm_source=bluesky,797,379
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzbiltu4na2a,propublica.org,2026-11-01T19:00:12.932138897Z,233,external,0,0,,propublica.org,https://www.propublica.org/article/plastics-industry-recycling-legislation-congress?utm_campaign=propublica-sprout&utm_content=1793559612&utm_medium=social&utm_source=bluesky,477,269
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzbc5xfghs22,propublica.org,2026-11-01T17:05:04.451Z,238,video,0,0,,,,1264,593
-at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzb4ujkeqk2y,propublica.org,2026-11-01T15:30:19.209Z,271,images,1,1,"A woman in a colorful patterned jacket, wearing brown square glasses and looking off to the side. Behind her is a TV screen with a blue background.",,,2957,1580
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzbc5xfghs22,propublica.org,2026-11-01T17:05:04.451Z,238,video,0,0,,,,1264,594
+at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mzb4ujkeqk2y,propublica.org,2026-11-01T15:30:19.209Z,271,images,1,1,"A woman in a colorful patterned jacket, wearing brown square glasses and looking off to the side. Behind her is a TV screen with a blue background.",,,2959,1581
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mz7plodq7o2c,propublica.org,2026-11-01T02:00:03.867955933Z,209,external,0,0,,projects.propublica.org,https://projects.propublica.org/american-citizens-detained-dhs-civil-rights/list?utm_campaign=propublica-sprout&utm_content=1793498403&utm_medium=social&utm_source=bluesky,1519,883
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mz7ivaw3wy2b,propublica.org,2026-11-01T00:00:08.777Z,248,external,0,0,,propub.li,https://propub.li/4iRF1Oo,1397,744
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3mz7c6pglv42b,propublica.org,2026-10-31T22:00:10.159547432Z,285,external,0,0,,propublica.org,https://www.propublica.org/article/oklahoma-oil-pollution-citation-violations?utm_campaign=propublica-sprout&utm_content=1793484009&utm_medium=social&utm_source=bluesky,718,431
@@ -586,36 +586,41 @@ at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3my6jbbssgr2k,propublic
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3my66qun6ao2z,propublica.org,2026-10-18T18:00:53.254Z,220,video,0,0,,,,1280,728
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3my5y4lwzgc2g,propublica.org,2026-10-18T16:02:10.628Z,237,external,0,0,,propublica.org,https://www.propublica.org/podcast/susan-collins-bribery-allegations-fbi-martin-kao?utm_source=bluesky&utm_medium=social&utm_campaign=propublica-bsky,1814,843
 at://did:plc:k4jt6heuiamymgi46yeuxtpt/app.bsky.feed.post/3my5t2276j22m,propublica.org,2026-10-18T14:31:16.202Z,228,external,0,0,,propublica.org,https://www.propublica.org/article/missouri-plan-judge-selection-republican-attacks?utm_source=bluesky&utm_medium=social&utm_campaign=propublica-bsky,641,367
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzgi4qab3q2j,nytimes.com,2026-11-03T18:35:04.469983Z,186,external,0,0,,nyti.ms,https://nyti.ms/3UYP5w2,19,5
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzghwjwzbc2w,nytimes.com,2026-11-03T18:31:36.608Z,106,external,0,0,,nytimes.com,https://www.nytimes.com/2026/11/02/nyregion/marathon-runner-dies-rachel-apa.html?smtyp=cur&smid=bsky-nytimes,19,2
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzghvnhgue2b,nytimes.com,2026-11-03T18:31:06.544525Z,179,external,0,0,,nyti.ms,https://nyti.ms/4zpPZ3P,5,2
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzgh6nfbaa2v,nytimes.com,2026-11-03T18:18:14.651817Z,168,video,0,0,,,,29,7
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzggkllswx2i,nytimes.com,2026-11-03T18:07:01.892555Z,282,images,1,1,A graphic titled When Do Polls Close Where You Are? It shows maps of the U.S. highlighting poll closing times on the East coast starting at 6pm ET and ending in Alaska at 1am Eastern.,,,43,18
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzggh4fomt2v,nytimes.com,2026-11-03T18:05:05.295935Z,296,images,1,0,,,,15,3
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzgg57lyfq24,nytimes.com,2026-11-03T17:59:33.102204Z,211,images,1,0,,,,21,5
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzgf2eiqpn2j,nytimes.com,2026-11-03T17:40:03.771698Z,237,external,0,0,,nyti.ms,https://nyti.ms/4zAbgYv,34,8
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzge5dek6k2p,nytimes.com,2026-11-03T17:23:49.626Z,288,video,0,0,,,,27,7
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzgavs3mfc22,nytimes.com,2026-11-03T16:25:55.243481Z,264,video,0,0,,,,17,2
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzgaapoeps2x,nytimes.com,2026-11-03T16:14:08.227Z,251,video,0,0,,,,30,6
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzg5etzcr22h,nytimes.com,2026-11-03T15:22:45.772Z,160,video,0,0,,,,35,8
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzfzsdu7wd22,nytimes.com,2026-11-03T14:18:43.574865Z,146,images,1,1,"A line of people in dark clothing at a polling place in Alaska. A headline reads: ""What to Watch for in the Midterm Elections Results"" Photo by Erin Schaff/The New York Times",,,24,2
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzfxdemwc22v,nytimes.com,2026-11-03T13:34:33.632Z,227,video,0,0,,,,32,6
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzfwaino5n2j,nytimes.com,2026-11-03T13:15:03.395701Z,247,external,0,0,,nyti.ms,https://nyti.ms/4A9Wzv8,27,5
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzfse7vimu2r,nytimes.com,2026-11-03T12:05:33.435482Z,116,external,0,0,,nyti.ms,https://nyti.ms/4BYAcL5,34,3
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzfmzjhqnm2i,nytimes.com,2026-11-03T10:30:05.675404Z,74,external,0,0,,nyti.ms,https://nyti.ms/3UXywk9,66,13
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzfcp4ojl42p,nytimes.com,2026-11-03T07:25:19.314783Z,117,external,0,0,,nyti.ms,https://nyti.ms/4BMlpD8,28,6
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzf4jzxip32b,nytimes.com,2026-11-03T05:35:06.241612Z,200,external,0,0,,nyti.ms,https://nyti.ms/4BGXmoP,44,12
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzf2lhh73g24,nytimes.com,2026-11-03T05:00:06.403717Z,229,external,0,0,,nyti.ms,https://nyti.ms/4zpQuec,25,2
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzeyvtj2iu22,nytimes.com,2026-11-03T04:30:07.163579Z,281,images,1,1,"Disneyland’s Autopia track is pictured. Headline reads: ""After 71 Years and a Lot of Exhaust, Disneyland’s Autopia Goes Electric."" Photo credit: Michael Montfort/Michael Ochs Archives, via Getty Images.",,,139,14
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzexa4w3vy2h,nytimes.com,2026-11-03T04:00:05.089460Z,200,external,0,0,,nyti.ms,https://nyti.ms/4sC0kXA,138,23
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzevkioz2w2p,nytimes.com,2026-11-03T03:30:05.499199Z,193,external,0,0,,nyti.ms,https://nyti.ms/4BGhPtW,50,11
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzeturteqn22,nytimes.com,2026-11-03T03:00:03.123826Z,130,external,0,0,,nyti.ms,https://nyti.ms/4A3oL2I,21,2
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzes7aqzp322,nytimes.com,2026-11-03T02:30:06.858574Z,295,external,0,0,,nyti.ms,https://nyti.ms/4isLk9N,62,19
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzgnczpdxz2v,nytimes.com,2026-11-03T20:08:04.379543Z,279,external,0,0,,nyti.ms,https://nyti.ms/4sFjrjr,21,4
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzgmltdlfk2p,nytimes.com,2026-11-03T19:55:06.013388Z,255,images,1,1,Headline over a photo of a Chromebook: Google Will Turn Off Search for Schools That Reject Its A.I.,,,26,19
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzgl6e5xrp2o,nytimes.com,2026-11-03T19:29:40.150949Z,246,external,0,0,,nyti.ms,https://nyti.ms/4BBKU9T,50,28
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzgk4cnzcn22,nytimes.com,2026-11-03T19:10:37.639709Z,282,video,0,0,,,,85,15
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzgjcb6aaj2j,nytimes.com,2026-11-03T18:56:03.753763Z,268,images,1,1,"A graphic titled ""When to Expect Results in Each State""",,,41,18
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzgi4qab3q2j,nytimes.com,2026-11-03T18:35:04.469983Z,186,external,0,0,,nyti.ms,https://nyti.ms/3UYP5w2,52,17
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzghwjwzbc2w,nytimes.com,2026-11-03T18:31:36.608Z,106,external,0,0,,nytimes.com,https://www.nytimes.com/2026/11/02/nyregion/marathon-runner-dies-rachel-apa.html?smtyp=cur&smid=bsky-nytimes,44,8
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzghvnhgue2b,nytimes.com,2026-11-03T18:31:06.544525Z,179,external,0,0,,nyti.ms,https://nyti.ms/4zpPZ3P,15,7
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzgh6nfbaa2v,nytimes.com,2026-11-03T18:18:14.651817Z,168,video,0,0,,,,50,10
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzggkllswx2i,nytimes.com,2026-11-03T18:07:01.892555Z,282,images,1,1,A graphic titled When Do Polls Close Where You Are? It shows maps of the U.S. highlighting poll closing times on the East coast starting at 6pm ET and ending in Alaska at 1am Eastern.,,,57,22
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzggh4fomt2v,nytimes.com,2026-11-03T18:05:05.295935Z,296,images,1,0,,,,22,5
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzgg57lyfq24,nytimes.com,2026-11-03T17:59:33.102204Z,211,images,1,0,,,,25,6
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzgf2eiqpn2j,nytimes.com,2026-11-03T17:40:03.771698Z,237,external,0,0,,nyti.ms,https://nyti.ms/4zAbgYv,45,11
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzge5dek6k2p,nytimes.com,2026-11-03T17:23:49.626Z,288,video,0,0,,,,35,10
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzgavs3mfc22,nytimes.com,2026-11-03T16:25:55.243481Z,264,video,0,0,,,,18,3
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzgaapoeps2x,nytimes.com,2026-11-03T16:14:08.227Z,251,video,0,0,,,,31,7
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzg5etzcr22h,nytimes.com,2026-11-03T15:22:45.772Z,160,video,0,0,,,,37,9
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzfzsdu7wd22,nytimes.com,2026-11-03T14:18:43.574865Z,146,images,1,1,"A line of people in dark clothing at a polling place in Alaska. A headline reads: ""What to Watch for in the Midterm Elections Results"" Photo by Erin Schaff/The New York Times",,,25,3
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzfxdemwc22v,nytimes.com,2026-11-03T13:34:33.632Z,227,video,0,0,,,,33,7
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzfwaino5n2j,nytimes.com,2026-11-03T13:15:03.395701Z,247,external,0,0,,nyti.ms,https://nyti.ms/4A9Wzv8,28,7
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzfse7vimu2r,nytimes.com,2026-11-03T12:05:33.435482Z,116,external,0,0,,nyti.ms,https://nyti.ms/4BYAcL5,35,4
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzfmzjhqnm2i,nytimes.com,2026-11-03T10:30:05.675404Z,74,external,0,0,,nyti.ms,https://nyti.ms/3UXywk9,67,14
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzfcp4ojl42p,nytimes.com,2026-11-03T07:25:19.314783Z,117,external,0,0,,nyti.ms,https://nyti.ms/4BMlpD8,29,7
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzf4jzxip32b,nytimes.com,2026-11-03T05:35:06.241612Z,200,external,0,0,,nyti.ms,https://nyti.ms/4BGXmoP,45,13
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzf2lhh73g24,nytimes.com,2026-11-03T05:00:06.403717Z,229,external,0,0,,nyti.ms,https://nyti.ms/4zpQuec,26,3
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzeyvtj2iu22,nytimes.com,2026-11-03T04:30:07.163579Z,281,images,1,1,"Disneyland’s Autopia track is pictured. Headline reads: ""After 71 Years and a Lot of Exhaust, Disneyland’s Autopia Goes Electric."" Photo credit: Michael Montfort/Michael Ochs Archives, via Getty Images.",,,141,15
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzexa4w3vy2h,nytimes.com,2026-11-03T04:00:05.089460Z,200,external,0,0,,nyti.ms,https://nyti.ms/4sC0kXA,139,24
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzevkioz2w2p,nytimes.com,2026-11-03T03:30:05.499199Z,193,external,0,0,,nyti.ms,https://nyti.ms/4BGhPtW,51,12
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzeturteqn22,nytimes.com,2026-11-03T03:00:03.123826Z,130,external,0,0,,nyti.ms,https://nyti.ms/4A3oL2I,22,3
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzes7aqzp322,nytimes.com,2026-11-03T02:30:06.858574Z,295,external,0,0,,nyti.ms,https://nyti.ms/4isLk9N,64,20
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzeqjkszx72j,nytimes.com,2026-11-03T02:00:05.380148Z,160,external,0,0,,nyti.ms,https://nyti.ms/4iyK2Ks,81,13
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzeotxlxxf22,nytimes.com,2026-11-03T01:30:06.928705Z,160,external,0,0,,nyti.ms,https://nyti.ms/4yXPLj8,229,104
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzen6g3p4k22,nytimes.com,2026-11-03T01:00:10.175119Z,146,images,1,0,,,,624,481
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzen6g3p4k22,nytimes.com,2026-11-03T01:00:10.175119Z,146,images,1,0,,,,628,486
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzemybkm5s2e,nytimes.com,2026-11-03T00:56:44.155Z,230,video,0,0,,,,43,15
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzekppaifk2u,nytimes.com,2026-11-03T00:16:09.030Z,156,video,0,0,,,,191,34
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzekppaifk2u,nytimes.com,2026-11-03T00:16:09.030Z,156,video,0,0,,,,192,34
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzehuhfrjr2i,nytimes.com,2026-11-02T23:25:07.305167Z,243,external,0,0,,nyti.ms,https://nyti.ms/4jUO4zm,74,24
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzehcjnyzj2o,nytimes.com,2026-11-02T23:15:05.695014Z,258,external,0,0,,nyti.ms,https://nyti.ms/3WkDVCe,45,9
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzegy7zcir2j,nytimes.com,2026-11-02T23:09:19.976489Z,209,external,0,0,,nyti.ms,https://nyti.ms/4e89yoI,28,8
@@ -639,7 +644,7 @@ at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzceboitx622,nytimes.c
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzcctynzvi2h,nytimes.com,2026-11-02T02:50:03.602841Z,294,external,0,0,,nyti.ms,https://nyti.ms/4BJ9aqQ,107,16
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzcbqbrayw2v,nytimes.com,2026-11-02T02:30:05.251354Z,276,external,0,0,,nyti.ms,https://nyti.ms/4eeJKXT,80,36
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzcanaqleu2b,nytimes.com,2026-11-02T02:10:29.776378Z,208,external,0,0,,nyti.ms,https://nyti.ms/3UVkIGO,89,19
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzc6rfugm22b,nytimes.com,2026-11-02T01:37:01.926Z,277,images,1,1,"The U.S. Capitol Building is framed by trees. A headline reads: ""Democrats Show Strength in Final Days of Race for Senate, Times/Siena Polls Find."" Photo by Alex Kent for The New York Times.",,,186,34
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzc6rfugm22b,nytimes.com,2026-11-02T01:37:01.926Z,277,images,1,1,"The U.S. Capitol Building is framed by trees. A headline reads: ""Democrats Show Strength in Final Days of Race for Senate, Times/Siena Polls Find."" Photo by Alex Kent for The New York Times.",,,187,34
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzc3zamqfs2n,nytimes.com,2026-11-02T00:47:43.642Z,287,video,0,0,,,,158,25
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzc3y2lara2r,nytimes.com,2026-11-02T00:47:03.698270Z,150,external,0,0,,nyti.ms,https://nyti.ms/4zg4t66,40,9
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzc2hshbbl2s,nytimes.com,2026-11-02T00:20:04.426983Z,244,external,0,0,,nyti.ms,https://nyti.ms/3WneaRE,66,10
@@ -656,7 +661,7 @@ at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzbmisowtx2j,nytimes.c
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzbjne7tjr2b,nytimes.com,2026-11-01T19:18:57.353396Z,177,external,0,0,,nyti.ms,https://nyti.ms/4znKane,36,16
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzbj3o5ks22k,nytimes.com,2026-11-01T19:09:03.836Z,222,images,1,1,"President Trump stands Sen. Dan Sullivan in front of an American flag. A headline reads: ""Judge Rejects Trump Officials’ Move to Challenge Alaska Senate Election."" Photo by Doug Mills for The New York Times.",,,190,37
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzbhn7xigg2r,nytimes.com,2026-11-01T18:43:05.402594Z,296,images,1,0,,,,57,14
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzbh5f36uj22,nytimes.com,2026-11-01T18:34:13.896774Z,134,external,0,0,,nyti.ms,https://nyti.ms/47RNPxO,537,126
+at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzbh5f36uj22,nytimes.com,2026-11-01T18:34:13.896774Z,134,external,0,0,,nyti.ms,https://nyti.ms/47RNPxO,538,126
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzbfs4o6vg2i,nytimes.com,2026-11-01T18:10:02.236027Z,247,external,0,0,,nyti.ms,https://nyti.ms/4BJSdwy,46,11
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzbbd42eko2i,nytimes.com,2026-11-01T16:50:03.303822Z,193,images,1,0,,,,210,47
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mzbaygygvx2b,nytimes.com,2026-11-01T16:44:05.643139Z,223,images,1,0,,,,106,24
@@ -716,11 +721,6 @@ at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mz4kq5jvvq2r,nytimes.c
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mz4jvbygiq2b,nytimes.com,2026-10-30T19:40:04.758385Z,289,external,0,0,,nyti.ms,https://nyti.ms/4sI79ab,37,5
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mz4j2ijjkk24,nytimes.com,2026-10-30T19:25:05.638341Z,299,images,1,0,,,,77,25
 at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mz4d6rn2uo2m,nytimes.com,2026-10-30T17:40:06.965117Z,213,external,0,0,,trib.al,https://trib.al/kFVVuor,96,26
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mz4cvs2qhc2h,nytimes.com,2026-10-30T17:35:05.407951Z,298,images,1,1,"A hand in silhouette at a cryptocurrency kiosk. A headline reads: ""What To Know About The $6.3 Billion Binance Hack"" Photo by Claudia Morales/Reuters",,,47,17
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mz4bboe6pr2b,nytimes.com,2026-10-30T17:05:56.708492Z,225,external,0,0,,nyti.ms,https://nyti.ms/4iitPsE,322,201
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mz4afexiow24,nytimes.com,2026-10-30T16:50:07.291829Z,297,external,0,0,,nyti.ms,https://nyti.ms/4yQrBqG,27,4
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mz4afeajdu2j,nytimes.com,2026-10-30T16:50:06.570019Z,234,images,1,0,,,,252,79
-at://did:plc:eclio37ymobqex2ncko63h4r/app.bsky.feed.post/3mz47um235i2i,nytimes.com,2026-10-30T16:40:44.257754Z,273,video,0,0,,,,43,21
 at://did:plc:qqavis3fg5675o3steyynvfh/app.bsky.feed.post/3mz3vhgtfr222,knightcolumbia.org,2026-10-30T13:34:25.291Z,285,video,0,0,,,,8,2
 at://did:plc:qqavis3fg5675o3steyynvfh/app.bsky.feed.post/3myzltsh7yk2f,knightcolumbia.org,2026-10-29T15:37:03.228Z,298,video,0,0,,,,9,2
 at://did:plc:qqavis3fg5675o3steyynvfh/app.bsky.feed.post/3myxj4vlp5k2r,knightcolumbia.org,2026-10-28T19:43:07.813Z,285,video,0,0,,,,4,2

@@ -112,6 +112,8 @@ jobs:
             any::websocket
             any::sandwich
             any::lmtest
+            any::patchwork
+            any::later
             any::broom
             any::httr2
             any::curl
