@@ -117,6 +117,8 @@ install.packages(c("bskyr", "tidyverse", "jsonlite", "igraph",
                    "tidytext", "topicmodels", "reshape2", "rmarkdown",
                    "digest", "websocket"))  # reshape2: tidying LDA in Part 06;
                                             # websocket only for Part 10
+install.packages(c("httr2", "later",         # called directly in Parts 08-10
+                   "patchwork"))              # multi-panel figures
 install.packages(c("sandwich", "lmtest"))   # optional: HAC errors in Part 05
 install.packages(c("testthat", "withr"))    # for the R tests and mock-API check
 ```
@@ -202,13 +204,17 @@ These apply to both implementations unless noted.
 - **API style (Python):** the atproto SDK with dot-notation methods —
   `client.get_author_feed(...)` or `client.app.bsky.feed.get_author_feed({...})` —
   and cursor-based pagination, as in Part 00.
-- **API style (R):** bskyr functions returning tibbles; rely on bskyr's
-  automatic pagination (`limit > 100`); reach into `record` list-columns with
-  `purrr::map_chr(record, "field")`; use `clean = FALSE` plus purrr for deeply
-  nested responses (threads, feeds, embeds).
+- **API style (R):** bskyr functions returning tibbles; reach into `record`
+  list-columns with `purrr::map_chr(record, "field")`; use `clean = FALSE` plus
+  purrr for deeply nested responses (threads, feeds, embeds). bskyr pages
+  automatically when `limit > 100`, but it does not pause between pages, so use
+  it only for small, capped pulls (a few pages). For larger collections write a
+  cursor loop (bskyr returns the cursor in `attr(x, "cursor")`, as Part 02 does)
+  with `Sys.sleep()` between pages.
 - **Be polite to the API:** `time.sleep(0.1)` / `Sys.sleep(0.1)` between
-  paginated calls; cap every collection (a few hundred requests per notebook
-  at most); keep each Python part's `data/` under roughly 2 MB.
+  paginated calls you control; cap every collection (a few hundred requests per
+  notebook at most); keep each Python part's `data/` under roughly 2 MB. Record
+  in each collection's metadata whether it stopped at its cap (`truncated`).
 - **Guard privileged cells (Python):** anything that needs authentication
   (search, notifications) runs inside `if is_authenticated(client):` with an
   informative `else`. **Never call write endpoints** (`send_post`, `like`,

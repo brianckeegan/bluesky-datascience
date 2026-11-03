@@ -136,7 +136,7 @@ The series exists in two parallel implementations that perform the same analyses
 
 **Motivation.** Hand-coding thousands of posts is the bottleneck of classic content analysis. Large language models can label stance, topic, or toxicity at scale — but only if we validate them like any other instrument.
 
-**Endpoints.** Reuses post archives from Parts 02–06; no new Bluesky endpoints. Adds an LLM API (*e.g.*, Anthropic's Claude API) as a second data-processing service.
+**Endpoints.** `app.bsky.feed.getAuthorFeed`, to collect a fresh corpus of `nytimes.com` posts to annotate (the method applies equally to the archives from Parts 02–06). Adds an LLM API (*e.g.*, Anthropic's Claude API) as a second data-processing service.
 
 **Methods.** Writing a labeling prompt with a codebook; requesting structured (JSON) outputs; batching posts and handling API costs and rate limits; comparing LLM labels to a hand-coded gold sample with agreement metrics (percent agreement, Cohen's kappa); error analysis of disagreements; few-shot examples versus zero-shot prompting.
 
