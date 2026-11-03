@@ -17,13 +17,59 @@ measures its shape with [igraph](https://r.igraph.org/), traces who
 liked, reposted, and quoted the post and when, and shows that engagement
 across posts is radically unequal.
 
+How does content spread through a social network? When you post
+something, some people reply, some like it, some repost it to their own
+followers, and some quote it into a new conversation. Each of those
+reactions can trigger further reactions, and the result is a *cascade*:
+a tree of activity growing out of a single **root** post, the post that
+started it all. On Bluesky, the chain of replies attached to a post is
+called a **thread**, and because every reply names exactly one
+**parent** (the specific post it answers), a thread naturally forms a
+tree. Cascades are the basic unit of analysis for studying *information
+diffusion*: questions like "do messages spread through a few big
+broadcasts or long person-to-person chains?" (Goel, Anderson, Hofman, &
+Watts [2016](https://doi.org/10.1287/mnsc.2015.2158)) and "does false
+news travel farther and faster than true news?" (Vosoughi, Roy, & Aral
+[2018](https://doi.org/10.1126/science.aap9559)).
+
+Most of what we know about online diffusion comes from Twitter, where
+researchers needed special access (the "firehose" or expensive data
+grants) to see complete cascades, and public APIs returned only samples.
+Bluesky is different in a useful way: **every like, repost, reply, and
+quote is a public record** on the AT Protocol. Anyone can ask who liked
+a post and when, who amplified it, and what the entire conversation
+beneath it looks like, with no special access. That makes Bluesky an
+unusually open environment for replicating (and stress-testing) the
+Twitter-era diffusion literature. As we will see, though, "public in
+principle" does not mean "complete in one API call": the AppView prunes
+its view of very large threads, and being honest about that coverage is
+part of doing this well.
+
+If cascades are new to you, Chapter 19 ("Cascading Behavior in
+Networks") of Easley & Kleinberg's *[Networks, Crowds, and
+Markets](https://www.cs.cornell.edu/home/kleinber/networks-book/)*, a
+standard undergraduate textbook that is free online, is an accessible
+companion: it explains *why* network structure makes some things spread
+and others fizzle, where this document measures *how* real spreading
+events actually looked.
+
 ### Learning objectives
 
-* Traverse nested thread views recursively into a reply tree.
-* Compute cascade metrics: size, depth, breadth, structural virality.
-* Analyze the timing of engagement: the burst and the decay.
-* Plot heavy-tailed engagement distributions correctly (CCDFs, log-log).
-* Recognize selection on the dependent variable in diffusion research.
+By the end of this document you will be able to:
+
+1. Retrieve a post's full reply thread, likes, reposts, and quotes from
+   the Bluesky API.
+2. Recursively parse the API's nested thread views into an igraph reply
+   tree, handling deleted and blocked posts gracefully.
+3. Compute cascade metrics (size, depth, breadth, and **structural
+   virality**) and explain what they reveal about broadcast versus viral
+   spread.
+4. Analyze *when* engagement arrives (the burst-then-decay signature)
+   and *who* engages in multiple ways.
+5. Plot heavy-tailed engagement distributions with histograms and
+   log-log CCDFs.
+6. Recognize the research-design trap of sampling cascades on their
+   success: "selection on the dependent variable."
 
 ## Setup
 
@@ -33,6 +79,7 @@ library(tidyverse)
 library(jsonlite)
 library(lubridate)
 library(igraph)
+library(patchwork)   # places ggplot figures side by side
 ```
 
 As in every part of this series, the shared helper `bsky_client.R` looks
@@ -69,43 +116,139 @@ NYT_FEED_ITEMS      <- 200   # Python: fetch_author_posts(client, 'nytimes.com',
 
 ### A note on parsing, and a platform in flux
 
-The Python notebook opens with a lesson about *strict* SDK parsing:
-typed models crash when Bluesky ships an embed type the SDK hasn't met.
-R sidesteps the issue by temperament — `clean = FALSE` hands us plain
-nested lists, and lists don't validate anything. The price is that *we*
-must know the structure; the reward is that nothing the platform adds
-can crash us. For deeply nested responses like threads, this part works
-with raw lists and `purrr`.
+Bluesky changes faster than the libraries that describe it. Two kinds
+of change matter. A **new type** can appear where several are allowed:
+an embed can be an image set, a link card, a quote, a video, and
+Bluesky keeps adding kinds (a multi-photo *gallery* embed arrived in
+2026). And the **shape** of a response can change: a field gets renamed,
+goes missing, or changes type.
+
+The Python notebook shows how a *typed* client reacts, using a saved
+fixture: two real `bsky.app` posts from `getAuthorFeed`, altered on
+purpose so that the first carries a made-up embed type
+(`app.bsky.embed.hologram#view`) and the second has its required
+`indexedAt` field renamed. Python's SDK validates every response against
+the models it ships with, so the renamed field raises an error (and older
+SDK versions also crashed on the unknown embed).
+
+R reads the same fixture file from the Python part's `data/` folder.
+`clean = FALSE` and `jsonlite` hand us plain nested lists, and lists
+validate nothing, so neither change can crash us. That is not the same as
+being safe. Watch what happens when we read the field the second post
+renamed:
+
+```{r drift-fixture, eval = TRUE}
+fixture <- fromJSON(
+  "../../Notebooks/Part 04 - Threads Engagement and Diffusion/data/drift_fixture.json",
+  simplifyVector = FALSE)
+
+map(fixture$feed, \(item) tibble(
+  embed_type = item$post$embed$`$type` %||% NA_character_,
+  indexed_at = item$post$indexedAt %||% NA_character_,
+  text = substr(item$post$record$text, 1, 40)
+)) |> list_rbind()
+```
+
+Both posts load, the unknown embed type is just a string, and the
+renamed field silently becomes `NA`. A typed client fails loudly; raw
+lists fail **quietly**, and a quiet failure is the more dangerous kind,
+because the analysis keeps running on missing values. That is why the
+shared helpers in `bsky_client.R` (`is_repost()`, `is_reply()`) stop
+with an error when the columns they expect are missing, and why it pays
+to check for unexpected `NA`s after every collection.
+
+Parsing drift is only one way a platform in flux breaks research code.
+In 2026 Bluesky's moderation service stopped accepting the wildcard
+label queries its API reference still documents (Part 09): the request
+itself began returning HTTP 400. The defenses are the same in every
+case: record your package versions along with your collection dates
+(`packageVersion("bskyr")`), keep raw data you can re-parse, and treat
+a refusal or an unexpected `NA` as a problem to investigate rather than
+as an empty result. For deeply nested responses like threads, this part
+works with raw lists and `purrr`.
 
 ## 1. Finding a study post
 
-We need a post with a deep conversation under it. The official
-`bsky.app` account reliably draws large reply threads. We fetch its
-recent feed with [`bs_get_author_feed()`](https://christophertkenny.com/bskyr/reference/bs_get_author_feed.html) and keep only its
-*original* posts, dropping reposts (someone else's post) and replies
-(the account joining someone else's conversation), using the
-`is_repost()` and `is_reply()` helpers from `bsky_client.R`:
+Diffusion analysis starts from a root post. Rather than hand-picking a
+famous one, we pull the ~100 most recent feed items from the official
+`bsky.app` account (9+ million followers, so its posts reliably attract
+engagement) with
+[`bs_get_author_feed()`](https://christophertkenny.com/bskyr/reference/bs_get_author_feed.html),
+the R wrapper for
+[`app.bsky.feed.getAuthorFeed`](https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getAuthorFeed),
+and choose a case study from the data. The author feed mixes three kinds
+of items, which we need to tell apart:
+
+* **reposts** of other accounts' posts;
+* **replies** the account wrote into other threads;
+* **original posts**, the roots of their own cascades, which is what we
+  want.
+
+Every post carries four engagement counters maintained by the AppView:
+`reply_count`, `like_count`, `repost_count`, and `quote_count`. Here
+they are for the newest item in the feed. (The counters are live, so the
+numbers you see will differ from any printed copy of this document: that
+is expected, not an error.)
 
 ```{r find-post}
 feed <- bs_get_author_feed("bsky.app", limit = FEED_ITEMS)
 
+feed |>
+  mutate(created_at = post_created_at(feed)) |>
+  select(uri, created_at, reply_count, like_count, repost_count, quote_count) |>
+  head(1)
+```
+
+The endpoint also accepts a `filter` (`posts_no_replies`,
+`posts_with_media`, `posts_with_video`, `posts_and_author_threads`) and
+an `includePins` flag, but none of them does our filtering for us: even
+`posts_no_replies` still includes reposts and the account's replies
+within its own threads. (bskyr's `bs_get_author_feed()` doesn't expose
+the filter anyway.) So we classify items ourselves with the
+`is_repost()` and `is_reply()` helpers from `bsky_client.R`, and let
+`summary()` describe each counter. Watch the gulf between the median and
+the maximum:
+
+```{r originals}
 originals <- feed |>
   filter(!is_repost(feed), !is_reply(feed)) |>
   mutate(text = map_chr(record, "text", .default = ""))
 
+c(feed_items = nrow(feed), original_posts = nrow(originals))
+
 originals |>
   select(reply_count, like_count, repost_count, quote_count) |>
   summary()
+```
 
+Already at this account-level view the engagement counts are wildly
+unequal: the medians sit far below the maxima. We will come back to that
+shape in Section 5. For now, rank the originals by reply count (replies
+are what build a *conversation tree*) and adopt the most-replied post as
+our **case-study post**. Because it is chosen from live data, *which*
+post wins, and every number computed from it below, will differ each
+time the document is knitted. That is deliberate: the method is the
+tutorial, not the particular numbers.
+
+```{r case-study}
 case_study <- originals |> slice_max(reply_count, n = 1, with_ties = FALSE)
 
-case_study |> select(uri, reply_count, like_count, repost_count, text)
+case_study |> select(uri, reply_count, like_count, repost_count, quote_count, text)
 ```
 
 ## 2. From thread views to reply trees
 
-[`bs_get_post_thread()`](https://christophertkenny.com/bskyr/reference/bs_get_post_thread.html) returns the post and its replies nested `depth`
-levels down. We start, as the Python notebook does, with a shallow
+[`bs_get_post_thread()`](https://christophertkenny.com/bskyr/reference/bs_get_post_thread.html)
+(the R wrapper for
+[`app.bsky.feed.getPostThread`](https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getPostThread))
+returns the post and its replies nested `depth` levels down. Two words
+to keep straight: a reply's **parent** is the single post it directly
+answers, while the **root** is the post at the very top of the thread. A
+reply deep in a conversation has a parent that is itself a reply, but
+every post in the thread shares the same root. Not every node is
+readable: a deleted reply comes back as a `notFoundPost` stub, and one
+whose author has blocked the viewer (or been blocked) as a
+`blockedPost`, both with no `post` or `replies` to traverse. We start, as the Python notebook does, with a shallow
 request (`THREAD_FIRST_DEPTH`, two levels), so that truncation is easy
 to see. With `clean = FALSE` the response is the API's JSON as a
 plain list: `response[["thread"]]` is the root node, and each node's
@@ -139,18 +282,43 @@ thread_to_edges <- function(node, parent_uri = NA_character_) {
 }
 
 response <- bs_get_post_thread(case_study$uri, depth = THREAD_FIRST_DEPTH, clean = FALSE)
-tree <- thread_to_edges(response[["thread"]])
+root <- response[["thread"]]
+tree <- thread_to_edges(root)
 
-c(posts = nrow(tree),
+c(root_reply_count = root$post$replyCount,
+  top_level_replies_returned = length(root$replies),
+  posts = nrow(tree),
   truncated_branches = sum(tree$truncated))
 ```
+
+Before going further, walk the nested structure by hand once: take the
+first entry in the root's `replies` list and look at *its* `replies`. It
+has exactly the same shape one level down, and that self-similarity is
+why a recursive parser is the natural tool:
+
+```{r walk-by-hand}
+first_reply <- root$replies[[1]]
+
+c(replied_at = first_reply$post$record$createdAt,
+  likes = first_reply$post$likeCount,
+  its_replies = length(first_reply$replies))
+```
+
+Notice the gap between the root's `reply_count` and the number of
+replies actually returned: the AppView serves a **pruned view** of busy
+threads. It is built to render a conversation screen, not to enumerate a
+dataset. Keep that in mind; we will quantify it in a moment.
 
 A single request only reaches `depth` levels, so deep conversations get
 *truncated*: nodes that claim replies we have not seen. (The full fetch
 below asks for `THREAD_DEPTH` levels per request.) The fetcher
-below keeps a **frontier** — a queue of truncated nodes still to expand
-— and works through it with follow-up requests until the frontier is
-empty or the request budget runs out. The `seen` vector prevents
+below behaves like a small crawler doing **breadth-first search (BFS)**,
+the classic traversal that explores a tree level by level: it keeps a
+**frontier** (a queue of truncated nodes still to expand) and works
+through it with follow-up requests until the frontier is empty or the
+request budget runs out. The budget matters twice over: it keeps us
+polite to the API, and it makes the collection's cost predictable before
+we start. The `seen` vector prevents
 double-counting posts that appear in overlapping responses:
 
 ```{r fetch-full-tree}
@@ -190,8 +358,12 @@ c(posts = nrow(tree),
 
 ### How much of the cascade did we get?
 
-Every node advertises its `reply_count`; comparing promised replies to
-retrieved edges is an honest coverage check:
+Every node reports how many direct replies it has, so we can compare
+the replies *promised* by those counters with the reply edges we
+actually *retrieved*. For quiet threads the two match; for a mega-thread
+the AppView's pruning means we have a sample of the cascade, biased
+toward whatever the server chose to surface (it does not document its
+ranking):
 
 ```{r coverage}
 promised <- sum(tree$reply_count)
@@ -201,12 +373,41 @@ c(promised = promised, retrieved = retrieved,
   coverage = round(retrieved / promised, 3))
 ```
 
+Do not be alarmed if that coverage is low: on a mega-thread with tens of
+thousands of promised replies it can land in the low single digits of a
+percent. The crawler is working correctly. The AppView caps how many
+replies it returns *per node* (a breadth cut), and no amount of
+re-querying recovers replies the server declines to list. The protocol's
+promise still holds (every reply is a public record in its author's
+repository, and Part 10's firehose-based collection can capture
+cascades completely), but the convenient endpoint alone does not
+deliver it for threads this size. The honest move is the one we just
+made: report coverage next to the metrics.
+
 ## 3. Cascade metrics
 
-Build the tree as an igraph object and measure its shape. **Structural
-virality** (Goel et al. 2016) is the mean shortest-path distance between
-all pairs of nodes: low for broadcast (everyone replies to the root),
-high for chains that spread hand-to-hand.
+The diffusion literature summarizes a cascade's shape with a few
+standard numbers. In tree vocabulary, *depth* is vertical (how far a
+node sits from the root) and *breadth* is horizontal (how many nodes
+share a level):
+
+* **size**: how many posts the tree contains;
+* **max depth**: the longest chain of replies-to-replies;
+* **mean depth**: how far from the root the average reply sits;
+* **max breadth**: the largest number of posts at any single level;
+* **structural virality**: the average distance between *all pairs* of
+  posts in the (undirected) tree (Goel et al.
+  [2016](https://doi.org/10.1287/mnsc.2015.2158)).
+
+Structural virality is the interesting one. Size alone cannot
+distinguish a celebrity's post that ten thousand people answer directly
+(a *broadcast*) from a chain letter passed person to person ten thousand
+times (*viral* spread): both are size 10,001. Average pairwise distance
+can: in the star every pair of leaves is 2 hops apart, while in the
+chain typical pairs are thousands of hops apart. igraph's
+[`mean_distance()`](https://r.igraph.org/reference/distances.html)
+computes it exactly. We build the tree as an igraph object and measure
+its shape:
 
 ```{r metrics}
 edges <- tree |> filter(!is.na(parent_uri)) |> select(parent_uri, uri)
@@ -219,17 +420,26 @@ structural_virality <- function(g) {
   mean_distance(as_undirected(g), unconnected = FALSE)
 }
 
+finite_depths <- depths[is.finite(depths)]
+
 tibble(
   size = vcount(Gt),
-  depth = max(depths[is.finite(depths)]),
-  max_breadth = max(table(depths[is.finite(depths)])),
-  unique_repliers = n_distinct(tree$author_did),
+  max_depth = max(finite_depths),
+  mean_depth = mean(finite_depths),
+  max_breadth = max(table(finite_depths)),
+  unique_authors = n_distinct(tree$author_did),
   structural_virality = structural_virality(Gt)
 )
 ```
 
-Calibrate the structural-virality number against synthetic extremes of
-the same size:
+A structural-virality value on its own is hard to judge: is the number
+above broadcast-ish or viral-ish? To calibrate it, build the two extreme
+trees *of the same size* with igraph's generators,
+[`make_star()`](https://r.igraph.org/reference/make_star.html) (one
+center connected to everyone: a pure broadcast) and a non-circular
+[`make_ring()`](https://r.igraph.org/reference/make_ring.html) (a single
+chain: pure person-to-person spread), and compute the same metric on
+them. Our cascade has to land somewhere between those two poles:
 
 ```{r calibrate}
 n <- vcount(Gt)
@@ -245,7 +455,12 @@ cascades do, and much closer to the broadcast star than to the chain:
 Goel et al. (2016) found the same across a billion Twitter events.
 Because the server prunes busy threads mostly at the first level (direct
 replies to the root), the true cascade is probably even more
-broadcast-like than the tree we retrieved.
+broadcast-like than the tree we retrieved: pruning biases structural
+virality *upward*.
+
+The **depth profile**, how many posts sit at each level, shows the same
+structure visually: a fat first level of direct replies that thins
+quickly, with a long shallow tail of back-and-forth conversations.
 
 ```{r depth-profile, fig.width=8, fig.height=4}
 tibble(depth = depths[is.finite(depths)]) |>
@@ -259,25 +474,50 @@ tibble(depth = depths[is.finite(depths)]) |>
 
 ### Drawing the reply tree
 
-```{r draw-tree, fig.width=9, fig.height=9}
-set.seed(42)
-layout <- layout_as_tree(Gt, root = case_study$uri, circular = TRUE)
+Trees beg to be drawn. igraph's
+[`layout_as_tree()`](https://r.igraph.org/reference/layout_as_tree.html)
+with `circular = TRUE` computes a radial layout: each node's radius is
+its depth, so every subtree occupies its own wedge. We hand those
+coordinates to ggplot, which lets us color each post by its depth and
+add a colorbar. The red point is the root:
 
-plot(Gt, layout = layout,
-     vertex.size = ifelse(V(Gt)$name == case_study$uri, 6, 1.5),
-     vertex.color = ifelse(V(Gt)$name == case_study$uri,
-                           "#DC143C", "steelblue"),
-     vertex.label = NA, edge.arrow.size = 0,
-     edge.color = adjustcolor("gray", alpha.f = 0.4),
-     main = paste0("Reply tree of the case-study post (",
-                   vcount(Gt), " posts retrieved)"))
+```{r draw-tree, fig.width=9, fig.height=9}
+layout <- layout_as_tree(Gt, root = case_study$uri, circular = TRUE)
+nodes <- tibble(x = layout[, 1], y = layout[, 2],
+                depth = depths, is_root = V(Gt)$name == case_study$uri)
+edge_ends <- ends(Gt, E(Gt), names = FALSE)
+segments <- tibble(x = layout[edge_ends[, 1], 1], y = layout[edge_ends[, 1], 2],
+                   xend = layout[edge_ends[, 2], 1], yend = layout[edge_ends[, 2], 2])
+
+ggplot() +
+  geom_segment(data = segments, aes(x, y, xend = xend, yend = yend),
+               color = "gray", alpha = 0.4, linewidth = 0.3) +
+  geom_point(data = filter(nodes, !is_root), aes(x, y, color = depth), size = 1) +
+  geom_point(data = filter(nodes, is_root), aes(x, y), color = "#DC143C", size = 4) +
+  scale_color_viridis_c(name = "Reply depth") +
+  coord_equal() +
+  labs(title = paste0("Reply tree of the case-study post (",
+                      vcount(Gt), " posts retrieved)")) +
+  theme_void()
 ```
 
 ## 4. Who engages, and when
 
-Replying is one engagement among several. Likes carry two timestamps —
-`createdAt` from the liker's client and `indexedAt` from the network —
-which lets us reconstruct the post's attention curve. With
+Replies are only one channel of engagement. Three more endpoints tell us
+who reacted in lighter-weight ways:
+
+* [`app.bsky.feed.getLikes`](https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getLikes):
+  who liked the post, **with timestamps**;
+* [`app.bsky.feed.getRepostedBy`](https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getRepostedBy):
+  who amplified it to their followers (profiles only, no timestamps);
+* [`app.bsky.feed.getQuotes`](https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getQuotes):
+  quote posts that embed it, each the root of a potential new cascade.
+
+It is worth pausing on what a quietly unusual dataset the like list is:
+on most platforms, *who* liked *what*, *when* is private or paywalled,
+while on Bluesky each like is a public record. Likes carry two
+timestamps, `createdAt` from the liker's client and `indexedAt` from the
+network, which lets us reconstruct the post's attention curve. With
 `clean = FALSE`, [`bs_get_post_likes()`](https://christophertkenny.com/bskyr/reference/bs_get_post_likes.html) hands back a list of raw response
 pages; each page has a `$likes` list whose elements we flatten into one
 row apiece, then convert "when was this like indexed" into "hours since
@@ -334,8 +574,16 @@ compute from it inherits that.
 
 ### The burst, then the decay
 
-```{r burst, fig.width=8, fig.height=4}
-likes |>
+Attention on social media is front-loaded: a post earns most of its
+engagement in the first hours while feeds and notifications surface it,
+then decays to a trickle. Plotting cumulative likes against time since
+posting makes that signature visible (a steep initial rise that bends
+toward a plateau), and the per-hour histogram shows the same burst
+directly, often with small daily echoes as different time zones wake up.
+`patchwork`'s `+` places the two plots side by side:
+
+```{r burst, fig.width=12, fig.height=4}
+cumulative_plot <- likes |>
   mutate(cumulative = row_number()) |>
   ggplot(aes(hours_since_post / 24, cumulative)) +
   geom_line(color = "steelblue") +
@@ -343,36 +591,44 @@ likes |>
        title = "Cumulative likes over time") +
   theme_minimal()
 
-likes |>
+burst_plot <- likes |>
   filter(hours_since_post <= 72) |>
   ggplot(aes(hours_since_post)) +
   geom_histogram(bins = 72, fill = "steelblue") +
   labs(x = "Hours since post (first 72)", y = "Likes per hour",
        title = "The initial burst") +
   theme_minimal()
-```
 
-Most attention arrives within hours — the universal "burst then decay"
-shape of social media attention.
+cumulative_plot + burst_plot
+```
 
 ### Reposters and quoters
 
-Two lighter-weight channels remain. [`bs_get_reposts()`](https://christophertkenny.com/bskyr/reference/bs_get_reposts.html) lists who
-amplified the post to their own followers (profiles only, no
-timestamps), and [`bs_get_quotes()`](https://christophertkenny.com/bskyr/reference/bs_get_quotes.html) lists posts that embed it, each the
-root of a potential new cascade. Both are capped by the parameters at
-the top of the document:
+Reposts are the engine of diffusion (they place the post in *new*
+audiences' feeds) and quotes start new conversations about it.
+[`bs_get_reposts()`](https://christophertkenny.com/bskyr/reference/bs_get_reposts.html)
+lists who amplified the post, and
+[`bs_get_quotes()`](https://christophertkenny.com/bskyr/reference/bs_get_quotes.html)
+lists posts that embed it. Note the affordance gap in the API: likes
+come with timestamps, reposts do not (a reposter row is just a profile),
+so timing analyses of amplification need different collection
+strategies (Part 10's firehose records repost events as they happen).
+Both lists are capped by the parameters at the top of the document:
 
 ```{r reposts-quotes}
 reposters <- bs_get_reposts(case_study$uri, limit = REPOSTS_CAP)
 quotes <- bs_get_quotes(case_study$uri, limit = QUOTES_CAP)
 
-c(reposters = nrow(reposters), quotes = nrow(quotes),
-  quote_likes = sum(quotes$like_count, na.rm = TRUE))
+c(reposters_retrieved = nrow(reposters),
+  reposts_reported = case_study$repost_count,
+  quotes_retrieved = nrow(quotes),
+  quotes_reported = case_study$quote_count,
+  likes_on_quote_posts = sum(quotes$like_count, na.rm = TRUE),
+  replies_to_quote_posts = sum(quotes$reply_count, na.rm = TRUE))
 ```
 
-Each quote post can seed its own cascade — diffusion on Bluesky is a
-forest, not a single tree.
+The quote posts earn engagement of their own: each one can seed its own
+cascade, so diffusion on Bluesky is a forest, not a single tree.
 
 ### Do the same people like and repost?
 
@@ -395,21 +651,53 @@ list is incomplete (see the shortfall above), the overlap is undercounted.
 
 ## 5. Heavy-tailed engagement across posts
 
-Single cascades mislead; the *distribution* across posts is the durable
-fact. Compare the official platform account with a national newsroom, on a
-complementary CDF with log-log axes:
+Step back from one cascade to the *distribution* of engagement across
+many posts. Engagement is famously **heavy-tailed**. A distribution has
+a *heavy tail* when extreme values are common enough to dominate the
+totals: unlike human heights, where nobody is fifty feet tall, post
+engagement routinely produces values hundreds or thousands of times the
+median. Most posts receive little attention while a few receive enormous
+amounts, and the "average post" is a misleading fiction (Bakshy, Hofman,
+Mason, & Watts 2011 found the same for cascade sizes seeded by ordinary
+Twitter users).
 
-```{r heavy-tails, fig.width=10, fig.height=4.5}
+For contrast with `bsky.app`'s megaphone, we also collect ~200 recent
+feed items from `nytimes.com`, The New York Times, a newsroom that posts
+dozens of times a day to over a million followers:
+
+```{r nyt-feed}
 nyt_feed <- bs_get_author_feed("nytimes.com", limit = NYT_FEED_ITEMS)
 nyt_originals <- nyt_feed |>
   filter(!is_repost(nyt_feed), !is_reply(nyt_feed))
 
+c(feed_items = nrow(nyt_feed), original_posts = nrow(nyt_originals))
+
+nyt_originals |>
+  select(reply_count, like_count, repost_count, quote_count) |>
+  summary()
+```
+
+A linear-scale histogram mostly shows one tall bar near zero and a few
+invisible outliers: the tail is exactly what it hides. The standard fix
+is the **complementary cumulative distribution function (CCDF)** on
+log-log axes: for each engagement level *x*, plot the fraction of posts
+with *at least* *x*. Heavy-tailed distributions decay slowly, roughly
+straight on log-log axes, while thin-tailed ones plunge. Zero-count
+posts are dropped, since log 0 is undefined. The two views side by side:
+
+```{r heavy-tails, fig.width=12, fig.height=4.5}
 ccdf <- function(x) {
   x <- sort(x[!is.na(x)])
   tibble(value = x, p = 1 - (seq_along(x) - 1) / length(x))
 }
 
-bind_rows(
+linear_plot <- ggplot(originals, aes(like_count)) +
+  geom_histogram(bins = 30, fill = "steelblue") +
+  labs(x = "Likes per post", y = "Posts",
+       title = "@bsky.app like counts (linear scale)") +
+  theme_minimal()
+
+ccdf_plot <- bind_rows(
   ccdf(originals$like_count) |> mutate(account = "bsky.app"),
   ccdf(nyt_originals$like_count) |> mutate(account = "nytimes.com")
 ) |>
@@ -417,10 +705,18 @@ bind_rows(
   ggplot(aes(value, p, color = account)) +
   geom_step() +
   scale_x_log10() + scale_y_log10() +
+  scale_color_manual(values = c("bsky.app" = "steelblue", "nytimes.com" = "darkorange")) +
   labs(x = "Likes per post", y = "P(X ≥ x)",
        title = "Like-count CCDF (log-log)") +
   theme_minimal()
+
+linear_plot + ccdf_plot
 ```
+
+One number can summarize the same inequality: what share of *all* likes
+went to the top 10% of posts? If attention were spread evenly the answer
+would be 10%; heavy tails push it far higher, the "winner-take-most"
+signature you will meet again in every engagement dataset you collect:
 
 ```{r top10-share}
 bind_rows(
@@ -438,10 +734,42 @@ bind_rows(
   )
 ```
 
-A handful of posts capture most of the attention — the heavy tail that
-makes "the average post" a misleading unit of analysis.
+Both accounts show the heavy-tailed signature (engagement inequality is
+a property of the *medium*, not just of celebrity), but the curves sit
+far apart on the x-axis (compare the two medians above), even though
+both accounts count their followers in the millions. The gap is about
+*posting style*, not audience size: `bsky.app` posts rarely, and each
+announcement lands on the whole audience at once, while a newsroom
+floods the zone with dozens of posts a day, diluting attention across
+them. Follower count is **potential** reach; engagement per post is what
+the audience actually does with it. And when an account's occasional
+post does break out, the extra reach comes from reposts rippling
+outward, the **viral** pathway. Goel et al. (2016) showed that broadcast
+and viral diffusion are genuinely different mechanisms that produce
+cascades of similar size with very different shapes, which is precisely
+why structural virality (Section 3) was invented: size alone cannot tell
+you *how* something spread.
 
 ## 6. Saving the data
+
+We save two artifacts to `data/` for reuse:
+
+* **`engagement_summary.csv`**: per-post engagement counts for both
+  accounts. We keep post URIs (they identify the *posts*, which we
+  analyze) but drop the text: it is re-fetchable from the URI, and there
+  is no reason to redistribute it.
+* **`case_study_likes.csv`**: the timing of likes on the case-study
+  post, with **timestamps and an anonymous index only**.
+
+That second choice is *data minimization* in action. Our research
+question (when does engagement arrive?) needs timestamps, not
+identities. The liker DIDs are public records, and keeping them would be
+defensible for a question that genuinely requires them, but a saved file
+should carry the minimum needed for its purpose: files get copied,
+shared, and forgotten, and a de-identified file of timestamps cannot
+become a list of *who liked what* in someone else's hands. The last line
+lists what the collection left on disk; keeping `data/` small enforces
+the same discipline.
 
 ```{r save}
 dir.create("data", showWarnings = FALSE)
@@ -460,77 +788,224 @@ likes |>
             hours_since_post, collected_at = COLLECTED_AT) |>
   write_csv("data/case_study_likes.csv")
 
-fs::dir_info("data")[, c("path", "size")]
+files <- list.files("data", full.names = TRUE)
+tibble(file = files, size_kb = round(file.size(files) / 1024))
 ```
 
 ## 7. Research design: studying diffusion without sampling on success
 
-The fatal error in diffusion research is **selecting on the dependent
-variable**: studying only the cascades that went viral and "discovering"
-the properties of viral content. Goel et al. (2012) showed that when you
-sample *all* cascades, the overwhelming majority are tiny — depth one,
-size one. Vosoughi, Roy, & Aral (2018) compared true and false news by
-conditioning on *content verified externally*, not on success. The
-honest design defines the population of posts first (an account's full
-history, a time window from the firehose — Part 10) and treats cascade
-size as the outcome, never the sampling criterion.
+The methods above are straightforward; the design decisions around them
+are where diffusion studies succeed or fail.
 
-This document did that only halfway, and it is worth being precise about
-which half. The **engagement distributions** in Section 5 are
-success-blind: they use each account's most recent posts, a time window
-chosen before looking at engagement. The **case-study cascade** in
-Sections 2–4 is not: we picked it *because* it had the most replies of
-`bsky.app`'s recent posts, which is sampling on the dependent variable
-in miniature. Its size, depth and structural virality describe an
-outlier chosen for being large, and tell us nothing about how a typical
-post spreads. A success-blind version would compute the same cascade
-metrics for *every* post in the time window, small and large alike.
+### Selection on the dependent variable
+
+The most tempting way to study virality is to collect viral things:
+scrape the trending page, search for posts with thousands of reposts,
+ask "what do hit posts have in common?" This is **sampling on the
+dependent variable**, and it cannot answer the question. Whatever the
+hits have in common (emotional language, images, posting time),
+countless *failed* posts shared those traits too; without the failures
+in your sample, you cannot tell features that cause spread from features
+that are merely common. The diffusion literature's central empirical
+fact makes this acute: cascades' size distribution is so heavy-tailed
+that the typical post spawns *no* cascade at all (Goel, Watts, &
+Goldstein 2012). A sample of successes is a sample of extreme outliers.
+
+The defensible design samples posts **at the starting line, before their
+outcomes are known**, then follows every cascade, including the
+overwhelmingly common tiny ones. This document did that only halfway,
+and it is worth being precise about which half:
+
+* The **engagement distributions** in Section 5 are success-blind. They
+  use each account's most recent posts, a time-window frame chosen before
+  looking at engagement, so the low-engagement posts in
+  `engagement_summary.csv` are data, not noise.
+* The **case-study cascade** in Sections 2–4 is not. We picked it
+  *because* it had the most replies of `bsky.app`'s recent posts, which
+  is sampling on the dependent variable in miniature. Its size, depth and
+  structural virality describe an outlier chosen for being large, and
+  they tell us nothing about how a typical Bluesky post spreads. That was
+  a fine choice for teaching the methods (a big tree has something to
+  measure) and the wrong one for a finding.
+
+A success-blind version of Section 3 would compute the same cascade
+metrics for *every* post in the time window, small and large alike;
+Exercise 4 is a step in that direction, and the first research project
+below is the full design. At platform scale, the same logic means
+sampling from the firehose (Part 10) or from a pre-registered panel of
+accounts (Part 01), as Bakshy et al. (2011) did when they followed all
+74 million diffusion events from 1.6 million seeds (successes and
+failures alike) to ask whether "influencers" were worth their price.
+
+### Conditioning on content: the true-versus-false-news design
+
+The marquee Twitter diffusion study, Vosoughi, Roy, & Aral
+([2018](https://doi.org/10.1126/science.aap9559)), shows the other
+defensible move: condition on a *pre-treatment* property of content
+rather than on its success. They started from claims independently
+fact-checked as true or false, collected **every** cascade spreading each
+claim (~126,000 cascades), and compared the distributions: falsehood
+spread farther, faster, deeper, and more broadly, and the false cascades
+were more *viral* in the structural sense of Section 3. Every
+measurement in that paper (cascade size, depth, breadth, structural
+virality, timing curves) is one you can now compute from public Bluesky
+data. The replication question writes itself: do their findings hold on
+a platform with different curation, no engagement-optimizing algorithm
+in the default feed, and a different population?
+
+### Bluesky-specific cautions
+
+Three things to carry from this document into any such design: the
+AppView prunes very large threads, so condition your collection plan
+(thread endpoint vs. firehose) on the cascade sizes you expect;
+engagement counters are *live* (they were different yesterday and will
+be different tomorrow), so record collection times; and deleted replies
+(`notFoundPost`) mean retrospective collection systematically misses the
+most ephemeral parts of conversations.
 
 ## Ethics and limitations
 
-Reply trees include ordinary people who answered a prominent account;
-analyze the *structure*, and avoid republishing individual repliers'
-words or identities (our saved likes table keeps only timing, not
-identities). Coverage is never complete: deleted and blocked replies
-leave holes, the thread endpoint truncates, and counters drift. The
-case-study post was selected *because* it was successful — fine for
-illustrating methods, fatal for causal claims, as Section 7 explains.
+**Third parties everywhere.** We chose `bsky.app`, an institutional
+account, as our root, but the people in its reply tree, like list, and
+repost list are ordinary users who never opted into being studied.
+Cascade data is *inherently* about third parties. This document's
+defaults are worth keeping: identify institutional accounts, aggregate
+over individuals (depth profiles, overlap rates, distributions) rather
+than spotlighting them, and avoid quoting strangers' replies verbatim (a
+verbatim post is trivially re-identifiable through search even if you
+withhold the handle). That is also why the hand-walk in Section 2 prints
+the first reply's timing and counts but not its author.
+
+**Public is not consented.** Likes are public records on the AT
+Protocol, but most users have not read the protocol docs, and many would
+be surprised that *who liked what, when* is globally queryable (Fiesler
+& Proferes 2018 found exactly this surprise among Twitter users). That a
+field is available is the beginning of the ethical analysis, not the
+end. We saved like *timings* without identities because our question
+needed nothing more; "public data" also does not automatically mean
+IRB-exempt, so ask, and consult the AoIR guidelines (franzke et al.
+2020).
+
+**Deletion and withdrawal.** The `notFoundPost` stubs we skipped are
+people exercising the right to take things back. Saved archives should
+record collection dates (ours do) and honor deletions when data is
+shared or re-published.
+
+**Limitations of the measurements.** Our case study was chosen for its
+size (Section 7), so its metrics describe an outlier, and its tree is a
+*pruned sample* of a very large thread: coverage was quantified in
+Section 2, the server's selection rule is undocumented, and metrics like
+breadth and structural virality inherit that bias. Engagement counts
+condition on visible reactions: Bluesky exposes no impression counts, so
+we observe who *acted*, never who *saw* and scrolled past ("engagement"
+is not "exposure"). All counts are live and change between knits of this
+document. And Bluesky's population skews toward early adopters and
+Twitter migrants, so prevalence estimates do not generalize to "the
+public", just as Twitter's never did. The platform's structural
+differences (no engagement-ranked default feed, composable moderation)
+are part of what makes replication here scientifically interesting
+rather than merely convenient.
 
 ## Exercises
 
-1. Re-run the cascade collection for the *second*-most-replied post. How
-   do its depth and structural virality compare?
-2. Compute the share of all replies that are depth-1. What does it say
-   about broadcast versus conversation?
-3. Plot likes-per-hour for the first week on log-log axes and estimate
-   the decay exponent with a linear fit.
-4. Use `bs_get_quotes()` to fetch the largest quote post's own thread.
-   How big is the secondary cascade?
-5. Build the CCDF comparison with `repost_count` instead of likes. Is
-   reposting more or less unequal than liking?
+These extend the document in roughly increasing order of effort. For all
+of them, keep the politeness habits: small request budgets, sleeps
+between calls, and recorded collection times.
+
+1. **A different case study.** Re-run Sections 2–4 with the
+   *second*-most-replied post (`originals |> arrange(desc(reply_count)) |> slice(2)`),
+   or with the most-replied original post from another large account
+   (try `npr.org`). Which conclusions change qualitatively, and which are
+   stable across case studies?
+2. **A bigger crawl budget.** Re-collect the case-study tree with
+   `fetch_thread_tree(case_study$uri, depth = 10, max_requests = 80)`.
+   How much do node count, coverage, and structural virality move? Judge
+   when extra requests stop paying.
+3. **Ranking by repost instead of reply.** Section 1 ranked posts by
+   `reply_count`. Re-rank `originals` by `repost_count` and compare the
+   two top-5 lists; then compute the Spearman rank correlation among all
+   four counters with `cor(..., method = "spearman")`. Are starting
+   conversations and being amplified the same kind of success?
+4. **Structural virality across five posts.** Loop over the five
+   most-replied originals, fetch each reply tree with a modest budget
+   (`max_requests = 10`), and assemble their size, depth and structural
+   virality into one tibble. Does structural virality grow with size, or
+   are bigger cascades just bigger stars?
+5. **Tree shape versus engagement.** Using the cascades from Exercise 4,
+   compute for each the fraction of retrieved posts at depth 1 (direct
+   replies to the root) and plot it against the root's `like_count`. Do
+   more-liked posts have flatter, more broadcast-like conversations, and
+   what does AppView pruning do to your confidence in the answer?
+6. **Quote posts as new roots.** Take the most-liked quote post from
+   Section 4 (`quotes |> slice_max(like_count, n = 1)`) and fetch *its*
+   reply tree. Compare its depth profile to the original's: does
+   commentary about a post breed a different conversation shape than the
+   post itself?
 
 ## Research project ideas
 
-* **Structural virality on Bluesky.** Sample posts from the firehose
-  (Part 10), reconstruct their cascades after one week, and replicate
-  Goel et al.'s (2016) distribution of structural virality on an open
-  platform.
-* **Quote-post framing.** Compare the language of quote posts to the
-  posts they quote (Part 06's methods) to measure how reframing changes
-  as information diffuses.
+**1. Is Bluesky diffusion broadcast or viral? (a Goel et al. 2016
+replication).** *Question:* does the joint distribution of cascade size
+and structural virality on Bluesky match the broadcast-dominated picture
+Goel et al. ([2016](https://doi.org/10.1287/mnsc.2015.2158)) found
+across a billion Twitter events, on a platform whose default feeds are
+not engagement-ranked? *Data:* a success-blind sample of root posts:
+every original post from a stratified panel of a few hundred accounts
+over a fixed week (the paneling logic of Part 01), so the tiny cascades
+stay in the sample. *Method:* fetch each reply tree with a fixed request
+budget, compute size, depth, breadth, and structural virality, and plot
+virality against size as Goel et al. do. *Expected challenge:* AppView
+pruning biases the metrics for large threads; either restrict claims to
+the small-to-medium cascades where coverage is complete, or collect
+replies prospectively from the firehose (Part 10) and treat this
+document's endpoint as a validation check.
+
+**2. Do contested claims spread differently? (a Vosoughi et al.
+2018-style design).** *Question:* do posts linking to independently
+fact-checked *false* claims spread farther, faster, deeper, and more
+virally than posts linking to *true* ones? *Data:* a set of claim URLs
+labeled true or false by fact-checking organizations; an authenticated
+search collection (Part 02) of every Bluesky post carrying each URL;
+then this document's four endpoints for every matching post. *Method:*
+per-claim cascade collection, then compare the distributions of size,
+depth, max breadth, structural virality, and like-arrival speed between
+the truth categories, conditioning on a pre-treatment property of the
+content, not on its success. *Expected challenge:* claim matching
+(paraphrases and screenshots evade URL search, so measure your recall
+on a hand-coded subsample) and Bluesky's smaller, early-adopter-skewed
+population, which limits generalization but is itself part of the
+comparative story.
+
+**3. Conversation shape as an early-warning signal.** *Question:* does
+the shape of a thread's first hours (depth profile, branching, the
+reply-to-like ratio) predict whether it becomes sustained back-and-forth
+argument (deep, narrow chains among few accounts) or fades after a
+one-hop burst? *Data:* a time-window sample of fresh root posts from
+accounts of varied sizes, with each thread re-crawled at fixed intervals
+(1, 6, 24, and 72 hours after posting). *Method:* compute shape metrics
+at each snapshot and model final depth and size from the early-snapshot
+features. *Expected challenge:* repeated crawling multiplies request
+volume, so budgets and sleeps matter more than ever; and deletions
+accumulate over snapshots, meaning the most volatile threads are
+precisely the most undercounted, a bias worth measuring and reporting.
 
 ## References
 
 ### Scholarship
 
-* Goel, S., Watts, D. J., & Goldstein, D. G. (2012). The structure of online diffusion networks. *EC '12*.
-* Goel, S., Anderson, A., Hofman, J., & Watts, D. J. (2016). The structural virality of online diffusion. *Management Science*, 62(1), 180–196.
-* Vosoughi, S., Roy, D., & Aral, S. (2018). The spread of true and false news online. *Science*, 359(6380), 1146–1151.
-* Crane, R., & Sornette, D. (2008). Robust dynamic classes revealed by measuring the response function of a social system. *PNAS*, 105(41).
+* Bakshy, E., Hofman, J. M., Mason, W. A., & Watts, D. J. (2011). Everyone's an influencer: Quantifying influence on Twitter. *Proceedings of the Fourth ACM International Conference on Web Search and Data Mining (WSDM '11)*, 65–74. <https://doi.org/10.1145/1935826.1935845>
+* boyd, d., Golder, S., & Lotan, G. (2010). Tweet, tweet, retweet: Conversational aspects of retweeting on Twitter. *Proceedings of the 43rd Hawaii International Conference on System Sciences (HICSS-43)*. <https://doi.org/10.1109/HICSS.2010.412>
+* Easley, D., & Kleinberg, J. (2010). Cascading behavior in networks. In *Networks, Crowds, and Markets: Reasoning About a Highly Connected World* (ch. 19). Cambridge University Press. Free online: <https://www.cs.cornell.edu/home/kleinber/networks-book/>
+* Fiesler, C., & Proferes, N. (2018). "Participant" perceptions of Twitter research ethics. *Social Media + Society*, 4(1). <https://doi.org/10.1177/2056305118763366>
+* franzke, a. s., Bechmann, A., Zimmer, M., Ess, C., & the Association of Internet Researchers. (2020). *Internet Research: Ethical Guidelines 3.0*. <https://aoir.org/reports/ethics3.pdf>
+* Goel, S., Anderson, A., Hofman, J., & Watts, D. J. (2016). The structural virality of online diffusion. *Management Science*, 62(1), 180–196. <https://doi.org/10.1287/mnsc.2015.2158>
+* Goel, S., Watts, D. J., & Goldstein, D. G. (2012). The structure of online diffusion networks. *Proceedings of the 13th ACM Conference on Electronic Commerce (EC '12)*, 623–638. <https://doi.org/10.1145/2229012.2229058>
+* Vosoughi, S., Roy, D., & Aral, S. (2018). The spread of true and false news online. *Science*, 359(6380), 1146–1151. <https://doi.org/10.1126/science.aap9559>
 
 ### Documentation
 
-* `app.bsky.feed.getPostThread`: <https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getPostThread>
-* `app.bsky.feed.getLikes`: <https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getLikes>
-* igraph: <https://r.igraph.org/>
-* bskyr: <https://christophertkenny.com/bskyr/>
+* Bluesky HTTP API reference: [getPostThread](https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getPostThread), [getLikes](https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getLikes), [getRepostedBy](https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getRepostedBy), [getQuotes](https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getQuotes), [getAuthorFeed](https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getAuthorFeed)
+* igraph for R: <https://r.igraph.org/>, in particular [`distances()`](https://r.igraph.org/reference/distances.html) and [`layout_as_tree()`](https://r.igraph.org/reference/layout_as_tree.html)
+* patchwork: <https://patchwork.data-imaginist.com/>
+* bskyr reference: <https://christophertkenny.com/bskyr/reference/>
+* The AT Protocol specifications: <https://atproto.com>

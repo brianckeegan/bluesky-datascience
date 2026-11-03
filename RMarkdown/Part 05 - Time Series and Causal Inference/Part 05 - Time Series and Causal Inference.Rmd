@@ -22,14 +22,63 @@ Both versions analyze **the same saved archive**, so they should agree
 exactly. Section 5 checks that they do: R's regression coefficients are
 compared with the table the Python notebook saved.
 
+Every post, reply, and repost on Bluesky carries a timestamp, which
+means an account's feed is more than a pile of content: it is a
+**behavioral trace over time**. Fifteen years of Twitter research showed
+how much social science lives inside those traces. Golder & Macy (2011)
+found that mood follows daily and seasonal rhythms across cultures by
+timestamping millions of tweets, Dodds et al. (2011) built a real-time
+"hedonometer" of collective happiness, and González-Bailón et al. (2011)
+reconstructed the minute-by-minute dynamics of protest recruitment
+during Spain's 15-M movement.
+
+Time series also let us ask a more ambitious kind of question. When
+something happens in the world (an election, a platform migration, a
+policy change), we want to know whether behavior changed *because of
+it*. A line that goes up after an event is not an answer: posting might
+have been trending upward already, the change might be seasonal, or
+something else might have happened at the same time. Answering causal
+questions with observational data requires **research designs**, not
+just plots. This document introduces two workhorse designs from the
+quasi-experimental toolkit:
+
+* **Interrupted time series (ITS)**: model the pre-event trend, and ask
+  whether the level or slope of the series breaks at the event.
+* **Difference-in-differences (DiD)**: compare the before–after change
+  for a "treated" unit against the before–after change for a comparison
+  unit that was *not* affected by the event.
+
+Both designs come from the program-evaluation toolkit that economists
+and epidemiologists reach for when randomized experiments are
+impossible. If causal inference is new to you, two free online
+textbooks pair well with this document: Scott Cunningham's [*Causal
+Inference: The Mixtape*](https://mixtape.scunning.com/) and Nick
+Huntington-Klein's [*The Effect*](https://theeffectbook.net/). We apply
+both designs to a genuine **natural experiment** (an event whose timing
+was determined by outside forces rather than by the people whose
+behavior we measure): the surge of new users and activity that hit
+Bluesky after the U.S. presidential election on November 5, 2024. And we
+will be candid about where the designs succeed and where they fail.
+
 ### Learning objectives
 
-* Collect posting histories, decide when to stop, and analyze a saved archive.
-* Handle timestamps and timezones.
-* Describe diurnal, weekly, and seasonal posting rhythms.
-* Fit and interpret an interrupted time series (ITS) regression.
-* Fit difference-in-differences (DiD) and check the parallel-trends assumption.
-* Articulate the threats to validity that observational designs face.
+By the end of this document you will be able to:
+
+1. Page backward through an account's **posting history**, decide when
+   to stop, and analyze a saved archive.
+2. Parse ISO-8601 timestamps into **timezone-aware** date-times and
+   reason about UTC versus local time.
+3. Turn an event log into daily and weekly counts, smooth with rolling
+   means, and describe diurnal and weekly rhythms.
+4. Specify and interpret an **interrupted time series (segmented)
+   regression** with `lm()`, including its autocorrelation caveats.
+5. Build a tidy two-account panel and estimate a
+   **difference-in-differences** regression, and diagnose when the
+   parallel-trends assumption fails.
+6. Retrieve **profile covariates** to reason about matching a better
+   comparison group.
+7. Articulate the **threats to validity** (selection, anticipation,
+   concurrent shocks) that separate causal claims from correlational ones.
 
 ## Setup
 
@@ -39,6 +88,14 @@ library(tidyverse)
 library(jsonlite)
 library(lubridate)
 ```
+
+Both causal designs ultimately boil down to one call to `lm()`, R's
+ordinary least squares regression (the same line-fitting workhorse from
+introductory statistics), applied to carefully constructed columns.
+[broom](https://broom.tidymodels.org/)'s `tidy()` turns a fitted model
+into a tibble of coefficients, and
+[lubridate](https://lubridate.tidyverse.org/) handles dates and time
+zones.
 
 As in every part of this series, the shared helper `bsky_client.R` looks
 for credentials (an `atproto.json` file or bskyr's environment
@@ -142,8 +199,11 @@ read_csv(ARCHIVE, show_col_types = FALSE) |> head()
 
 Each row is one action, stored with its timestamp as a UTC string (the
 trailing `Z`). The archive reaches back to November 2023 for
-`nytimes.com` — a full year before the event — and stops there by
-design.
+`nytimes.com`, a full year before the event, and stops there by design.
+An author feed is more than original posts: each item can be an original
+post, a reply, or a repost, and the archive records an `action` type for
+each. Reposts are timestamped by *when the account reposted*, because
+the act of reposting is the behavior we want to place in time.
 
 ## 2. Timestamps and timezones
 
@@ -163,15 +223,32 @@ archive <- read_csv(ARCHIVE, show_col_types = FALSE) |>
 treated_posts <- filter(archive, actor == TREATED)
 comparison_posts <- filter(archive, actor == COMPARISON)
 
+first_action <- treated_posts$created_at[1]
+c(local = format(first_action, "%Y-%m-%d %H:%M:%S %Z"),
+  utc = format(with_tz(first_action, "UTC"), "%Y-%m-%d %H:%M:%S %Z"))
+
 count(treated_posts, action)
 sum(treated_posts$is_reply)
 ```
 
-Original posts dominate: reposts are under a tenth of the newsroom's
-activity, and replies are rare. An institutional account broadcasts; it
-seldom converses.
+The first line shows one instant in two zones: converting between them
+loses nothing. Original posts dominate: reposts are under a tenth of the
+newsroom's activity, and replies are rare. An institutional account
+broadcasts; it seldom converses. Still, "posting activity" is a bundle
+of distinct behaviors. We analyze **all actions together** as one
+measure of activity; everything below could be re-run on
+`filter(treated_posts, action == "post")` to isolate original posting,
+and checking whether your findings survive that choice is exactly the
+kind of robustness check reviewers ask for (Exercise 2).
 
 ## 3. Descriptive time series: the rhythms of posting
+
+Before any causal modeling, *look at the data*. The raw records are an
+**event log**: one row per action, at irregular instants. Most
+time-series tools instead want a **time series** proper: one number per
+regular interval (per day, per week). Grouping the event log into
+fixed-width time bins and counting within each bin is called
+**resampling**.
 
 ### Daily counts and a rolling mean
 
@@ -210,7 +287,10 @@ Activity rises through spring 2024, sags to the lowest level of the
 whole series in late summer and fall 2024, and then — in the weeks after
 the November election — climbs to roughly four times its old level and
 *stays there*. That is a **step**, not a spike: there is no decay back
-toward the old baseline.
+toward the old baseline. The rolling mean makes that shape legible where
+the raw daily series is just spiky noise. Keep it in mind: the entire
+causal-inference half of this document is an attempt to put numbers,
+and honest assumptions, around exactly this picture.
 
 ### Weekly counts
 
@@ -240,10 +320,17 @@ ggplot(treated_weekly, aes(week, n)) +
   theme_minimal()
 ```
 
+Even at a glance the series has two regimes, before and after late
+2024; hold that thought for Section 4.
+
 ### Hour-of-day and day-of-week profiles
 
-The same actions binned by local hour and by UTC hour tell two different
-stories, and only the local one matches a plausible working day:
+Golder & Macy (2011) showed that aggregate Twitter activity traces the
+human day: people wake, work, and wind down on schedule, and their posts
+follow. We can draw the same **diurnal profile** for one account, and
+show why the timezone conversion mattered. The same actions binned by
+local hour and by UTC hour tell two different stories, and only the
+local one matches a plausible working day:
 
 ```{r rhythms, eval=TRUE, fig.width=10, fig.height=4}
 bind_rows(
@@ -286,10 +373,23 @@ treated_posts |>
 ```
 
 Three years of data are too few to declare "seasonality" with
-confidence. What *is* unmistakable is that 2025 and 2026 sit far above
-2024 in every month of the year.
+confidence: one account's annual pattern is confounded with everything
+else that happened that year. What *is* unmistakable is that 2025 and
+2026 sit far above 2024 in every month of the year. Something changed in
+between.
 
 ## 4. An event: the November 2024 Bluesky surge
+
+On **November 5, 2024**, Donald Trump won the U.S. presidential
+election. In the days that followed, large numbers of users, disaffected
+with X/Twitter and its owner's role in the campaign, migrated to
+Bluesky. The platform [gained millions of users in roughly a
+week](https://en.wikipedia.org/wiki/Bluesky#2024:_Growth), media outlets
+covered the "X-odus", and activity from existing accounts spiked as
+their timelines filled with new arrivals. For a researcher this is a
+**natural experiment**: an event with a sharp, known onset that
+plausibly changed behavior, but whose timing was not chosen by the
+people whose behavior we measure.
 
 Both designs compare against the pre-event period, so first we check that
 we actually have one. Without it, the `post` indicator would be all ones,
@@ -315,14 +415,45 @@ after the election and keeps ramping for about seven weeks, into late
 December, before leveling off around 400–450 actions a week. The
 pre-event period isn't flat either: it rises through spring 2024 and
 falls to a low just before the election, so the event arrives at a
-seasonal trough.
+seasonal trough. "The line goes up after the event" is journalism, not
+causal inference. The question a causal design answers is: **how much of
+the change is a break from where the pre-existing trend was already
+heading?**
 
 ## 5. Interrupted time series
 
-ITS fits the segmented regression
-*y* = β₀ + β₁·t + β₂·post + β₃·(t − t_event)·post + ε:
-a pre-period trend, a level shift at the event, and a trend change after
-it. The counterfactual is the pre-trend extended forward.
+The interrupted time series (ITS) design, also called **segmented
+regression**, formalizes that question. We model weekly counts as a
+linear trend that is allowed to *break* at the event, in both level and
+slope:
+
+*y*<sub>t</sub> = β₀ + β₁·t + β₂·post<sub>t</sub> + β₃·(t − t<sub>event</sub>)·post<sub>t</sub> + ε<sub>t</sub>
+
+where *t* counts weeks from the start of the series and post is 1 for
+weeks on or after the event. Each coefficient has a direct
+interpretation:
+
+| Term | Meaning |
+|---|---|
+| β₀ | baseline level at the start of the series |
+| β₁ | pre-event trend (actions per week, per week) |
+| β₂ | **immediate level shift** at the event |
+| β₃ | **change in slope** after the event |
+
+Three vocabulary words recur in everything you will read about this
+design:
+
+* A **level shift** is an immediate jump (or drop) in the series at the
+  event: the height of the line changes, captured by β₂.
+* A **slope change** (or *trend change*) is a change in the steepness of
+  the series after the event, captured by β₃. An event can produce
+  either, both, or neither.
+* The **counterfactual** is the path the series *would have taken* had
+  the event never happened. We can never observe it (the *fundamental
+  problem of causal inference*), so every design is, at heart, an
+  argument for a particular stand-in. ITS's stand-in is the pre-event
+  trend β₀ + β₁·t, extended forward. For a friendly, deeper treatment,
+  see [Chapter 17 of *The Effect*](https://theeffectbook.net/ch-EventStudies.html).
 
 Read the chunk below as building the regression's design matrix by hand,
 column for column as in the Python notebook:
@@ -411,16 +542,31 @@ ggplot(its_plot_data, aes(week)) +
   theme_minimal()
 ```
 
-The gray dashed counterfactual slopes *downward*, because the pre-event
-trend does. Extended far enough it would cross zero and predict negative
+**How to read this plot.** The gray dashed line is the counterfactual,
+the pre-event trend extended as if November 5 had never happened. The
+navy line is the model's fit, which is allowed to break at the event.
+The vertical gap between the two at the event date is the level shift
+(β₂); the way that gap changes over the following months is the slope
+change (β₃) at work, small here, so the gap stays roughly constant. The
+causal estimate is that gap. Every ITS estimate you report should be
+drawn this way: if the picture does not persuade, the coefficient table
+will not either.
+
+Notice too that the counterfactual slopes *downward*, because the
+pre-event trend does. Extended far enough it would cross zero and predict negative
 posts, which is impossible. A linear model of counts has no floor;
 modeling log counts, or using Poisson regression (`glm(family =
 poisson)`), builds one in.
 
 ### An honest aside: autocorrelation
 
-Weekly counts are autocorrelated (this week predicts next week), which
-makes OLS standard errors too small. The **Durbin–Watson statistic**
+OLS standard errors assume the residuals (the model's week-by-week
+errors) are independent of one another. Time series residuals rarely
+are: a busy week tends to be followed by a busy week and a quiet one by
+a quiet one. This serial dependence is called **autocorrelation**,
+because the series is correlated *with a lagged copy of itself*, and it
+makes OLS standard errors too small and p-values too confident (the
+coefficients themselves are still unbiased). The **Durbin–Watson statistic**
 diagnoses this: values near 2 mean no first-order autocorrelation,
 values well below 2 mean positive autocorrelation. The standard fix keeps
 the OLS coefficients and replaces the standard errors with
@@ -451,14 +597,43 @@ because of `prewhite = FALSE`. sandwich's `NeweyWest()` *pre-whitens*
 the residuals by default (it fits an autoregression to them first),
 while statsmodels does not. HAC estimates depend on choices like this,
 and on the lag length, so always report which estimator you used:
-"robust standard errors" alone doesn't pin down a number.
+"robust standard errors" alone doesn't pin down a number. (Fancier
+options, such as ARIMA error structures or GLS, exist; Bernal et al.
+2017 in the references is a practical ITS tutorial.)
+
+ITS has one big blind spot: it cannot tell the event apart from
+**anything else that changed at the same moment**. If posting rose
+because of the election news cycle itself rather than the platform
+migration, ITS on one account cannot distinguish those. For that we need
+a comparison group.
 
 ## 6. Difference-in-differences
 
-ITS extrapolates the treated unit's own trend; DiD instead uses a
-*comparison unit* to absorb shocks common to both. Its identifying
-assumption is **parallel trends**: absent the event, the two series
-would have moved together. Always plot the pre-trends first:
+The **difference-in-differences (DiD)** design adds a comparison unit
+that experienced the same calendar time (the same news cycle, the same
+seasonality) but not the treatment. The estimate is the *difference of
+two differences*:
+
+DiD = (ȳ<sub>T,post</sub> − ȳ<sub>T,pre</sub>) − (ȳ<sub>C,post</sub> − ȳ<sub>C,pre</sub>)
+
+Whatever would have happened to *everyone* (the comparison group's
+change) gets subtracted off, isolating the treated unit's extra change.
+The identifying assumption is **parallel trends**: absent the event, the
+treated and comparison series would have moved in parallel. That
+assumption *is* the design, so restate it slowly. We are not assuming
+the two accounts are similar in level (ours differ by an order of
+magnitude), only that their *changes over time* would have matched had
+the event not occurred, so that the comparison unit's before–after
+change can stand in for the treated unit's unobservable counterfactual
+change.
+
+DiD is the most widely used quasi-experimental design in the social
+sciences; its most famous application is Card & Krueger's (1994)
+minimum-wage study, and it gets a gentle chapter in each free textbook:
+[Chapter 18 of *The Effect*](https://theeffectbook.net/ch-DifferenceinDifference.html)
+and [Chapter 9 of the *Mixtape*](https://mixtape.scunning.com/09-difference_in_differences).
+Before estimating anything, a DiD analysis must show the **pre-trend
+plot**: do the two series move in parallel before the event?
 
 ```{r pretrends, eval=TRUE, fig.width=10, fig.height=4}
 comparison_weekly <- weekly_counts(comparison_posts)
@@ -475,7 +650,9 @@ bind_rows(
   theme_minimal()
 ```
 
-The DiD estimate can be computed two equivalent ways, and seeing both
+Squint at the pre-event period and form your own judgment; we will
+return to this plot critically in a moment. The DiD estimate can be
+computed two equivalent ways, and seeing both
 demystifies the regression: first as arithmetic on the 2×2 table of
 means, then as the interaction coefficient in a regression, which adds
 standard errors. As in the Python notebook, the panel keeps only the
@@ -514,18 +691,44 @@ equals the by-hand difference of differences
 (`r sprintf("%.1f", did_by_hand)`). It is almost exactly the ITS level
 shift, because the comparison account's own before–after change
 (`post`, `r sprintf("%+.2f", did_table$estimate[did_table$term == "post"])`)
-is close to zero.
+is close to zero. Reading the other coefficients: `intercept` is the
+comparison account's pre-event weekly average, `treated` is how much
+more active the treated account already was before the event, and `post`
+is the comparison account's before–after change, the "what happened to
+everyone" term.
 
 ### Why this DiD should not be believed
 
-Our comparison unit is the platform's *official account*. Its posting is
-driven by product launches, not by the news cycle that drives a
-newsroom, and its pre-event level is more than an order of magnitude
-lower. In this archive it barely moves around the event, so it subtracts
-almost nothing, and the DiD collapses into a before–after comparison of
-one account. A comparison too flat to absorb the shared shock (the
-election news cycle) violates the design just as surely as one that was
-itself treated. DiD is only as good as its comparison group.
+Here is the part of the analysis that matters most, and that a
+dishonest write-up would omit. **`bsky.app` is a terrible comparison
+group**, for at least three reasons:
+
+1. **It was also treated.** `bsky.app` is the platform's own account.
+   During the November surge the Bluesky team was posting welcome
+   threads, feature announcements, and status updates *because of the
+   very event we are studying*. A comparison unit must be unaffected by
+   the treatment; ours sits at the epicenter. In this archive, though,
+   `bsky.app` barely moves week to week, so the comparison subtracts
+   almost nothing and the DiD collapses into a before–after comparison
+   of one account. That is the opposite failure: a comparison too flat
+   to absorb the shared shock (the election news cycle) that a newsroom
+   certainly experienced.
+2. **Parallel trends is visibly violated.** A platform's communications
+   account and a national newsroom do not share data-generating
+   processes. Their pre-event levels differ by more than an order of
+   magnitude, and their movements track product launches versus the news
+   cycle. Nothing about one line tells us what the other would have done
+   absent the election.
+3. **One unit per arm.** With a single treated and a single comparison
+   unit, we cannot separate "the effect of the event" from anything
+   idiosyncratic that happened to either account that month. Credible
+   DiD designs use many units per arm, with uncertainty clustered at the
+   unit level.
+
+We chose this comparison deliberately: seeing the assumption fail on
+real data teaches more than a sanitized example where it silently holds.
+The estimate above is a worked *mechanical* example of DiD, not a
+defensible causal estimate.
 
 ## 7. Building a better comparison group: matching on profile covariates
 
@@ -573,16 +776,41 @@ Read the result before trusting it. Even the nearest matches have a small
 fraction of the Times' audience. Matching can only choose among the
 candidates you give it, and a pool drawn from the accounts a newsroom
 follows contains its reporters, not its peer institutions. A better pool
-would be other national news organizations, matched on covariates
-measured *before* the event. See the
+would be other national news organizations. Even then, a real study
+would match on covariates measured *before* the event (`posts` and
+`followers` here are measured today, after the treatment, and
+conditioning on post-treatment variables is itself a bias), collect
+dozens of matched accounts per treated account, verify parallel
+pre-trends empirically, and only then estimate. See the
 [MatchIt](https://kosukeimai.github.io/MatchIt/) package for the
 industrial version.
 
+And we still should not overclaim. Matching makes accounts comparable on
+what we can **observe**; the November surge "treated" essentially
+everyone on Bluesky to some degree, so a fully untreated control may not
+exist *on this platform at all*. Designs researchers used for this
+problem on Twitter include comparison groups from a different platform,
+accounts in unaffected countries or time zones, or dose-response designs
+(accounts more versus less exposed to the migration wave). The hard part
+of causal inference is never the regression; it is the argument for the
+counterfactual.
+
 ## 8. Keyword volume around an event
 
-[`bs_search_posts()`](https://christophertkenny.com/bskyr/reference/bs_search_posts.html) with `since`/`until` windows builds a topic-level
-series — e.g., weekly volume of posts mentioning "twitter" around the
-election. Capped to stay polite:
+Account histories are one lens on an event; **keyword volume** is
+another.
+[`bs_search_posts()`](https://christophertkenny.com/bskyr/reference/bs_search_posts.html)
+(the R wrapper for
+[`app.bsky.feed.searchPosts`](https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.searchPosts))
+accepts `since` and `until` windows, so issuing one search per week and
+counting the results builds a topic's time series, exactly how
+researchers built event timelines from Twitter's search API
+(González-Bailón et al. 2011 tracked protest hashtags this way). Two
+cautions: search queries an **index**, not the full network history, so
+deletions and opt-outs create survivorship bias; and capping each window
+at 1,000 results turns high-volume weeks into a censored measure, so for
+popular keywords treat the series as a floor, not a count. Capped to
+stay polite:
 
 ```{r keyword-volume, eval=bsky_authed, fig.width=10, fig.height=4}
 edges <- seq(as_date("2024-10-01"), as_date("2024-12-31"), by = "week")
@@ -610,11 +838,16 @@ tibble(week = tail(edges, -1), posts = volume) |>
 
 ## 9. Saving and reloading the data
 
-The archive and its metadata were saved when they were collected. Here we
-save the *derived* tables beside this document, so the headline results
-can be checked without rerunning anything. (R outputs in `RMarkdown/`
-are not committed to the repository; the shared archive lives with the
-Python notebook.)
+Collection took nearly five hundred API requests; analysis should not
+require repeating it. The archive and its metadata (collection date,
+accounts, event date, stopping rule, requests per account) were saved
+the moment they were collected, because live feeds change and a result
+that cannot be tied to a collection date cannot be checked. Here we save
+the two *derived* tables beside this document, daily counts for both
+accounts and the tidy ITS coefficients, so the headline results can be
+checked without rerunning anything. (R outputs in `RMarkdown/` are not
+committed to the repository; the shared archive lives with the Python
+notebook.)
 
 ```{r save, eval=TRUE}
 dir.create("data", showWarnings = FALSE)
@@ -633,69 +866,173 @@ nrow(reloaded) == nrow(daily_both)
 
 ## 10. Research design: what it takes to claim causation
 
-Neither design above randomizes anything. ITS assumes nothing else
-changed at the event date that affects the outcome; DiD assumes parallel
-trends. Both fail silently when violated. The discipline is: specify the
-design *before* looking at the post-period; plot pre-trends; run placebo
-tests (fake event dates, unaffected outcomes); and treat estimates as
-"the effect under these assumptions," stated plainly.
+Step back from the mechanics. Both designs in this document are
+**quasi-experimental**: nobody randomized accounts into "experience the
+November surge" and "don't". Instead we leaned on a *natural
+experiment* (an event with sharp, externally determined timing) and on
+design assumptions that substitute for randomization. Those assumptions
+are where causal claims live or die. The recurring **threats to
+validity**:
 
-Three threats loom large here. **Selection:** the treated account is on
-Bluesky because a major newsroom chose to invest in the platform, a
-decision that may itself have responded to the audience surge.
-**Anticipation:** the weeks just before the event are a *dip*, so a
-rebound from a low point would look like an effect. **Concurrent
-shocks:** the election was also an enormous news event, and a newsroom
-would post more after it on any platform. Natural experiments on
-platforms — outages, feature launches, deplatformings — are the cleanest
-events, because their timing is plausibly exogenous to any one account's
-behavior.
+* **Selection.** Who is in the treated group, and why? Our treated
+  account is on Bluesky because a major newsroom chose to invest in the
+  platform, a decision that may itself have responded to the audience
+  surge, which makes "the event" and "the newsroom's strategy" hard to
+  pull apart. Effects estimated on self-selected units do not generalize
+  to units that chose differently.
+* **Anticipation.** Treatments with announced timing leak backward.
+  Users disaffected with X were drifting to Bluesky throughout 2024; if
+  behavior shifts *before* the event date, the "pre" period is
+  contaminated. (The weeks just before the event line in Section 4 are a
+  *dip*, which raises the opposite worry: a rebound from a low point
+  would look like an effect.)
+* **Concurrent shocks.** The election was not only a migration trigger;
+  it was a massive news event that changed everyone's posting,
+  everywhere. ITS cannot separate co-timed causes at all; DiD can only
+  if the comparison group absorbs the shared shock, which requires the
+  comparison to be exposed to the news but not the migration.
+* **Parallel trends / counterfactual credibility.** ITS assumes the
+  pre-trend would have continued; DiD assumes the comparison's change
+  reveals the treated counterfactual. Section 6 showed how visibly this
+  can fail. Pre-trend plots, placebo events (rerun the ITS on a date
+  when nothing happened: a significant "effect" there is a red flag),
+  and multiple comparison units are the standard diagnostics.
+
+This is why **correlation-only claims fail**: "posting rose after the
+election" is consistent with the event causing the rise, with a
+pre-existing trend, with seasonality, with a concurrent shock, and with
+regression to the mean after a lull. A design's job is to rule those out
+one by one, and a write-up's job is to say plainly which ones it could
+not rule out.
 
 ## Ethics and limitations
 
-Activity histories reveal sleep, work, travel, and life disruptions.
-Treat even public timing data as sensitive, aggregate when reporting, and
-avoid building behavioral profiles of private individuals. This document
-studies two institutional accounts whose posting is professional output,
-and the saved archive keeps only the account, action type, reply flag,
-and timestamp. Our data are two accounts chosen for pedagogy, weekly bins
-hide within-week dynamics, the author feed omits deleted posts
-(survivorship in time!), and every caveat from Sections 5–7 applies to
-any causal language.
+**Ethics.** Posting histories are public, but assembling someone's
+complete three-year behavioral trace (when they sleep, when they work,
+when they go quiet) is more intrusive than reading any individual post,
+and timestamp analysis can reveal patterns (time zone, schedule, life
+disruptions) that users never chose to disclose. This document studies
+two institutional accounts, a national newsroom and the platform's
+official account, whose posting is professional output; apply the same
+designs to private individuals only with a research justification,
+minimal fields, and aggregate reporting (the saved archive keeps only
+the account, action type, reply flag, and timestamp). The matching
+section retrieves other accounts' public profile statistics; report such
+covariates in aggregate rather than ranking named individuals. And
+remember deletion: users remove posts, so a saved archive is a snapshot.
+Record the collection date (we did) and honor deletions when sharing
+data.
+
+**Limitations.** Everything here measures *visible platform behavior*,
+not underlying attention or attitudes: absence of posting is not absence
+of activity (lurking is invisible). Two accounts cannot support
+population claims; Bluesky's user base over-represents Twitter migrants
+and early adopters, and November 2024 in particular reshaped who is on
+the platform at all (a selection effect *caused by* our event of study).
+Author feeds exclude deleted posts, so the past is measured with
+survivorship bias. Weekly counts treat a one-word repost and a 20-post
+thread identically. And our event study has a single treated unit and a
+knowingly invalid comparison: it is a teaching design. A publishable
+version needs many matched accounts, pre-registered event windows,
+placebo tests, and honesty about the threats listed in Section 10.
 
 ## Exercises
 
-1. Refit the ITS with daily instead of weekly counts. How do the
-   estimates and their standard errors change?
-2. Run a placebo ITS with a fake event date of 2024-06-01. Is the
-   level shift "significant"? What does that teach you?
-3. Restrict the panel to ±12 weeks around the event and refit the DiD.
-4. Refit the ITS on `log1p(n)` and with `glm(family = poisson)`. Does a
-   model with a floor change the story the counterfactual tells?
-5. Decompose the treated series by `action` type — did original posts
-   and reposts respond to the event differently?
+These extend the document, ordered from small modifications to
+mini-analyses. All of them can be done with the data and functions
+already loaded above.
+
+1. **Change the time zone.** Re-run the `timestamps` chunk with a
+   different `TZ` (`"Europe/London"` or `"Asia/Tokyo"`; any [IANA zone
+   name](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
+   works) and redraw the diurnal profile. The quiet hours should move to
+   wherever your chosen zone places New York's night.
+2. **Original posts only.** Rebuild `treated_weekly` from
+   `filter(treated_posts, action == "post")` and re-fit the ITS. Do the
+   level shift and trend change survive this robustness check, or was
+   the November surge mostly a *reposting* surge?
+3. **Placebo event.** Re-fit the ITS with a fake event date on which
+   nothing notable happened, say `as_date("2024-05-01")`. A
+   "significant" level shift at a date you invented is a red flag that
+   the design, not the event, is generating findings. Report the placebo
+   coefficients side by side with the real ones.
+4. **Stress-test the standard errors.** Recompute the HAC errors with
+   `lag` of 1, 8, and 12 instead of 4. How sensitive are the conclusions
+   about `level_shift` and `trend_change`? There is no single correct lag
+   length; reporting the sensitivity is the honest move.
+5. **A better comparison account, a better DiD.** Pick the nearest
+   matched account from Section 7 (or any account you can argue is a
+   better comparison than `bsky.app`), collect its history with the
+   `collect_actions()` function from the `refresh` chunk, and redo the
+   pre-trend plot and DiD. Is parallel trends more plausible? Does the
+   estimate move, and in which direction?
+6. **A different event.** Bluesky dropped its invite-code requirement
+   and opened public registration on **February 6, 2024**. Re-run the ITS
+   around that date. Is there a detectable break, and how does its shape
+   (level shift vs. slope change) compare with the November surge?
 
 ## Research project ideas
 
-* **Migration waves.** Using account creation dates from profiles,
-  identify accounts that joined during the November 2024 surge and
-  compare their retention curves to earlier cohorts.
-* **Event studies of platform shocks.** Build an ITS around a Bluesky
-  feature launch (e.g., DMs or video) using keyword volume as the
-  outcome, with placebo dates as robustness checks.
+**1. Dose–response in the X-odus.** *Question:* did existing Bluesky
+users who were more exposed to the November 2024 migration wave change
+their own posting more? *Data:* a sample of accounts created well before
+October 2024 (so that being in the sample is not itself caused by the
+event), each account's posting history, and an exposure ("dose") measure
+such as the share of each account's pre-event follows who were publicly
+active in migration conversations (Part 03's network tools help).
+*Method:* a continuous-treatment event study (interact the post-event
+indicator with dose, or fit separate ITS models by dose tercile) with
+HAC or account-clustered standard errors. *Expected challenge:* naive
+dose measures (follower growth during the surge) are themselves outcomes
+of the event, so the design hinges on a pre-determined exposure proxy
+and candid argument about the endogeneity that remains.
+
+**2. Feature launches as interrupted time series.** *Question:* do
+platform feature launches (in-app video, DMs, whichever launch is recent
+when you read this) change how much and what people post? *Data:*
+weekly post volumes and post-type shares (links, images, video, replies)
+for a panel of a few hundred accounts sampled *before* the launch,
+collected with this part's paging code or platform-wide via Part 10's
+Jetstream tools. *Method:* ITS on the aggregate share of posts using the
+new feature, with placebo dates before the launch; a staggered rollout
+supports a DiD between early- and late-access accounts. *Expected
+challenge:* launches are announced in advance and rolled out gradually,
+so the "interruption" is fuzzy; reconstruct the timeline from the
+[Bluesky blog](https://bsky.social/about/blog) and show the results are
+robust to the choice of event date.
+
+**3. News shocks and topical attention with keyword series.**
+*Question:* how fast does attention to a sudden news event rise and
+decay on Bluesky, and does it crowd out other topics? *Data:* weekly or
+daily keyword-volume series built with the authenticated search loop
+from Section 8, for event-related keywords and a basket of placebo
+keywords unrelated to the event. *Method:* ITS on the event keywords
+with the placebo basket as comparison series (a difference-in-differences
+in attention), looking for the explosive-onset, slow-decay dynamics
+González-Bailón et al. (2011) documented for protest hashtags. *Expected
+challenge:* the search index undercounts and the per-window cap censors
+high-volume weeks, so the series is a floor rather than a count;
+validate a few windows against an independent measure such as Jetstream
+sampling.
 
 ## References
 
 ### Scholarship
 
-* Bernal, J. L., Cummins, S., & Gasparrini, A. (2017). Interrupted time series regression for the evaluation of public health interventions. *International Journal of Epidemiology*, 46(1), 348–355.
-* Angrist, J. D., & Pischke, J.-S. (2009). *Mostly Harmless Econometrics*. Princeton University Press.
-* Golder, S. A., & Macy, M. W. (2011). Diurnal and seasonal mood vary with work, sleep, and daylength across diverse cultures. *Science*, 333(6051), 1878–1881.
-* Cunningham, S. (2021). *Causal Inference: The Mixtape*. Yale University Press. <https://mixtape.scunning.com/>
+* Golder, S. A., & Macy, M. W. (2011). Diurnal and seasonal mood vary with work, sleep, and daylength across diverse cultures. *Science*, 333(6051), 1878–1881. <https://doi.org/10.1126/science.1202775>
+* Dodds, P. S., Harris, K. D., Kloumann, I. M., Bliss, C. A., & Danforth, C. M. (2011). Temporal patterns of happiness and information in a global social network: Hedonometrics and Twitter. *PLOS ONE*, 6(12), e26752. <https://doi.org/10.1371/journal.pone.0026752>
+* González-Bailón, S., Borge-Holthoefer, J., Rivero, A., & Moreno, Y. (2011). The dynamics of protest recruitment through an online network. *Scientific Reports*, 1, 197. <https://doi.org/10.1038/srep00197>
+* Bernal, J. L., Cummins, S., & Gasparrini, A. (2017). Interrupted time series regression for the evaluation of public health interventions: a tutorial. *International Journal of Epidemiology*, 46(1), 348–355. <https://doi.org/10.1093/ije/dyw098>
+* Card, D., & Krueger, A. B. (1994). Minimum wages and employment: A case study of the fast-food industry in New Jersey and Pennsylvania. *American Economic Review*, 84(4), 772–793. (The classic difference-in-differences study.)
+* Cunningham, S. (2021). *Causal Inference: The Mixtape*. Yale University Press. Free online at <https://mixtape.scunning.com/>
+* Huntington-Klein, N. (2021). *The Effect: An Introduction to Research Design and Causality*. CRC Press. Free online at <https://theeffectbook.net/>
+* Angrist, J. D., & Pischke, J.-S. (2009). *Mostly Harmless Econometrics: An Empiricist's Companion*. Princeton University Press.
 
 ### Documentation
 
+* Bluesky API endpoints used in this part: [`getAuthorFeed`](https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.getAuthorFeed), [`getProfiles`](https://endpoints.bsky.app/#bluesky-app/tag/appbskyactor/GET/xrpc/app.bsky.actor.getProfiles), [`getFollows`](https://endpoints.bsky.app/#bluesky-app/tag/appbskygraph/GET/xrpc/app.bsky.graph.getFollows), [`searchPosts`](https://endpoints.bsky.app/#bluesky-app/tag/appbskyfeed/GET/xrpc/app.bsky.feed.searchPosts)
 * lubridate: <https://lubridate.tidyverse.org/>
+* broom: <https://broom.tidymodels.org/>
 * sandwich (HAC errors): <https://sandwich.R-Forge.R-project.org/>
 * MatchIt: <https://kosukeimai.github.io/MatchIt/>
-* bskyr: <https://christophertkenny.com/bskyr/>
+* bskyr reference: <https://christophertkenny.com/bskyr/reference/>

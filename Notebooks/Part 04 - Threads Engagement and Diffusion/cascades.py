@@ -78,11 +78,22 @@ def lenient_query(client, nsid, **params):
     ``DotDict`` that supports the same snake_case dot access
     (``post.reply_count``, ``thread.replies``, ...).
     """
-    params_model, response_model = LEXICONS[nsid]
+    params_model, _ = LEXICONS[nsid]
     response = client.invoke_query(
         nsid, params=params_model(**params), output_encoding="application/json"
     )
-    return get_or_create(response.content, response_model, strict=False)
+    return parse_response(response.content, nsid, strict=False)
+
+
+def parse_response(content, nsid, strict=False):
+    """Parse a raw JSON response (a dict) into the SDK's model for ``nsid``.
+
+    With ``strict=True`` this is what the SDK's typed client methods do, and
+    it raises ``ModelError`` when the response does not fit the installed
+    models. With ``strict=False`` a mismatch yields a ``DotDict`` instead.
+    The notebook uses it on a saved fixture to show both behaviors.
+    """
+    return get_or_create(content, LEXICONS[nsid][1], strict=strict)
 
 
 def _get(node, attribute, default=None):

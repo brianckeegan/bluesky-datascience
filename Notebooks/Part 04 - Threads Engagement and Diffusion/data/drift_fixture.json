@@ -1,0 +1,62 @@
+{
+ "_fixture_note": "Two real bsky.app posts from app.bsky.feed.getAuthorFeed, with embeds, facets and viewer state removed, then altered on purpose: feed[0] carries a made-up embed type (app.bsky.embed.hologram#view) and feed[1] has indexedAt renamed to indexedTime. Used by Parts 04 and 07 to show how typed SDK models react to API drift.",
+ "feed": [
+  {
+   "post": {
+    "uri": "at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mzg7hgxgqk26",
+    "cid": "bafyreigd4pqhxjxcva43jxo3lleri67woip44kr65hc45qze5fzhpc4z4a",
+    "author": {
+     "did": "did:plc:z72i7hdynmk6r22z27h6tvur",
+     "handle": "bsky.app",
+     "displayName": "Bluesky",
+     "createdAt": "2023-04-12T04:53:57.057Z"
+    },
+    "record": {
+     "$type": "app.bsky.feed.post",
+     "createdAt": "2026-11-03T16:00:00.226Z",
+     "langs": [
+      "en"
+     ],
+     "text": "Bluesky’s Election Day feed features 700+ local reporters and newsrooms covering all 50 states and DC, many of them independent or nonprofit.\n\nWant to keep up with their reporting today and year-round? Follow this battleground Starter Pack or any of the regional packs in the thread below. 🧵"
+    },
+    "bookmarkCount": 92,
+    "replyCount": 30,
+    "repostCount": 193,
+    "likeCount": 700,
+    "quoteCount": 22,
+    "indexedAt": "2026-11-03T16:00:00.478Z",
+    "embed": {
+     "$type": "app.bsky.embed.hologram#view",
+     "frames": 24,
+     "alt": "A made-up embed type"
+    }
+   }
+  },
+  {
+   "post": {
+    "uri": "at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3mz4cvlf7z22v",
+    "cid": "bafyreicfhjw57i7cubyg53qqqvgfa3seip23omadrwb7v4zkbwwmtano3u",
+    "author": {
+     "did": "did:plc:z72i7hdynmk6r22z27h6tvur",
+     "handle": "bsky.app",
+     "displayName": "Bluesky",
+     "createdAt": "2023-04-12T04:53:57.057Z"
+    },
+    "record": {
+     "$type": "app.bsky.feed.post",
+     "createdAt": "2026-10-30T17:34:58.466Z",
+     "langs": [
+      "en"
+     ],
+     "text": "New in beta: the moderation inbox. \n\nNow you can see the reports you've made, and find out what happened to the content you reported, right in the Bluesky app. Notices about your account and appeals live there too."
+    },
+    "bookmarkCount": 170,
+    "replyCount": 81,
+    "repostCount": 324,
+    "likeCount": 1827,
+    "quoteCount": 85,
+    "indexedTime": "2026-10-30T17:35:05.614Z"
+   }
+  }
+ ]
+}
